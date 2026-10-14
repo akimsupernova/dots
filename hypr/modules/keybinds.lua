@@ -31,6 +31,8 @@ hl.bind("CTRL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -e btop"), { description
 hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:launcherToggleRelease"), { description = "Shell: Toggle launcher" })
 hl.bind("SUPER + A", hl.dsp.exec_cmd("pavucontrol"), { description = "Media: Volume Control" })
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call emoji toggle"), { description = "Shell: Emoji" })
+hl.bind("SUPER + SHIFT + mouse_down", hl.dsp.exec_cmd([[sh -c '"$HOME/.config/quickshell/scripts/brightness.sh" down']]), { description = "Media: Brightness Up" })
+hl.bind("SUPER + SHIFT + mouse_up", hl.dsp.exec_cmd([[sh -c '"$HOME/.config/quickshell/scripts/brightness.sh" up']]),   { description = "Media: Brightness Down" })
 
 for i = 1, 10 do
     local key = i % 10

@@ -20,6 +20,7 @@ ShellRoot {
     Monitors {}
     Cheatsheet {}
     VolumeOsd {}
+    BrightnessOsd {}
     Launcher {}
     ClockWidget {}
     Polkit {}

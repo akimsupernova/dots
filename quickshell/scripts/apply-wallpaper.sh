@@ -78,7 +78,7 @@ case "$TYPE" in
     fi
 
     sleep 0.2
-    awww img "$PATH_IN" --transition-type random --transition-duration 1.0 --transition-fps 120 2>>"$LOG" || true
+    awww img "$PATH_IN" --transition-type random --transition-duration 1.0 --transition-fps 60 2>>"$LOG" || true
     log "image applied OK"
     ;;
   *)
