@@ -47,5 +47,5 @@ Singleton {
     readonly property int fontSize: 13
 
     //adjust this if the font looks stupid
-    readonly property int textYOffset: 1
+    readonly property int textYOffset: 0
 }

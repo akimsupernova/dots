@@ -4,6 +4,7 @@ set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 ICONS_DIR="$HOME/.icons"
+FONTS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
 BACKUP_BASE="$HOME/.local/share/akim-dotfiles-backup"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/akim-dotfiles"
 MANIFEST="$STATE_DIR/manifest"
@@ -16,7 +17,7 @@ SKIP_DEPS=0
 TMP_DIRS=()
 
 PACKAGES=(
-  hyprland ttf-google-sans awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-jack pipewire-pulse polkit python ddcutil
+  ark awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-pulse polkit python ddcutil
   btop nvtop lact quickshell kate zen-browser-bin noto-fonts-extra pipewire-alsa alsa-utils wireplumber pavucontrol sof-firmware brightnessctl
   bibata-cursor-theme grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
 )
@@ -128,10 +129,18 @@ post_install() {
   fi
 }
 
+refresh_font_cache() {
+  if command -v fc-cache >/dev/null 2>&1; then
+    info "Refreshing font cache..."
+    run fc-cache -f "$FONTS_DIR" >/dev/null 2>&1 || true
+  fi
+}
+
 target_dir() {
   case "$1" in
     .config) printf '%s' "$CONFIG_DIR" ;;
     .icons)  printf '%s' "$ICONS_DIR" ;;
+    .fonts)  printf '%s' "$FONTS_DIR" ;;
     *) die "Unknown label: $1" ;;
   esac
 }
@@ -198,7 +207,7 @@ do_install() {
   local item
   while IFS= read -r -d '' item; do
     config_items+=("$item")
-  done < <(find "$ROOT" -mindepth 1 -maxdepth 1 -type d ! -name '.*' ! -name 'icons' -print0 | sort -z)
+  done < <(find "$ROOT" -mindepth 1 -maxdepth 1 -type d ! -name '.*' ! -name 'icons' ! -name 'fonts' -print0 | sort -z)
   [[ ${#config_items[@]} -gt 0 ]] || die "No config folders found in $ROOT."
 
   if ((SKIP_DEPS)); then
@@ -220,6 +229,16 @@ do_install() {
     done < <(find "$ROOT/icons" -mindepth 1 -maxdepth 1 -print0 | sort -z)
   else
     warn "No icons folder found; skipping."
+  fi
+
+  if [[ -d "$ROOT/fonts" ]]; then
+    run mkdir -p "$FONTS_DIR"
+    while IFS= read -r -d '' item; do
+      deploy_item "$item" ".fonts"
+    done < <(find "$ROOT/fonts" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+    refresh_font_cache
+  else
+    warn "No fonts folder found; skipping."
   fi
 
   if [[ -d "$BACKUP_ROOT" ]]; then
@@ -399,6 +418,7 @@ do_uninstall() {
   fi
 
   rm -f "$MANIFEST" "$BACKUP_REF"
+  refresh_font_cache
   rmdir "$STATE_DIR" 2>/dev/null || true
   find "$BACKUP_ROOT" -depth -type d -empty -delete 2>/dev/null || true
   rmdir "$BACKUP_BASE" 2>/dev/null || true
