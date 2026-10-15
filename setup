@@ -16,7 +16,7 @@ SKIP_DEPS=0
 TMP_DIRS=()
 
 PACKAGES=(
-  ttf-google-sans awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-jack pipewire-pulse polkit python ddcutil
+  hyprland ttf-google-sans awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-jack pipewire-pulse polkit python ddcutil
   btop nvtop lact quickshell kate zen-browser-bin noto-fonts-extra pipewire-alsa alsa-utils wireplumber pavucontrol sof-firmware brightnessctl
   bibata-cursor-theme grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
 )
