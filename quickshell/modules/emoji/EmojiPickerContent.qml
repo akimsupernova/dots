@@ -93,26 +93,6 @@ Rectangle {
                 font.family: Theme.font
                 font.pixelSize: 12
             }
-
-            Rectangle {
-                width: 30
-                height: 30
-                radius: 6
-                color: closeMa.containsMouse ? "#40ffffff" : "transparent"
-                Text {
-                    anchors.centerIn: parent
-                    text: "✕"
-                    color: Theme.subtext
-                    font.pixelSize: 14
-                }
-                MouseArea {
-                    id: closeMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.closeRequested()
-                }
-            }
         }
 
         Rectangle {

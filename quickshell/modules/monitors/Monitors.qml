@@ -272,8 +272,8 @@ Scope {
                                 width: monLabel.implicitWidth + 20
                                 height: 28
                                 radius: 6
-                                color: index === root.selectedMonitor ? "#3533ccff" : (monMa.containsMouse ? "#20ffffff" : "#15ffffff")
-                                border.color: index === root.selectedMonitor ? "#33ccff" : "transparent"
+                                color: index === root.selectedMonitor ? Qt.alpha(Theme.accent1, 0.2) : (monMa.containsMouse ? "#20ffffff" : "#15ffffff")
+                                border.color: index === root.selectedMonitor ? Theme.accent1 : "transparent"
                                 border.width: 1
 
                                 Text {
@@ -367,8 +367,8 @@ Scope {
                             width: modeListView.width
                             height: 36
                             radius: 8
-                            color: index === root.selectedMode ? "#3533ccff" : (modeMa.containsMouse ? "#18ffffff" : "transparent")
-                            border.color: index === root.selectedMode ? "#33ccff" : "transparent"
+                            color: index === root.selectedMode ? Qt.alpha(Theme.accent1, 0.2) : (modeMa.containsMouse ? "#18ffffff" : "transparent")
+                            border.color: index === root.selectedMode ? Theme.accent1 : "transparent"
                             border.width: 1
 
                             readonly property bool isCurrent: currentMon && (
