@@ -43,9 +43,9 @@ Singleton {
     readonly property int gap:    5
     readonly property int barHeight: 25
 
-    readonly property string font: "Google Sans Display"
+    readonly property string font: "Google Sans"
     readonly property int fontSize: 13
 
     //adjust this if the font looks stupid
-    readonly property int textYOffset: 0
+    readonly property int textYOffset: 1
 }
