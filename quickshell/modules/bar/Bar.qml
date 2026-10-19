@@ -17,7 +17,7 @@ PanelWindow {
     implicitHeight: Theme.barHeight
     color: "transparent"
 
-    WlrLayershell.namespace: "akim-bar"
+    WlrLayershell.namespace: "Glassveil Shell Bar"
 
     Rectangle {
         anchors.fill: parent

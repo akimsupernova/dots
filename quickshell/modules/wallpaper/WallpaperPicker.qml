@@ -50,7 +50,7 @@ Scope {
             color: "transparent"
             focusable: true
 
-            WlrLayershell.namespace: "akim-wallpaper-picker"
+            WlrLayershell.namespace: "Glassveil Shell Wallpaper"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 

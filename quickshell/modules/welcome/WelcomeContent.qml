@@ -172,7 +172,7 @@ GlassPanel {
                         y: -56 * s
                         width: 498 * s
                         height: 385 * s
-                        source: (root.shown && page0.active) ? Qt.resolvedUrl("../../assets/namecard/dance.gif") : ""
+                        source: (root.shown && page0.active) ? Qt.resolvedUrl("../../assets/namecard/herta.gif") : ""
                         playing: root.shown && page0.active
                         cache: false
                         asynchronous: true

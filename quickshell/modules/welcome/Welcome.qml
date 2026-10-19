@@ -11,7 +11,7 @@ Scope {
     property bool open: false
 
     readonly property string stateDir:
-        (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/akim-dotfiles"
+        (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/glassveil-shell"
     readonly property string pendingPath: stateDir + "/welcome-pending"
 
     onOpenChanged: if (!open) Quickshell.execDetached(["rm", "-f", host.pendingPath])
@@ -49,7 +49,7 @@ Scope {
         exclusiveZone: 0
         exclusionMode: ExclusionMode.Ignore
 
-        WlrLayershell.namespace: "akim-welcome"
+        WlrLayershell.namespace: "Glassveil Shell Welcome"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: host.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 

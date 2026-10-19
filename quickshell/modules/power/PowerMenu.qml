@@ -29,7 +29,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            WlrLayershell.namespace: "akim-power"
+            WlrLayershell.namespace: "Glassveil Shell Power"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 

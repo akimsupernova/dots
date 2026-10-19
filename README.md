@@ -1,11 +1,21 @@
 <p align="center">
-  <img src="quickshell/assets/preview/preview1.png" alt="Desktop preview" width="100%">
+  <img src="quickshell/assets/preview/preview1.png" alt="Glassveil Shell desktop preview" width="100%">
+</p>
+
+<h1 align="center">Glassveil Shell</h1>
+
+<p align="center">
+  A minimal Hyprland desktop powered by Quickshell.
+</p>
+
+<p align="center">
+  <code>Arch Linux</code> · <code>Hyprland</code> · <code>Quickshell</code>
 </p>
 
 ## Requirements
 
-- Arch Linux or CachyOS (or a derivative)
-- Hyprland already installed, with Lua config support
+- Arch Linux
+- Hyprland with Lua configuration support
 
 ## Install
 
@@ -15,12 +25,12 @@ cd dots
 ./setup install
 ```
 
-Useful commands:
+## Commands
 
 ```bash
-./setup install --no-deps   # dotfiles only, skip packages
-./setup install -n          # dry run: show what would happen
-./setup welcome             # show the welcome card again at next login
+./setup install --no-deps   # Install dotfiles without packages
+./setup install -n          # Preview changes without applying them
+./setup welcome             # Show the welcome card at next login
 ```
 
 ## Uninstall
@@ -29,4 +39,4 @@ Useful commands:
 ./setup uninstall
 ```
 
-Removes the dotfiles and restores your original configs from the backup.
+Restores your previous configuration from the backup.

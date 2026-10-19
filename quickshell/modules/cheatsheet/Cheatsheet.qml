@@ -30,7 +30,7 @@ Scope {
             color: "transparent"
             focusable: true
 
-            WlrLayershell.namespace: "akim-cheatsheet"
+            WlrLayershell.namespace: "Glassveil Shell Cheatsheet"
             WlrLayershell.layer: WlrLayer.Overlay
 
             readonly property real u: Theme.u

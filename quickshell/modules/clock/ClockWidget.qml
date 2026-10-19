@@ -64,7 +64,7 @@ Scope {
             color: "transparent"
             mask: Region { item: root.draggable ? content.holder : null }
 
-            WlrLayershell.namespace: "akim-clock"
+            WlrLayershell.namespace: "Glassveil Shell Clock"
             WlrLayershell.layer: WlrLayer.Bottom
 
             DraggableClock {

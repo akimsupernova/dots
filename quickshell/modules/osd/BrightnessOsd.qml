@@ -43,7 +43,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            WlrLayershell.namespace: "akim-osd-brightness"
+            WlrLayershell.namespace: "Glassveil Shell OSD Brightness"
             WlrLayershell.layer: WlrLayer.Overlay
 
             mask: Region { item: indicator }

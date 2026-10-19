@@ -28,7 +28,7 @@ PanelWindow {
     exclusiveZone: 0
     exclusionMode: ExclusionMode.Ignore
 
-    WlrLayershell.namespace: "akim-namecard-picker"
+    WlrLayershell.namespace: "Glassveil Shell Namecard"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 

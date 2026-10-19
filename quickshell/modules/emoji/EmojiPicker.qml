@@ -41,7 +41,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            WlrLayershell.namespace: "akim-emoji-picker"
+            WlrLayershell.namespace: "Glassveil Shell Emoji"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 

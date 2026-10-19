@@ -38,7 +38,7 @@ Scope {
         exclusiveZone: 0
         exclusionMode: ExclusionMode.Ignore
 
-        WlrLayershell.namespace: "akim-launcher"
+        WlrLayershell.namespace: "Glassveil Shell Launcher"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: root.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 

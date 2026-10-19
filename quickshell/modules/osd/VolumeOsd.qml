@@ -60,7 +60,7 @@ PanelWindow {
     color: "transparent"
     visible: shown
 
-    WlrLayershell.namespace: "akim-osd"
+    WlrLayershell.namespace: "Glassveil Shell OSD"
     WlrLayershell.layer: WlrLayer.Overlay
 
     mask: Region { item: indicator }

@@ -19,9 +19,7 @@ Item {
         anchors.centerIn: parent
         text: cell.modelData.emoji
         font.family: "Noto Color Emoji"
-        font.pixelSize: Math.round(19 * Theme.u)
-        scale: cell.selected ? 1.3 : 1
-        Behavior on scale { NumberAnimation { duration: 190; easing.type: Easing.OutBack } }
+        font.pixelSize: Math.round((cell.selected ? 24 : 19) * Theme.u)
     }
 
     MouseArea {

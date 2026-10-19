@@ -20,7 +20,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            WlrLayershell.namespace: "akim-polkit"
+            WlrLayershell.namespace: "Glassveil Shell Polkit"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 

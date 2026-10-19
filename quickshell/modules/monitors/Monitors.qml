@@ -47,7 +47,7 @@ Scope {
             color: "transparent"
             focusable: true
 
-            WlrLayershell.namespace: "akim-monitor-settings"
+            WlrLayershell.namespace: "Glassveil Shell Monitor Settings"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 

@@ -101,7 +101,7 @@ Scope {
         exclusionMode: ExclusionMode.Ignore
         mask: Region { item: content.cardItem }
 
-        WlrLayershell.namespace: "akim-namecard"
+        WlrLayershell.namespace: "Glassveil Shell Namecard"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: host.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
@@ -151,7 +151,7 @@ Scope {
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
 
-        WlrLayershell.namespace: "akim-namecard-spectrum"
+        WlrLayershell.namespace: "Glassveil Shell Namecard Spectrum"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
