@@ -1,0 +1,7 @@
+hl.on("hyprland.start", function ()
+hl.exec_cmd("bash -c 'sleep 0.8; \"$HOME/.config/quickshell/scripts/restore-wallpaper.sh\"'")
+hl.exec_cmd("quickshell")
+hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 18")
+hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic'")
+hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size 18")
+end)

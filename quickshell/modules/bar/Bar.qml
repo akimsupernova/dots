@@ -1,0 +1,63 @@
+import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
+import qs.common
+
+PanelWindow {
+    id: bar
+
+    property var modelData
+    screen: modelData
+
+    anchors { top: true; left: true; right: true }
+    margins { top: Theme.gap; left: Theme.gap; right: Theme.gap }
+    implicitHeight: Theme.barHeight
+    color: "transparent"
+
+    WlrLayershell.namespace: "akim-bar"
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius
+        color: Theme.tint
+
+        ActiveWindow {
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.right: middle.left
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Row {
+            id: middle
+            anchors.centerIn: parent
+            spacing: 2.5
+
+            BarGroup {
+                Resources { Layout.alignment: Qt.AlignVCenter }
+                Media     { Layout.alignment: Qt.AlignVCenter }
+            }
+            BarGroup {
+                Workspaces { Layout.alignment: Qt.AlignVCenter }
+            }
+            BarGroup {
+                Clock   { Layout.alignment: Qt.AlignVCenter }
+            }
+        }
+
+        RowLayout {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.rightMargin: 8
+            spacing: 0
+
+            Tray {}
+            Battery {}
+            Volume {}
+        }
+    }
+}
