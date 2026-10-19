@@ -1,0 +1,2 @@
+# dots
+Simple hyprland dotfiles.
