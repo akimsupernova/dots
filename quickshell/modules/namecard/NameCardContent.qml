@@ -90,7 +90,7 @@ Item {
         opacity: root.stage(0)
         transform: Translate { x: (1 - root.stage(0)) * 22 * root.u }
 
-        Image {
+        AnimatedImage {
             id: heroImg
             anchors.fill: parent
             source: root.imgSrc("hero")
@@ -100,6 +100,8 @@ Item {
             asynchronous: true
             smooth: true
             mipmap: true
+            playing: true
+            cache: false
         }
         Item {
             anchors.fill: parent

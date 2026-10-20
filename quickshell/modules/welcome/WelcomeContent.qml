@@ -23,14 +23,14 @@ GlassPanel {
         { keys: ["SUPER", "/"],          text: "Keybind cheatsheet" },
         { keys: ["SUPER"],               text: "App launcher (tap)" },
         { keys: ["SUPER", "R"],          text: "Wallpaper picker" },
-        { keys: ["SUPER", "N"],          text: "Name card" },
+        { keys: ["SUPER", "G"],          text: "Name card" },
         { keys: ["SUPER", "M"],          text: "Monitor settings" },
         { keys: ["SUPER", "."],          text: "Emoji picker" },
         { keys: ["SUPER", "Return"],     text: "Terminal" },
         { keys: ["SUPER", "W"],          text: "Browser" },
         { keys: ["SUPER", "E"],          text: "File manager" },
         { keys: ["SUPER", "Q"],          text: "Close window" },
-        { keys: ["SUPER", "Space"],      text: "Screenshot (area)" },
+        { keys: ["SUPER", "N"],          text: "Sidebar" },
         { keys: ["SUPER", "SHIFT", "P"], text: "Power menu" }
     ]
 

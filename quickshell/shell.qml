@@ -13,6 +13,7 @@ import qs.modules.namecard
 import qs.modules.welcome
 import qs.modules.sidebar
 import qs.modules.notifications
+import qs.modules.lock
 
 ShellRoot {
     Variants {
@@ -34,5 +35,6 @@ ShellRoot {
     Welcome {}
     Sidebar {}
     NotificationPopups {}
+    Lock {}
 }
 

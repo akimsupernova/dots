@@ -5,12 +5,14 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import qs.common
+import qs.services
 
 PanelWindow {
     id: bar
 
     property var modelData
     screen: modelData
+    visible: !LockState.locked
 
     anchors { top: true; left: true; right: true }
     margins { top: Theme.gap; left: Theme.gap; right: Theme.gap }
