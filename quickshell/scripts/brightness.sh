@@ -6,10 +6,12 @@ step="${2:-5}"
 case "$action" in
     up)   sign=1 ;;
     down) sign=-1 ;;
-    *) echo "pakai: $0 up|down [persen]" >&2; exit 2 ;;
+    get)  sign=0 ;;
+    set)  sign=0 ;;
+    *) echo "usage: $0 up|down [percent] | get | set <percent>" >&2; exit 2 ;;
 esac
 case "$step" in
-    ''|*[!0-9]*) echo "langkah harus berupa angka" >&2; exit 2 ;;
+    ''|*[!0-9]*) echo "step must be a number" >&2; exit 2 ;;
 esac
 
 BACKLIGHT_DIR="${BACKLIGHT_DIR:-/sys/class/backlight}"
@@ -17,7 +19,7 @@ runtime="${XDG_RUNTIME_DIR:-/tmp}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 notify() { have notify-send && notify-send -u low -t 2500 "Brightness" "$1"; return 0; }
-osd() { have qs && qs ipc call brightness popup "$1" >/dev/null || echo "brightness.sh: qs ipc gagal (lihat: qs ipc show)" >&2; return 0; }
+osd() { [ -n "${NO_OSD:-}" ] && return 0; have qs && qs ipc call brightness popup "$1" >/dev/null || echo "brightness.sh: qs ipc failed (see: qs ipc show)" >&2; return 0; }
 
 if have flock; then
     exec 9>"$runtime/brightness.lock"
@@ -42,8 +44,8 @@ if have ddcutil; then
 fi
 
 if [ "$has_backlight" -eq 0 ] && [ -z "$buses" ]; then
-    notify "Tidak ada backlight maupun monitor DDC/CI (pasang brightnessctl/ddcutil, aktifkan DDC/CI di monitor, muat modul i2c-dev)"
-    echo "brightness.sh: tidak ada cara mengatur kecerahan" >&2
+    notify "No backlight or DDC/CI monitor found (install brightnessctl/ddcutil, enable DDC/CI on the monitor, load i2c-dev module)"
+    echo "brightness.sh: no way to control brightness" >&2
     exit 1
 fi
 
@@ -79,11 +81,16 @@ fi
 
 if [ -z "$cur" ]; then
     rm -f "$bus_cache" "$level_cache"
-    notify "Gagal membaca kecerahan saat ini"
+    notify "Failed to read current brightness"
     exit 1
 fi
 
-new=$((cur + sign * step))
+if [ "$action" = get ]; then
+    echo "$cur"
+    exit 0
+fi
+
+if [ "$action" = set ]; then new="$step"; else new=$((cur + sign * step)); fi
 [ "$new" -lt 1 ] && new=1
 [ "$new" -gt 100 ] && new=100
 
@@ -112,7 +119,7 @@ if [ -n "$buses" ]; then
     fi
 fi
 
-[ "$failed" -ne 0 ] && notify "Sebagian monitor gagal diubah kecerahannya"
+[ "$failed" -ne 0 ] && notify "Some monitors failed to change brightness"
 
 osd "$new"
 [ "$failed" -eq 0 ]

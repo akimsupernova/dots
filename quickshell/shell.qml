@@ -11,6 +11,8 @@ import qs.modules.emoji
 import qs.modules.power
 import qs.modules.namecard
 import qs.modules.welcome
+import qs.modules.sidebar
+import qs.modules.notifications
 
 ShellRoot {
     Variants {
@@ -30,5 +32,7 @@ ShellRoot {
     PowerMenu {}
     NameCard {}
     Welcome {}
+    Sidebar {}
+    NotificationPopups {}
 }
 

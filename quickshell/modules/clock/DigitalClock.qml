@@ -12,7 +12,7 @@ ColumnLayout {
     property string timeFormat: "hh:mm"
     property string dateFormat: "dddd, dd/MM"
     property int alignment: Text.AlignHCenter
-    property color textColor: Theme.text
+    property color textColor: Theme.ink
     property color shadowColor: "#66000000"
 
     spacing: 4

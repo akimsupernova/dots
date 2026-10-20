@@ -56,6 +56,10 @@ PanelWindow {
             spacing: 0
 
             Tray {}
+            StatusIcons {
+                Layout.leftMargin: 10
+                Layout.rightMargin: 6
+            }
             Battery {}
             Volume {}
         }

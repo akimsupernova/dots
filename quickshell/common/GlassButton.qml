@@ -28,12 +28,12 @@ Rectangle {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 5 * b.u
+        spacing: 6 * b.u
         Icon {
             visible: b.icon !== ""
             anchors.verticalCenter: parent.verticalCenter
             name: b.icon
-            size: Math.round(11 * b.u)
+            size: Math.round(14 * b.u)
             color: b.primary ? "#101216" : b.ink
         }
         Text {

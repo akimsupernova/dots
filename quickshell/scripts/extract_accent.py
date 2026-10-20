@@ -109,9 +109,9 @@ def pick_accent(px):
     return to_hex(r, g, b)
 
 
-INK_LIGHT_GLASS = (0x15, 0x17, 0x1a)   # teks gelap di atas kaca terang
-INK_DARK_GLASS = (0xf4, 0xf6, 0xfa)    # teks terang di atas kaca gelap
-TARGET_CONTRAST = 7.0                  # teks redup (opacity ~.6) masih >= ~4.5
+INK_LIGHT_GLASS = (0x15, 0x17, 0x1a)   # dark text on light glass
+INK_DARK_GLASS = (0xf4, 0xf6, 0xfa)    # light text on dark glass
+TARGET_CONTRAST = 7.0                  # dimmed text (opacity ~.6) still >= ~4.5
 MIN_ALPHA, MAX_ALPHA = 0.50, 0.92
 
 
@@ -134,8 +134,8 @@ def hex255(c):
 
 
 def glass_variant(tint, ink, extremes):
-    """Alpha terkecil agar kontras teks >= target di piksel wallpaper paling
-    terang DAN paling gelap (kaca = tint di atas blur wallpaper)."""
+    """Smallest alpha so that text contrast >= target on both the brightest
+    and darkest wallpaper pixels (glass = tint over blurred wallpaper)."""
     a = MIN_ALPHA
     while a <= MAX_ALPHA + 1e-9:
         worst = min(contrast(ink, mix(px, tint, a)) for px in extremes)
@@ -152,7 +152,7 @@ def pick_glass(px):
     ordered = sorted(px, key=lum255)
     extremes = [ordered[int(n * 0.04)], ordered[int(n * 0.50)], ordered[int(n * 0.96)]]
 
-    # saturasi rata-rata dinaikkan sedikit supaya warna wallpaper terasa di kaca
+    # slightly boost average saturation so wallpaper color shows through the glass
     h, sat, v = colorsys.rgb_to_hsv(*(c / 255 for c in avg))
     vivid = tuple(c * 255 for c in colorsys.hsv_to_rgb(h, min(1.0, sat * 1.5 + 0.05), v))
     light_tint = mix(vivid, (255, 255, 255), 0.66)
@@ -182,12 +182,12 @@ def main(argv):
         return 2
     path = args[0]
     if not os.path.exists(path):
-        print(f"file tidak ada: {path}", file=sys.stderr)
+        print(f"file not found: {path}", file=sys.stderr)
         return 1
 
     px = load_pixels(path)
     if not px:
-        print("gagal membaca gambar (pasang python-pillow atau ffmpeg)", file=sys.stderr)
+        print("failed to read image (install python-pillow or ffmpeg)", file=sys.stderr)
         return 1
 
     accent = pick_accent(px)

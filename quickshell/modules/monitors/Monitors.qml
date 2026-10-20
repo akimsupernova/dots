@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -27,15 +26,11 @@ Scope {
             screen: modelData
 
             readonly property real u: Theme.u
-            readonly property int panelWidth: Math.min(Math.round((screen?.width ?? 1920) * 0.55), 760)
-            readonly property int panelHeight: Math.min(Math.round((screen?.height ?? 1080) * 0.58), 600)
+            readonly property int panelWidth: Math.min(Math.round((screen?.width ?? 1920) * 0.9), Math.round(430 * u))
+            readonly property int panelHeight: Math.min(Math.round((screen?.height ?? 1080) * 0.85), Math.round(580 * u))
             readonly property int sideMargin: Math.max(0, Math.round(((screen?.width ?? 1920) - panelWidth) / 2))
 
-            anchors {
-                top: true
-                left: true
-                right: true
-            }
+            anchors { top: true; left: true; right: true }
             margins {
                 top: Theme.barHeight + Theme.gap + 10
                 left: sideMargin
@@ -52,25 +47,79 @@ Scope {
             WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
             property var monitors: []
-            property int selectedMonitor: 0
-            property int selectedMode: 0
+            property var baseline: []
+            property int sel: 0
             property string statusMsg: ""
-            property bool loading: false
+            property bool confirming: false
+            property int countdown: 10
 
-            readonly property var currentMon: (monitors.length > 0 && selectedMonitor < monitors.length)
-                                              ? monitors[selectedMonitor] : null
-            readonly property var modeList: currentMon ? (currentMon.availableModes || []) : []
+            readonly property var cur: (sel >= 0 && sel < monitors.length) ? monitors[sel] : null
+            readonly property bool dirty: JSON.stringify(monitors) !== JSON.stringify(baseline)
+            readonly property int enabledCount: monitors.filter(m => !m.disabled).length
+            readonly property var modeLabels: cur ? cur.modes.map(m => m.label) : []
+            readonly property int modeIndex: cur ? cur.modes.findIndex(m => m.value === cur.mode) : -1
 
+            function clone(v) { return JSON.parse(JSON.stringify(v)) }
+
+            function withSize(m) {
+                const md = m.modes.find(x => x.value === m.mode)
+                let w = md ? md.w : 1920
+                let h = md ? md.h : 1080
+                if (m.transform % 2 === 1) { const t = w; w = h; h = t }
+                const sc = m.scale > 0 ? m.scale : 1
+                return Object.assign({}, m, { lw: Math.round(w / sc), lh: Math.round(h / sc) })
+            }
+
+            function patch(i, p) {
+                const next = monitors.slice()
+                next[i] = withSize(Object.assign({}, next[i], p))
+                monitors = next
+            }
+
+            function snapPos(i, nx, ny) {
+                const m = monitors[i]
+                const T = 24
+                let bx = nx, by = ny, bdx = T + 1, bdy = T + 1
+                for (let j = 0; j < monitors.length; j++) {
+                    if (j === i || monitors[j].disabled) continue
+                    const o = monitors[j]
+                    const xs = [o.x + o.lw, o.x - m.lw, o.x, o.x + o.lw - m.lw]
+                    const ys = [o.y + o.lh, o.y - m.lh, o.y, o.y + o.lh - m.lh]
+                    for (let k = 0; k < 4; k++) {
+                        const dx = Math.abs(nx - xs[k]); if (dx < bdx) { bdx = dx; bx = xs[k] }
+                        const dy = Math.abs(ny - ys[k]); if (dy < bdy) { bdy = dy; by = ys[k] }
+                    }
+                }
+                return { x: Math.round(bx), y: Math.round(by) }
+            }
+
+            function monArg(m) {
+                if (m.disabled) return m.name + ",disable"
+                return m.name + "," + m.mode + "," + m.x + "x" + m.y + "," + m.scale + ",transform," + m.transform
+            }
+
+            function batchFor(list) {
+                return ["hyprctl", "--batch", list.map(m => "keyword monitor " + monArg(m)).join(" ; ")]
+            }
 
             function refreshMonitors() {
-                loading = true
                 statusMsg = "Loading monitors…"
                 listProc.running = true
             }
 
+            function normMode(s) {
+                const cleaned = String(s).replace(/Hz$/i, "").trim()
+                const parts = cleaned.split("@")
+                const wh = parts[0].split("x")
+                const rr = parts.length === 2 ? parseFloat(parts[1]) : 0
+                const rrStr = Number.isInteger(rr) ? String(rr) : String(Math.round(rr * 100) / 100)
+                return { value: parts.length === 2 ? parts[0] + "@" + rrStr : cleaned,
+                         label: String(s), w: parseInt(wh[0]) || 0, h: parseInt(wh[1]) || 0, r: rr }
+            }
+
             Process {
                 id: listProc
-                command: ["hyprctl", "-j", "monitors"]
+                command: ["hyprctl", "-j", "monitors", "all"]
                 stdout: StdioCollector {
                     onStreamFinished: {
                         try {
@@ -78,115 +127,122 @@ Scope {
                             const list = []
                             for (let i = 0; i < data.length; i++) {
                                 const m = data[i]
-                                const modes = (m.availableModes || []).map(s => {
-                                    const cleaned = String(s).replace(/Hz$/i, "").trim()
-                                    const parts = cleaned.split("@")
-                                    if (parts.length === 2) {
-                                        const rr = parseFloat(parts[1])
-                                        const rrStr = Number.isInteger(rr) ? String(rr) : String(Math.round(rr * 100) / 100)
-                                        return parts[0] + "@" + rrStr
-                                    }
-                                    return cleaned
-                                })
                                 const seen = {}
-                                const unique = []
-                                for (let j = 0; j < modes.length; j++) {
-                                    if (!seen[modes[j]]) {
-                                        seen[modes[j]] = true
-                                        unique.push(modes[j])
-                                    }
+                                const modes = []
+                                const raw = m.availableModes || []
+                                for (let j = 0; j < raw.length; j++) {
+                                    const nm = root.normMode(raw[j])
+                                    if (!seen[nm.value]) { seen[nm.value] = true; modes.push(nm) }
                                 }
-                                const curW = m.width || 0
-                                const curH = m.height || 0
-                                const curR = m.refreshRate ? Math.round(m.refreshRate * 100) / 100 : 0
-                                const curMode = curW && curH ? (curW + "x" + curH + "@" + curR) : ""
-
-                                list.push({
+                                let best = 0, bestD = 1e9
+                                for (let j = 0; j < modes.length; j++) {
+                                    if (modes[j].w !== m.width || modes[j].h !== m.height) continue
+                                    const d = Math.abs(modes[j].r - (m.refreshRate || 0))
+                                    if (d < bestD) { bestD = d; best = j }
+                                }
+                                const desc = String(m.description || m.name || "").replace(/\s*\([^)]*\)\s*$/, "")
+                                list.push(root.withSize({
                                     name: m.name || "",
-                                    desc: m.description || m.name || "",
-                                    currentMode: curMode,
-                                    availableModes: unique,
+                                    label: (m.name || "") + (desc && desc !== m.name ? " · " + desc : ""),
+                                    disabled: !!m.disabled,
+                                    modes: modes,
+                                    mode: modes.length ? modes[best].value : "preferred",
                                     scale: m.scale || 1,
                                     x: m.x || 0,
-                                    y: m.y || 0
-                                })
+                                    y: m.y || 0,
+                                    transform: m.transform || 0
+                                }))
                             }
                             root.monitors = list
-                            root.selectedMonitor = 0
-                            if (list.length > 0) {
-                                const modes = list[0].availableModes
-                                let idx = modes.indexOf(list[0].currentMode)
-                                if (idx < 0) {
-                                    const base = list[0].currentMode.replace(/\.\d+$/, "")
-                                    idx = modes.findIndex(md => md.replace(/\.\d+$/, "") === base)
-                                }
-                                root.selectedMode = idx >= 0 ? idx : 0
-                            }
+                            root.baseline = root.clone(list)
+                            root.sel = 0
                             root.statusMsg = list.length ? (list.length + " monitor(s)") : "No monitors detected"
                         } catch (e) {
                             root.statusMsg = "Parse error"
                             root.monitors = []
                         }
-                        root.loading = false
                     }
                 }
-                onExited: (code) => {
-                    if (code !== 0) {
-                        root.statusMsg = "hyprctl failed"
-                        root.loading = false
-                    }
-                }
+                onExited: code => { if (code !== 0) root.statusMsg = "hyprctl failed" }
             }
 
-            function applyMode() {
-                if (!currentMon || modeList.length === 0) return
-                const mon = currentMon
-                const mode = modeList[selectedMode]
-                if (!mode) return
-
+            function apply() {
+                if (!dirty || enabledCount === 0) return
                 statusMsg = "Applying…"
-
-                const pos = mon.x + "x" + mon.y
-                const scale = mon.scale || 1
-                applyProc.command = [
-                    "hyprctl", "keyword", "monitor",
-                    mon.name + "," + mode + "," + pos + "," + scale
-                ]
+                applyProc.command = batchFor(monitors)
                 applyProc.running = true
             }
 
             Process {
                 id: applyProc
-                onExited: (code) => {
+                stderr: StdioCollector {
+                    id: applyErrorOutput
+                }
+                onExited: code => {
                     if (code === 0) {
-                        writeConfig()
+                        root.confirming = true
+                        root.countdown = 10
+                        root.statusMsg = ""
+                        confirmTimer.restart()
                     } else {
-                        root.statusMsg = "Apply failed (" + code + ")"
+                        const err = applyErrorOutput.text.trim()
+                        root.statusMsg = err.length ? "Apply failed: " + err : "Apply failed (hyprctl exit " + code + ")"
+                        revertProc.command = root.batchFor(root.baseline)
+                        revertProc.running = true
                     }
                 }
             }
 
-            function writeConfig() {
-                if (!currentMon || modeList.length === 0) return
-                const mon = currentMon
-                const mode = modeList[selectedMode]
-                const pos = mon.x + "x" + mon.y
-                const scale = mon.scale || 1
+            Timer {
+                id: confirmTimer
+                interval: 1000
+                repeat: true
+                onTriggered: {
+                    root.countdown--
+                    if (root.countdown <= 0) root.revert()
+                }
+            }
 
+            function keep() {
+                confirmTimer.stop()
+                confirming = false
+                baseline = clone(monitors)
+                writeConfig()
+            }
+
+            function revert() {
+                confirmTimer.stop()
+                confirming = false
+                revertProc.command = batchFor(baseline)
+                revertProc.running = true
+                monitors = clone(baseline)
+                statusMsg = "Reverted"
+            }
+
+            function resetEdits() {
+                monitors = clone(baseline)
+                statusMsg = ""
+            }
+
+            Process { id: revertProc }
+
+            function writeConfig() {
                 let body = "------------------\n---- MONITORS ----\n------------------\n\n"
                 body += "-- See https://wiki.hypr.land/Configuring/Basics/Monitors/\n"
                 body += "-- Generated by Monitors Settings\n\n"
 
                 for (let i = 0; i < monitors.length; i++) {
                     const m = monitors[i]
-                    const mMode = (i === selectedMonitor) ? mode : (m.currentMode || "preferred")
-                    const mPos = (m.x || 0) + "x" + (m.y || 0)
-                    const mScale = m.scale || 1
                     body += "hl.monitor({\n"
                     body += '    output    = "' + m.name + '",\n'
-                    body += '    mode      = "' + mMode + '",\n'
-                    body += '    position  = "' + mPos + '",\n'
-                    body += '    scale     = "' + mScale + '",\n'
+                    if (m.disabled) {
+                        body += "    disabled  = true,\n"
+                    } else {
+                        body += '    mode      = "' + m.mode + '",\n'
+                        body += '    position  = "' + m.x + "x" + m.y + '",\n'
+                        body += '    scale     = "' + m.scale + '",\n'
+                        body += "    transform = " + m.transform + ",\n"
+                    }
                     body += "})\n"
                     if (i < monitors.length - 1) body += "\n"
                 }
@@ -195,284 +251,289 @@ Scope {
                 writeProc.command = [
                     "python3", "-c",
                     "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text(sys.argv[2])",
-                    path,
-                    body
+                    path, body
                 ]
                 writeProc.running = true
             }
 
             Process {
                 id: writeProc
-                onExited: (code) => {
-                    if (code === 0) {
-                        root.statusMsg = "OK ✓ saved"
-                        if (currentMon && modeList[selectedMode]) {
-                            const updated = monitors.slice()
-                            updated[selectedMonitor] = Object.assign({}, currentMon, {
-                                currentMode: modeList[selectedMode]
-                            })
-                            root.monitors = updated
-                        }
-                        closeTimer.restart()
-                    } else {
-                        root.statusMsg = "Failed to write file"
+                onExited: code => root.statusMsg = code === 0 ? "OK ✓ saved" : "Failed to write file"
+            }
+
+            FocusScope {
+                id: ui
+                anchors.fill: parent
+                focus: true
+
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Escape) {
+                        if (resDrop.open) resDrop.open = false
+                        else if (root.confirming) root.revert()
+                        else host.open = false
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (root.confirming) root.keep()
+                        else root.apply()
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Left && root.monitors.length > 1) {
+                        root.sel = Math.max(0, root.sel - 1)
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Right && root.monitors.length > 1) {
+                        root.sel = Math.min(root.monitors.length - 1, root.sel + 1)
+                        event.accepted = true
                     }
                 }
-            }
 
-            Timer {
-                id: closeTimer
-                interval: 700
-                onTriggered: host.open = false
-            }
-
-            GlassPanel {
-                id: glass
-                anchors.fill: parent
-
-                ColumnLayout {
+                GlassPanel {
+                    id: glass
                     anchors.fill: parent
-                    spacing: 10 * root.u
+                    feather: 14 * root.u
+                    coreRadius: 18 * root.u
+                    padding: 22 * root.u
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8 * root.u
-                        opacity: glass.stage(1)
-                        transform: Translate { y: (1 - glass.stage(1)) * 12 * root.u }
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 10 * root.u
 
-                        TitleBadge { title: "Monitor" }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8 * root.u
+                            opacity: glass.stage(1)
 
-                        Item { Layout.fillWidth: true }
-
-                        StatusPill {
-                            text: root.statusMsg
-                            good: root.statusMsg.indexOf("OK") >= 0
-                            bad: root.statusMsg.indexOf("fail") >= 0 || root.statusMsg.indexOf("error") >= 0
-                        }
-                    }
-
-                    Row {
-                        Layout.fillWidth: true
-                        spacing: 6 * root.u
-                        visible: monitors.length > 1
-                        opacity: glass.stage(2)
-                        transform: Translate { y: (1 - glass.stage(2)) * 12 * root.u }
-
-                        Repeater {
-                            model: monitors
-                            delegate: Rectangle {
-                                id: tab
-                                required property int index
-                                required property var modelData
-                                readonly property bool sel: index === root.selectedMonitor
-
-                                width: monLabel.implicitWidth + 24 * root.u
-                                height: Math.round(24 * root.u)
+                            Rectangle {
+                                implicitHeight: Math.round(28 * root.u)
+                                implicitWidth: titleRow.implicitWidth + 18 * root.u
                                 radius: height / 2
-                                color: Theme.inkA(sel ? 0.22 : (monMa.containsMouse ? 0.16 : 0.08))
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                                border.width: sel ? 2 : 0
-                                border.color: Theme.accent1
-                                scale: monMa.pressed ? 0.94 : (monMa.containsMouse ? 1.05 : 1)
-                                Behavior on scale { NumberAnimation { duration: 170; easing.type: Easing.OutBack } }
+                                color: Theme.inkA(0.12)
 
-                                Text {
-                                    id: monLabel
+                                Row {
+                                    id: titleRow
                                     anchors.centerIn: parent
-                                    text: tab.modelData.name
-                                    color: Theme.ink
-                                    opacity: tab.sel ? 1 : 0.7
-                                    font.family: Theme.font
-                                    font.pixelSize: Math.round(9.5 * root.u)
-                                    font.bold: tab.sel
-                                }
-                                MouseArea {
-                                    id: monMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.selectedMonitor = tab.index
-                                        const modes = tab.modelData.availableModes || []
-                                        let idx = modes.indexOf(tab.modelData.currentMode)
-                                        if (idx < 0) {
-                                            const base = (tab.modelData.currentMode || "").replace(/\.\d+$/, "")
-                                            idx = modes.findIndex(md => md.replace(/\.\d+$/, "") === base)
-                                        }
-                                        root.selectedMode = idx >= 0 ? idx : 0
+                                    spacing: 7 * root.u
+                                    Icon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        name: "monitor"
+                                        size: Math.round(13 * root.u)
+                                        color: Theme.ink
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Displays"
+                                        color: Theme.ink
+                                        font.family: Theme.font
+                                        font.pixelSize: Math.round(12.5 * root.u)
+                                        font.bold: true
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    Text {
-                        Layout.fillWidth: true
-                        visible: currentMon !== null
-                        text: currentMon
-                              ? (currentMon.desc + "  ·  current: " + currentMon.currentMode)
-                              : ""
-                        color: Theme.ink
-                        opacity: 0.6 * glass.stage(2.5)
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(9 * root.u)
-                        elide: Text.ElideRight
-                    }
+                            Item { Layout.fillWidth: true }
 
-                    ListView {
-                        id: modeListView
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-                        model: modeList
-                        currentIndex: root.selectedMode
-                        focus: true
-                        boundsBehavior: Flickable.StopAtBounds
-                        spacing: 3 * root.u
-
-                        highlightMoveDuration: 150
-                        highlightMoveVelocity: -1
-                        highlight: Rectangle {
-                            radius: height / 2
-                            color: Theme.inkA(0.14)
-                            border.width: 2
-                            border.color: Theme.accent1
-                        }
-
-                        Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Escape) {
-                                host.open = false
-                                event.accepted = true
-                            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                root.applyMode()
-                                event.accepted = true
-                            } else if (event.key === Qt.Key_Up) {
-                                root.selectedMode = Math.max(0, root.selectedMode - 1)
-                                event.accepted = true
-                            } else if (event.key === Qt.Key_Down) {
-                                root.selectedMode = Math.min(modeList.length - 1, root.selectedMode + 1)
-                                event.accepted = true
-                            } else if (event.key === Qt.Key_Left && monitors.length > 1) {
-                                root.selectedMonitor = Math.max(0, root.selectedMonitor - 1)
-                                event.accepted = true
-                            } else if (event.key === Qt.Key_Right && monitors.length > 1) {
-                                root.selectedMonitor = Math.min(monitors.length - 1, root.selectedMonitor + 1)
-                                event.accepted = true
+                            StatusPill {
+                                text: root.statusMsg
+                                good: root.statusMsg.indexOf("OK") >= 0
+                                bad: root.statusMsg.indexOf("fail") >= 0 || root.statusMsg.indexOf("error") >= 0
                             }
                         }
 
-                        onCurrentIndexChanged: {
-                            if (currentIndex !== root.selectedMode && currentIndex >= 0)
-                                root.selectedMode = currentIndex
-                        }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.round(150 * root.u)
+                            radius: Math.round(18 * root.u)
+                            color: Theme.inkA(0.06)
+                            opacity: glass.stage(2)
 
-                        Connections {
-                            target: root
-                            function onSelectedModeChanged() {
-                                modeListView.currentIndex = root.selectedMode
-                                modeListView.positionViewAtIndex(root.selectedMode, ListView.Contain)
-                            }
-                        }
-
-                        delegate: Item {
-                            id: modeDel
-                            required property int index
-                            required property string modelData
-                            width: modeListView.width
-                            height: Math.round(30 * root.u)
-
-                            readonly property bool sel: index === root.selectedMode
-                            readonly property real appear: glass.stage(3 + Math.min(index, 9) * 0.3)
-                            readonly property bool isCurrent: currentMon && (
-                                modelData === currentMon.currentMode ||
-                                modelData.replace(/\.\d+$/, "") === (currentMon.currentMode || "").replace(/\.\d+$/, "")
-                            )
-
-                            opacity: appear
-                            transform: Translate { x: (1 - modeDel.appear) * -18 * root.u }
-
-                            RowLayout {
+                            MonitorPreview {
                                 anchors.fill: parent
-                                anchors.leftMargin: 16 * root.u
-                                anchors.rightMargin: 14 * root.u
-                                spacing: 10 * root.u
+                                monitors: root.monitors
+                                selected: root.sel
+                                onPick: i => root.sel = i
+                                onMoved: (i, x, y) => {
+                                    const p = root.snapPos(i, x, y)
+                                    root.patch(i, { x: p.x, y: p.y })
+                                }
+                            }
+                        }
 
-                                Text {
-                                    text: modeDel.modelData
-                                    color: Theme.ink
-                                    opacity: modeDel.sel ? 1 : 0.75
-                                    Behavior on opacity { NumberAnimation { duration: 140 } }
-                                    font.family: Theme.font
-                                    font.pixelSize: Math.round(10.5 * root.u)
-                                    font.bold: modeDel.sel
+                        Text {
+                            Layout.fillWidth: true
+                            visible: root.cur !== null
+                            text: root.cur ? root.cur.label : ""
+                            elide: Text.ElideRight
+                            color: Theme.ink
+                            opacity: 0.6 * glass.stage(2.5)
+                            font.family: Theme.font
+                            font.pixelSize: Math.round(9 * root.u)
+                        }
+
+                        Flickable {
+                            id: flick
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            contentWidth: width
+                            contentHeight: rows.implicitHeight
+                            boundsBehavior: Flickable.StopAtBounds
+                            opacity: glass.stage(3)
+                            visible: root.cur !== null
+
+                            ColumnLayout {
+                                id: rows
+                                width: flick.width
+                                spacing: 6 * root.u
+
+                                SettingRow {
                                     Layout.fillWidth: true
+                                    icon: "monitor"
+                                    label: "Enabled"
+                                    ToggleSwitch {
+                                        checked: root.cur ? !root.cur.disabled : false
+                                        onToggled: v => {
+                                            if (!v && root.enabledCount <= 1) { root.statusMsg = "Keep one display on"; return }
+                                            root.patch(root.sel, { disabled: !v })
+                                        }
+                                    }
                                 }
 
-                                Rectangle {
-                                    visible: modeDel.isCurrent
-                                    implicitWidth: activeRow.implicitWidth + 14 * root.u
-                                    implicitHeight: Math.round(16 * root.u)
-                                    radius: height / 2
-                                    color: Qt.alpha(Theme.ok, 0.45)
+                                SettingRow {
+                                    Layout.fillWidth: true
+                                    icon: "sparkle"
+                                    label: "Resolution & Refresh Rate"
+                                    enabled: !!root.cur && !root.cur.disabled
+                                    opacity: enabled ? 1 : 0.4
+                                    Dropdown {
+                                        id: resDrop
+                                        width: Math.round(170 * root.u)
+                                        overlay: ui
+                                        model: root.modeLabels
+                                        currentIndex: root.modeIndex
+                                        onActivated: i => root.patch(root.sel, { mode: root.cur.modes[i].value })
+                                    }
+                                }
 
+                                SettingRow {
+                                    Layout.fillWidth: true
+                                    icon: "rotate"
+                                    label: "Orientation"
+                                    enabled: !!root.cur && !root.cur.disabled
+                                    opacity: enabled ? 1 : 0.4
                                     Row {
-                                        id: activeRow
-                                        anchors.centerIn: parent
                                         spacing: 4 * root.u
-                                        Rectangle {
-                                            id: dot
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: 5 * root.u; height: width; radius: width / 2
-                                            color: Theme.ink
-                                            SequentialAnimation on opacity {
-                                                loops: Animation.Infinite
-                                                NumberAnimation { to: 0.25; duration: 800; easing.type: Easing.InOutSine }
-                                                NumberAnimation { to: 1;    duration: 800; easing.type: Easing.InOutSine }
+                                        Repeater {
+                                            model: ["Normal", "90°", "180°", "270°"]
+                                            GlassButton {
+                                                required property int index
+                                                required property string modelData
+                                                text: modelData
+                                                implicitHeight: Math.round(24 * root.u)
+                                                selected: root.cur ? root.cur.transform === index : false
+                                                onClicked: root.patch(root.sel, { transform: index })
                                             }
                                         }
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "active"
-                                            color: Theme.ink
-                                            font.family: Theme.font
-                                            font.pixelSize: Math.round(8 * root.u)
-                                            font.weight: Font.Medium
-                                        }
+                                    }
+                                }
+
+                                SettingRow {
+                                    Layout.fillWidth: true
+                                    icon: "search"
+                                    label: "Scale"
+                                    enabled: !!root.cur && !root.cur.disabled
+                                    opacity: enabled ? 1 : 0.4
+                                    Stepper {
+                                        value: root.cur ? Math.round(root.cur.scale * 100) : 100
+                                        step: 25
+                                        from: 50
+                                        to: 300
+                                        suffix: "%"
+                                        valueWidth: 50 * root.u
+                                        onChanged: v => root.patch(root.sel, { scale: v / 100 })
+                                    }
+                                }
+
+                                SettingRow {
+                                    Layout.fillWidth: true
+                                    icon: "axis-x"
+                                    label: "Position X"
+                                    enabled: !!root.cur && !root.cur.disabled
+                                    opacity: enabled ? 1 : 0.4
+                                    Stepper {
+                                        value: root.cur ? root.cur.x : 0
+                                        step: 10
+                                        valueWidth: 56 * root.u
+                                        onChanged: v => root.patch(root.sel, { x: v })
+                                    }
+                                }
+
+                                SettingRow {
+                                    Layout.fillWidth: true
+                                    icon: "axis-y"
+                                    label: "Position Y"
+                                    enabled: !!root.cur && !root.cur.disabled
+                                    opacity: enabled ? 1 : 0.4
+                                    Stepper {
+                                        value: root.cur ? root.cur.y : 0
+                                        step: 10
+                                        valueWidth: 56 * root.u
+                                        onChanged: v => root.patch(root.sel, { y: v })
                                     }
                                 }
                             }
+                        }
 
-                            MouseArea {
-                                id: modeMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    root.selectedMode = modeDel.index
-                                    root.applyMode()
-                                }
-                                onEntered: root.selectedMode = modeDel.index
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: root.cur === null
+                            visible: root.cur === null
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6 * root.u
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.confirming ? ("Keep these display settings? Reverting in " + root.countdown + "s")
+                                                      : (root.dirty ? "Unsaved changes" : "")
+                                color: Theme.ink
+                                opacity: 0.75
+                                elide: Text.ElideRight
+                                font.family: Theme.font
+                                font.pixelSize: Math.round(9 * root.u)
+                            }
+
+                            GlassButton {
+                                visible: !root.confirming
+                                text: "Reset"
+                                enabled: root.dirty
+                                onClicked: root.resetEdits()
+                            }
+                            GlassButton {
+                                visible: !root.confirming
+                                primary: true
+                                text: "Apply"
+                                enabled: root.dirty && root.enabledCount > 0
+                                onClicked: root.apply()
+                            }
+                            GlassButton {
+                                visible: root.confirming
+                                text: "Revert"
+                                onClicked: root.revert()
+                            }
+                            GlassButton {
+                                visible: root.confirming
+                                primary: true
+                                text: "Keep"
+                                onClicked: root.keep()
                             }
                         }
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "And I tried callin you a thousand times"
-                        color: Theme.ink
-                        opacity: 0.5 * glass.stage(5)
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(8.5 * root.u)
                     }
                 }
             }
 
             Component.onCompleted: {
                 refreshMonitors()
-                Qt.callLater(() => {
-                    forceActiveFocus()
-                    modeListView.forceActiveFocus()
-                })
+                Qt.callLater(() => ui.forceActiveFocus())
             }
         }
     }

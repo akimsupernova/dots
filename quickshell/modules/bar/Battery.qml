@@ -5,41 +5,52 @@ import qs.services
 Item {
     id: root
 
-    readonly property color tone: BatteryState.low ? Theme.warn
-                                : (BatteryState.charging || BatteryState.full) ? Theme.ok
-                                : Theme.ink
+    readonly property real pct: BatteryState.percent
+    readonly property color fillColor: BatteryState.low ? Theme.warn
+                                    : (BatteryState.charging || BatteryState.full) ? Qt.alpha(Theme.ok, 0.95)
+                                    : Theme.ink
 
     visible: BatteryState.hasBattery
-    implicitWidth: visible ? row.implicitWidth : 0
+    implicitWidth: visible ? pill.width + 8 : 0
     implicitHeight: Theme.barHeight
 
-    TextMetrics {
-        id: widest
-        text: ""
-        font.family: Theme.font
-        font.pixelSize: Theme.fontSize
-    }
 
-    Row {
-        id: row
-        spacing: 1
+    Rectangle {
+        id: pill
         anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: 38
+        height: 17
+        radius: height / 2
+        color: Theme.inkA(0.2)
 
-        ProgressIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            icon: "battery-full"
-            size: 22
-            value: BatteryState.percent
-            color: root.tone
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            BatteryLabel { anchors.centerIn: parent; tint: Theme.ink }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            width: widest.width
-            text: Math.round(BatteryState.percent * 100) + "%"
-            color: BatteryState.low ? Theme.warn : Theme.ink
-            font.family: Theme.font
-            font.pixelSize: Theme.fontSize
+        Item {
+            id: fillClip
+            height: parent.height
+            width: Math.max(parent.height, parent.width * root.pct)
+            clip: true
+            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+            Rectangle {
+                width: pill.width
+                height: pill.height
+                radius: pill.radius
+                color: root.fillColor
+                Behavior on color { ColorAnimation { duration: 300 } }
+            }
+
+            Item {
+                width: pill.width
+                height: pill.height
+                BatteryLabel { anchors.centerIn: parent; tint: Theme.tint }
+            }
         }
     }
 }

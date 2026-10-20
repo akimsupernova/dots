@@ -29,7 +29,7 @@ def clean_key(keypart: str) -> str:
     return keypart
 
 def extract_description(expr: str):
-    """Ambil description = \"...\" dari opsi bind."""
+    """Extract description = \"...\" from bind options."""
     m = re.search(
         r"description\s*=\s*[\"']([^\"']+)[\"']",
         expr,
@@ -38,7 +38,7 @@ def extract_description(expr: str):
     if not m:
         return None
     desc = m.group(1).strip()
-    # "App: Browser" → tampilkan "Browser" (bagian setelah :)
+    # "App: Browser" → show "Browser" (part after :)
     if ":" in desc:
         cat, label = desc.split(":", 1)
         label = label.strip()
@@ -51,7 +51,7 @@ def fallback_action(act: str) -> str:
         mm = re.search(r"exec_cmd\((.+)\)\s*$", act)
         if mm:
             action = mm.group(1).strip().strip("\"'")
-            # buang table opsi di belakang kalau ikut ke-capture
+            # drop trailing options table if it was captured
             action = re.split(r"\)\s*,\s*\{", action)[0]
             if action.startswith("[["):
                 action = action[2:]
@@ -87,19 +87,19 @@ def fallback_action(act: str) -> str:
             action = action[:67] + "…"
     return action
 
-# Match hl.bind( ... ) termasuk multiline sederhana (satu baris)
+# Match hl.bind( ... ) including simple multiline (single line)
 for m in re.finditer(r"hl\.bind\((.+?)\)\s*(?:$|--)", text, re.M):
     expr = m.group(1)
 
-    # key = argumen pertama (string / mainMod ..)
-    # ambil sampai koma pertama di level atas (kasar)
+    # key = first argument (string / mainMod ..)
+    # take until first top-level comma (rough)
     parts = re.split(r",\s*", expr, maxsplit=1)
     if len(parts) < 2:
         continue
     keypart, rest = parts[0], parts[1]
     key = clean_key(keypart)
 
-    # prioritaskan description =
+    # prioritize description =
     desc = extract_description(expr)
     if desc:
         out[key] = desc

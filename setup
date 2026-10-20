@@ -33,9 +33,11 @@ PRESERVE=(hypr/modules/monitors.lua)
 PACKAGES=(
   ark awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-pulse polkit python ddcutil
   btop nvtop lact quickshell kate zen-browser-bin noto-fonts-extra pipewire-alsa alsa-utils wireplumber pavucontrol sof-firmware brightnessctl
-  bibata-cursor-theme grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
+  bibata-cursor-theme-bin grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
   libnotify
   cava playerctl xdg-utils python-pillow qt6-svg breeze-icons konsole ttf-jetbrains-mono-nerd
+  hyprland hyprsunset networkmanager bluez bluez-utils upower
+  adwaita-fonts adwaita-icon-theme xdg-desktop-portal-gtk qt6-wayland qt5-wayland
 )
 
 info() { printf '\033[1;34m[INFO]\033[0m %s\n' "$*"; }
@@ -321,7 +323,11 @@ setup_ddc() {
   fi
   step "Configuring i2c access for ddcutil"
   run sudo modprobe i2c-dev || warn "Could not load i2c-dev now; it will load at next boot."
-  printf 'i2c-dev\n' | run sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null
+  if ((DRY_RUN)); then
+    info "[dry-run] would write i2c-dev to /etc/modules-load.d/i2c-dev.conf"
+  else
+    printf 'i2c-dev\n' | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null
+  fi
   if ! getent group i2c >/dev/null 2>&1; then
     run sudo groupadd --system i2c
   fi
@@ -329,6 +335,30 @@ setup_ddc() {
     run sudo usermod -aG i2c "$USER"
     NEED_RELOGIN=1
   fi
+}
+
+enable_service() {
+  local unit="$1" why="$2"
+  command -v systemctl >/dev/null 2>&1 || return 0
+  if systemctl is-enabled --quiet "$unit" 2>/dev/null && systemctl is-active --quiet "$unit" 2>/dev/null; then
+    return 0
+  fi
+  if confirm "Enable $unit ($why)?" y; then
+    run sudo systemctl enable --now "$unit" || warn "Could not enable $unit. Run later: sudo systemctl enable --now $unit"
+  fi
+}
+
+setup_network() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+  command -v nmcli >/dev/null 2>&1 || return 0
+  if systemctl is-active --quiet NetworkManager.service 2>/dev/null; then
+    return 0
+  fi
+  if systemctl is-active --quiet iwd.service systemd-networkd.service connman.service 2>/dev/null; then
+    warn "Another network manager is running. The sidebar Wi-Fi menu needs NetworkManager; switch only if you want to: sudo systemctl enable --now NetworkManager"
+    return 0
+  fi
+  enable_service NetworkManager.service "needed by the sidebar Wi-Fi menu"
 }
 
 post_install() {
@@ -341,6 +371,11 @@ post_install() {
     if confirm "Enable lactd.service (required by LACT)?"; then
       run sudo systemctl enable --now lactd.service || warn "Could not enable lactd.service. Run later: sudo systemctl enable --now lactd.service"
     fi
+  fi
+
+  setup_network
+  if command -v bluetoothctl >/dev/null 2>&1; then
+    enable_service bluetooth.service "needed by the sidebar Bluetooth menu"
   fi
 
   setup_ddc
@@ -497,8 +532,15 @@ seed_wallpaper() {
 }
 
 check_hyprland() {
-  if ! command -v Hyprland >/dev/null 2>&1 && ! command -v hyprland >/dev/null 2>&1; then
-    warn "Hyprland was not found in PATH. These dotfiles need Hyprland (with Lua config support): sudo pacman -S hyprland"
+  local bin ver
+  bin="$(command -v Hyprland 2>/dev/null || command -v hyprland 2>/dev/null || true)"
+  if [[ -z "$bin" ]]; then
+    warn "Hyprland was not found in PATH. These dotfiles need Hyprland 0.55 or newer (Lua config): sudo pacman -S hyprland"
+    return 0
+  fi
+  ver="$("$bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)"
+  if [[ -n "$ver" && "$(printf '%s\n0.55\n' "$ver" | sort -V | head -n1)" != "0.55" ]]; then
+    warn "Hyprland $ver is too old: hypr/hyprland.lua needs 0.55 or newer. Update it: sudo pacman -Syu hyprland"
   fi
 }
 
@@ -554,7 +596,6 @@ do_install() {
 
   local first_install=1
   if [[ -f "$MANIFEST" ]]; then first_install=0; fi
-  check_hyprland
 
   local -a config_items=()
   local name item
@@ -582,6 +623,7 @@ do_install() {
   else
     install_packages
   fi
+  check_hyprland
 
   PRESERVE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dots-keep.XXXXXX")"
   TMP_DIRS+=("$PRESERVE_DIR")
@@ -653,6 +695,9 @@ do_uninstall() {
   local label name had dest_dir dest saved
   while IFS=$'\t' read -r label name had; do
     [[ -n "$label" ]] || continue
+    case "$name" in
+      ""|.|..|*/*) warn "Ignoring invalid manifest entry '$label/$name'."; continue ;;
+    esac
     dest_dir="$(target_dir "$label")"
     dest="$dest_dir/$name"
     saved="$BACKUP_ROOT/$label/$name"

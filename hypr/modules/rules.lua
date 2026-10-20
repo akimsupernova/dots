@@ -27,9 +27,11 @@ hl.window_rule({
     float = true,
 })
 
+-- Layer namespaces come from WlrLayershell.namespace in the Quickshell config
+
 hl.layer_rule({
     name  = "namecard",
-    match = { namespace = "^akim-namecard(-picker)?$" },
+    match = { namespace = "^Glassveil Shell Namecard$" },
 
     blur         = true,
     ignore_alpha = 0.05,
@@ -38,7 +40,7 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "shell-glass",
-    match = { namespace = "^akim-(wallpaper-picker|monitor-settings|emoji-picker|osd|osd-brightness)$" },
+    match = { namespace = "^Glassveil Shell (Wallpaper|Monitor Settings|Emoji|OSD|OSD Brightness)$" },
 
     blur         = true,
     ignore_alpha = 0.05,
@@ -47,9 +49,18 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "shell-glass-fullscreen",
-    match = { namespace = "^akim-(cheatsheet|launcher|power|polkit)$" },
+    match = { namespace = "^Glassveil Shell (Cheatsheet|Launcher|Power|Polkit)$" },
 
     blur         = true,
     ignore_alpha = 0.05,
     animation    = "fade",
+})
+
+hl.layer_rule({
+    name  = "glassveil-sidebar",
+    match = { namespace = "^Glassveil Shell (Sidebar|Notifications)$" },
+
+    blur         = true,
+    ignore_alpha = 0.05,
+    animation    = "slide right",
 })
