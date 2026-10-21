@@ -191,16 +191,28 @@ def main(argv):
         return 1
 
     accent = pick_accent(px)
+    glass = pick_glass(px)
     print(accent)
     if "--print" in argv:
-        print(json.dumps(pick_glass(px)))
+        print(json.dumps(glass))
         return 0
 
     out = state_file()
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    payload = json.dumps({"accent": accent, "glass": pick_glass(px), "source": path, "generated": int(time.time())}) + "\n"
+    payload = json.dumps({"accent": accent, "glass": glass, "source": path, "generated": int(time.time())}) + "\n"
     with open(out, "w") as f:
         f.write(payload)
+
+    if "--no-theme" not in argv:
+        # kitty / GTK / Qt / Kvantum follow the same accent (see theme_sync.py)
+        mode = os.environ.get("GLASSVEIL_THEME_MODE", "dark").lower()
+        if mode == "auto":
+            mode = glass["auto"]
+        try:
+            import theme_sync
+            theme_sync.sync(accent, mode)
+        except Exception as e:
+            print(f"theme sync failed: {e}", file=sys.stderr)
     return 0
 
 
