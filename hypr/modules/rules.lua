@@ -40,7 +40,7 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "shell-glass",
-    match = { namespace = "^Glassveil Shell (Wallpaper|Monitor Settings|Emoji|OSD|OSD Brightness)$" },
+    match = { namespace = "^Glassveil Shell (Wallpaper|Monitor Settings|Emoji|OSD|OSD Brightness|Welcome)$" },
 
     blur         = true,
     ignore_alpha = 0.05,
