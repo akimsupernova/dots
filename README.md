@@ -34,7 +34,7 @@
 ## Features
 
 - **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emoji picker, wallpaper picker, monitor settings, cheatsheet, name card, notification popups and volume/brightness OSD.
-- **AI panel** (`SUPER + I`) that connects to OpenAI, Claude, Gemini and more with a single `/apikey` command.
+- **AI panel** (`SUPER + I`) that connects to OpenAI, Claude, Gemini, local Ollama and more with a single `/apikey` command, with optional web search.
 - **Wallpaper-driven theme.** The accent color is taken from your wallpaper and applied to the shell, kitty, the fish prompt, GTK 3/4, Qt 5/6 and Kvantum.
 - **Image and video wallpapers** (`awww` for images, `mpvpaper` for videos).
 - **Hyprland Lua configuration**, split into small modules.
@@ -110,7 +110,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Fonts | `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
 | Audio | `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`, `alsa-utils`, `pavucontrol`, `cava`, `playerctl`, `sof-firmware` |
 | Network and devices | `networkmanager`, `bluez`, `bluez-utils`, `upower`, `brightnessctl`, `ddcutil` |
-| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `python`, `xdg-utils` |
+| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils` |
 | Apps | `zen-browser-bin`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
 
 ## Key bindings
@@ -202,27 +202,111 @@ Supported providers: **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistr
 | `/apikey remove <provider>` | Delete a saved key |
 | `/provider <name>` | Switch provider (or click the provider name in the pill) |
 | `/model <name>` | Change the model for the current provider (`/model default` resets it) |
-| `/endpoint <provider> <url>` | Use a custom OpenAI-compatible endpoint |
+| `/endpoint <provider> <url>` | Use a custom endpoint (OpenAI-compatible, or the Ollama server URL) |
+| `/web on\|off` | Let the AI search the internet (see [Web search](#web-search)) |
+| `/web backend <name>` | Choose the search service: `ddg`, `searxng` or `ollama` |
+| `/web url <url>` / `/web key <key>` | Configure the SearXNG instance or the Ollama search key |
+| `/ctx <tokens>` | Ollama context window (default 16384) |
 | `/clear` | Start a new chat |
 | `/help` | List commands |
 
 Provider aliases: `chatgpt` = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama.
 
-The **+** button opens a menu with the same actions: new chat, copy the last reply, provider picker, model, API key and help.
+The **+** button opens a menu with the same actions: new chat, copy the last reply, provider picker, a **Web search** toggle, model, API key and help.
+
+### Web search
+
+Turn it on with the **Web search** item in the **+** menu or with `/web on`.
+
+**Local models (Ollama).** The model decides for itself. It gets two tools, `web_search` and `web_fetch`, and uses them only when it needs current or external information. It can search several times and open pages to read them. Under the reply you see what it did:
+
+```text
+Web
+- searched: musim hujan indonesia
+- read: bmkg.go.id
+```
+
+- It needs a model with **tool support** (models tagged `tools` in the Ollama library). If the model has none, the panel does not fail: the model simply answers on its own and a small note says web search was not available.
+- Ollama is called through its native `/api/chat`, so the context window is set per request. The default is 16384 tokens; change it with `/ctx <tokens>` (larger uses more VRAM). Reading pages needs room, so do not go too low.
+- Pages are fetched with `curl`. Addresses on your own machine and network (localhost, `192.168.x.x`, `10.x.x.x`, link-local and similar) are blocked, and every redirect is checked again, so a web page cannot easily make the model reach local services.
+- Search results and page text are given to the model as untrusted data.
+
+**Other providers** (OpenAI, Claude, Gemini, ...). Every message is searched first and the top results are added to the prompt, with a **Sources** list under the reply.
+
+**Search services**
+
+```text
+/web backend ddg                no key; reads DuckDuckGo results (default)
+/web backend searxng            your own SearXNG instance
+/web url https://search.example.org
+/web backend ollama             Ollama web search API (free account key)
+/web key <key>                  key from https://ollama.com/settings/keys
+```
+
+**Good to know**
+
+- `ddg` reads DuckDuckGo's HTML page, so it can be rate-limited or stop working if DuckDuckGo changes it. `searxng` or `ollama` are more stable.
+- Your search queries and the pages the model opens leave your machine, even when the model itself is local.
+- The Ollama search key is stored in `~/.config/glassveil/ai.json` like the other keys.
+
+#### Setting up SearXNG (recommended)
+
+[SearXNG](https://docs.searxng.org/) is a self-hosted metasearch engine. It collects results from several search engines (Google included) without an API key. It needs Docker (`sudo pacman -S docker && sudo systemctl enable --now docker`) or Podman (use `podman` instead of `docker` below).
+
+```bash
+mkdir -p ~/.config/searxng
+cat > ~/.config/searxng/settings.yml <<EOF
+use_default_settings: true
+server:
+  secret_key: "$(openssl rand -hex 32)"
+  limiter: false
+search:
+  formats:
+    - html
+    - json
+EOF
+
+docker run -d --name searxng --restart unless-stopped \
+  -p 127.0.0.1:8888:8080 \
+  -v ~/.config/searxng:/etc/searxng \
+  docker.io/searxng/searxng:latest
+```
+
+Check that JSON works (a `403` means `json` is missing from `formats` or the settings file was not picked up):
+
+```bash
+curl "http://127.0.0.1:8888/search?q=test&format=json" | head -c 300
+```
+
+Then in the AI panel:
+
+```text
+/web url http://127.0.0.1:8888
+/web backend searxng
+/web on
+```
+
+Notes:
+
+- `-p 127.0.0.1:8888:8080` keeps the instance reachable from your own machine only. Do not publish it on `0.0.0.0` with the limiter off.
+- Individual engines (Google in particular) are sometimes blocked for a while. Results still come from the others.
+- Update with `docker pull docker.io/searxng/searxng:latest`, then remove and re-run the container.
+- Run `docker` with `sudo`, or add your user to the `docker` group.
 
 ### Privacy and security
 
 - Keys are stored in plain text in `~/.config/glassveil/ai.json` with mode `600`. That folder is outside this repository. **Never commit that file.**
 - Commands that start with `/` (including your key) are never added to the chat history and never sent to a provider.
-- Only the messages you type (up to the last 20 of the current session) and a short system prompt are sent to the provider you selected. The AI cannot read your files, screen, clipboard or run commands.
+- Only the messages you type (up to the last 20 of the current session), a short system prompt (with the current date) and, when web search is on, the search results or pages it fetched are sent to the provider you selected. The AI cannot read your files, screen, clipboard or run commands.
 - Chat history is kept in memory only and disappears when the shell restarts.
-- Use `/provider ollama` to keep everything on your own machine.
+- Use `/provider ollama` to keep your chat on your own machine. With web search on, your queries and the pages opened still go to the internet (and to the search service you chose).
 
 ### Notes
 
 - Default model names change over time. If you get a "model not found" error, set one with `/model <name>`.
 - Replies are shown when complete (no streaming yet).
 - Attachments (images, files, screenshots) are not supported.
+- Web search needs `curl` (installed by `./setup install`).
 
 ## Theming
 
