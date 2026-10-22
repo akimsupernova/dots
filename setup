@@ -34,7 +34,7 @@ PACKAGES=(
   ark awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-pulse polkit python ddcutil
   btop nvtop lact quickshell kate zen-browser-bin noto-fonts-extra pipewire-alsa alsa-utils wireplumber pavucontrol sof-firmware brightnessctl
   bibata-cursor-theme-bin grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
-  libnotify kvantum kvantum-qt5
+  libnotify kvantum kvantum-qt5 curl
   cava playerctl xdg-utils python-pillow qt6-svg breeze-icons konsole ttf-jetbrains-mono-nerd
   hyprland hyprsunset networkmanager bluez bluez-utils upower
   adwaita-fonts adwaita-icon-theme xdg-desktop-portal-gtk qt6-wayland qt5-wayland
