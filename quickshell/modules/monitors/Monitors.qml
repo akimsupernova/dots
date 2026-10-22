@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import qs.common
 
 Scope {
@@ -30,15 +31,30 @@ Scope {
             readonly property int panelHeight: Math.min(Math.round((screen?.height ?? 1080) * 0.85), Math.round(580 * u))
             readonly property int sideMargin: Math.max(0, Math.round(((screen?.width ?? 1920) - panelWidth) / 2))
 
-            anchors { top: true; bottom: true; left: true; right: true }
+            anchors { top: true; left: true; right: true }
+            margins {
+                top: Theme.barHeight + Theme.gap + 10
+                left: sideMargin
+                right: sideMargin
+            }
 
+            implicitHeight: panelHeight
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
             focusable: true
 
             WlrLayershell.namespace: "Glassveil Shell Monitor Settings"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+            HyprlandFocusGrab {
+                windows: [root]
+                active: true
+                onCleared: {
+                    if (root.confirming || applyProc.running) return
+                        host.open = false
+                }
+            }
 
             property var monitors: []
             property var baseline: []
@@ -76,20 +92,20 @@ Scope {
                 let bx = nx, by = ny, bdx = T + 1, bdy = T + 1
                 for (let j = 0; j < monitors.length; j++) {
                     if (j === i || monitors[j].disabled) continue
-                    const o = monitors[j]
-                    const xs = [o.x + o.lw, o.x - m.lw, o.x, o.x + o.lw - m.lw]
-                    const ys = [o.y + o.lh, o.y - m.lh, o.y, o.y + o.lh - m.lh]
-                    for (let k = 0; k < 4; k++) {
-                        const dx = Math.abs(nx - xs[k]); if (dx < bdx) { bdx = dx; bx = xs[k] }
-                        const dy = Math.abs(ny - ys[k]); if (dy < bdy) { bdy = dy; by = ys[k] }
-                    }
+                        const o = monitors[j]
+                        const xs = [o.x + o.lw, o.x - m.lw, o.x, o.x + o.lw - m.lw]
+                        const ys = [o.y + o.lh, o.y - m.lh, o.y, o.y + o.lh - m.lh]
+                        for (let k = 0; k < 4; k++) {
+                            const dx = Math.abs(nx - xs[k]); if (dx < bdx) { bdx = dx; bx = xs[k] }
+                            const dy = Math.abs(ny - ys[k]); if (dy < bdy) { bdy = dy; by = ys[k] }
+                        }
                 }
                 return { x: Math.round(bx), y: Math.round(by) }
             }
 
             function monArg(m) {
                 if (m.disabled) return m.name + ",disable"
-                return m.name + "," + m.mode + "," + m.x + "x" + m.y + "," + m.scale + ",transform," + m.transform
+                    return m.name + "," + m.mode + "," + m.x + "x" + m.y + "," + m.scale + ",transform," + m.transform
             }
 
             function batchFor(list) {
@@ -108,7 +124,7 @@ Scope {
                 const rr = parts.length === 2 ? parseFloat(parts[1]) : 0
                 const rrStr = Number.isInteger(rr) ? String(rr) : String(Math.round(rr * 100) / 100)
                 return { value: parts.length === 2 ? parts[0] + "@" + rrStr : cleaned,
-                         label: String(s), w: parseInt(wh[0]) || 0, h: parseInt(wh[1]) || 0, r: rr }
+                    label: String(s), w: parseInt(wh[0]) || 0, h: parseInt(wh[1]) || 0, r: rr }
             }
 
             Process {
@@ -131,20 +147,20 @@ Scope {
                                 let best = 0, bestD = 1e9
                                 for (let j = 0; j < modes.length; j++) {
                                     if (modes[j].w !== m.width || modes[j].h !== m.height) continue
-                                    const d = Math.abs(modes[j].r - (m.refreshRate || 0))
-                                    if (d < bestD) { bestD = d; best = j }
+                                        const d = Math.abs(modes[j].r - (m.refreshRate || 0))
+                                        if (d < bestD) { bestD = d; best = j }
                                 }
                                 const desc = String(m.description || m.name || "").replace(/\s*\([^)]*\)\s*$/, "")
                                 list.push(root.withSize({
                                     name: m.name || "",
                                     label: (m.name || "") + (desc && desc !== m.name ? " · " + desc : ""),
-                                    disabled: !!m.disabled,
-                                    modes: modes,
-                                    mode: modes.length ? modes[best].value : "preferred",
-                                    scale: m.scale || 1,
-                                    x: m.x || 0,
-                                    y: m.y || 0,
-                                    transform: m.transform || 0
+                                                        disabled: !!m.disabled,
+                                                        modes: modes,
+                                                        mode: modes.length ? modes[best].value : "preferred",
+                                                        scale: m.scale || 1,
+                                                        x: m.x || 0,
+                                                        y: m.y || 0,
+                                                        transform: m.transform || 0
                                 }))
                             }
                             root.monitors = list
@@ -162,9 +178,9 @@ Scope {
 
             function apply() {
                 if (!dirty || enabledCount === 0) return
-                statusMsg = "Applying…"
-                applyProc.command = batchFor(monitors)
-                applyProc.running = true
+                    statusMsg = "Applying…"
+                    applyProc.command = batchFor(monitors)
+                    applyProc.running = true
             }
 
             Process {
@@ -255,33 +271,21 @@ Scope {
                 onExited: code => root.statusMsg = code === 0 ? "OK ✓ saved" : "Failed to write file"
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (resDrop.open) resDrop.open = false
-                    else if (root.confirming) root.revert()
-                    else host.open = false
-                }
-            }
-
             FocusScope {
                 id: ui
-                x: root.sideMargin
-                y: Theme.barHeight + Theme.gap + 10
-                width: root.panelWidth
-                height: root.panelHeight
+                anchors.fill: parent
                 focus: true
 
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape) {
                         if (resDrop.open) resDrop.open = false
-                        else if (root.confirming) root.revert()
-                        else host.open = false
-                        event.accepted = true
+                            else if (root.confirming) root.revert()
+                                else host.open = false
+                                    event.accepted = true
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                         if (root.confirming) root.keep()
-                        else root.apply()
-                        event.accepted = true
+                            else root.apply()
+                                event.accepted = true
                     } else if (event.key === Qt.Key_Left && root.monitors.length > 1) {
                         root.sel = Math.max(0, root.sel - 1)
                         event.accepted = true
@@ -296,7 +300,6 @@ Scope {
                     anchors.fill: parent
                     feather: 14 * root.u
                     coreRadius: 18 * root.u
-                    cornerRadius: Theme.radius
                     padding: 22 * root.u
 
                     ColumnLayout {
@@ -501,7 +504,7 @@ Scope {
                             Text {
                                 Layout.fillWidth: true
                                 text: root.confirming ? ("Keep these display settings? Reverting in " + root.countdown + "s")
-                                                      : (root.dirty ? "Unsaved changes" : "")
+                                : (root.dirty ? "Unsaved changes" : "")
                                 color: Theme.ink
                                 opacity: 0.75
                                 elide: Text.ElideRight
