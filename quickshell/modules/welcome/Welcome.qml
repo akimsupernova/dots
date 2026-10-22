@@ -44,7 +44,8 @@ Scope {
 
         visible: host.open
         color: "transparent"
-        anchors { top: true; bottom: true; left: true; right: true }
+        implicitWidth: content.implicitWidth
+        implicitHeight: content.implicitHeight
         exclusiveZone: 0
         exclusionMode: ExclusionMode.Ignore
 
@@ -52,16 +53,9 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: host.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: host.open = false
-        }
-
         WelcomeContent {
             id: content
-            anchors.centerIn: parent
-            width: implicitWidth
-            height: implicitHeight
+            anchors.fill: parent
             shown: host.open
             onCloseRequested: host.open = false
             onLinkRequested: url => Quickshell.execDetached(["xdg-open", url])

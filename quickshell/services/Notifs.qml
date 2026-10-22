@@ -23,33 +23,33 @@ Singleton {
     function timeAgo(id, _tick) {
         const t = root.times[id]
         if (!t) return ""
-            const s = Math.max(0, Math.floor((_tick - t) / 1000))
-            if (s < 60) return "now"
-                const m = Math.floor(s / 60)
-                if (m < 60) return m + "m"
-                    const h = Math.floor(m / 60)
-                    if (h < 24) return h + "h"
-                        return Math.floor(h / 24) + "d"
+        const s = Math.max(0, Math.floor((_tick - t) / 1000))
+        if (s < 60) return "now"
+        const m = Math.floor(s / 60)
+        if (m < 60) return m + "m"
+        const h = Math.floor(m / 60)
+        if (h < 24) return h + "h"
+        return Math.floor(h / 24) + "d"
     }
 
     function byId(id) {
         const list = server.trackedNotifications.values
         for (let i = 0; i < list.length; i++)
             if (list[i].id === id) return list[i]
-                return null
+        return null
     }
 
     function toastIndex(id) {
         for (let i = 0; i < toastStore.count; i++)
             if (toastStore.get(i).nid === id) return i
-                return -1
+        return -1
     }
 
     function showToast(n) {
         const at = root.toastIndex(n.id)
         if (at > 0) toastStore.move(at, 0, 1)
-            else if (at < 0) toastStore.insert(0, { nid: n.id })
-                while (toastStore.count > root.maxToasts) toastStore.remove(toastStore.count - 1)
+        else if (at < 0) toastStore.insert(0, { nid: n.id })
+        while (toastStore.count > root.maxToasts) toastStore.remove(toastStore.count - 1)
     }
 
     function hideId(id) {

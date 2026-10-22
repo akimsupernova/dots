@@ -262,7 +262,6 @@ Scope {
                 id: glass
                 anchors.centerIn: parent
                 popIn: true
-                cornerRadius: Theme.radius
                 implicitWidth: Math.min(col.implicitWidth + padding * 2, (root.screen ? root.screen.width : 1920) * 0.92)
                 implicitHeight: Math.min(col.implicitHeight + padding * 2, (root.screen ? root.screen.height : 1080) * 0.86)
 

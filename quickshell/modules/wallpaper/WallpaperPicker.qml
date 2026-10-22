@@ -4,6 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Qt.labs.folderlistmodel
 import qs.common
 
@@ -33,7 +34,18 @@ Scope {
             readonly property real u: Theme.u
             readonly property int columns: Math.max(3, Math.floor((panelWidth - 60 * u) / (thumbSize + 14)))
 
-            anchors { top: true; bottom: true; left: true; right: true }
+            anchors {
+                top: true
+                left: true
+                right: true
+            }
+            margins {
+                top: Theme.barHeight + Theme.gap + 10
+                left: sideMargin
+                right: sideMargin
+            }
+
+            implicitHeight: panelHeight
 
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
@@ -41,7 +53,13 @@ Scope {
 
             WlrLayershell.namespace: "Glassveil Shell Wallpaper"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+            HyprlandFocusGrab {
+                windows: [root]
+                active: true
+                onCleared: host.open = false
+            }
 
             readonly property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/Wallpapers"
             readonly property string wallpaperDirAlt: Quickshell.env("HOME") + "/Wallpapers"
@@ -61,11 +79,11 @@ Scope {
 
             function isVideo(path) {
                 if (!path) return false
-                var lower = String(path).toLowerCase()
-                for (var i = 0; i < videoExts.length; i++) {
-                    if (lower.endsWith(videoExts[i])) return true
-                }
-                return false
+                    var lower = String(path).toLowerCase()
+                    for (var i = 0; i < videoExts.length; i++) {
+                        if (lower.endsWith(videoExts[i])) return true
+                    }
+                    return false
             }
 
             function thumbCachePath(filePath) {
@@ -83,45 +101,45 @@ Scope {
 
             function requestThumb(filePath) {
                 if (!filePath) return
-                var st = thumbStatus[filePath]
-                if (st === "ready" || st === "pending" || st === "fail") return
+                    var st = thumbStatus[filePath]
+                    if (st === "ready" || st === "pending" || st === "fail") return
 
-                var next = Object.assign({}, thumbStatus)
-                next[filePath] = "pending"
-                thumbStatus = next
-                thumbQueue = thumbQueue.concat([filePath])
-                processThumbQueue()
+                        var next = Object.assign({}, thumbStatus)
+                        next[filePath] = "pending"
+                        thumbStatus = next
+                        thumbQueue = thumbQueue.concat([filePath])
+                        processThumbQueue()
             }
 
             function processThumbQueue() {
                 if (thumbBusy || thumbQueue.length === 0) return
-                var path = thumbQueue[0]
-                thumbQueue = thumbQueue.slice(1)
-                thumbBusy = true
-                thumbCurrentPath = path
+                    var path = thumbQueue[0]
+                    thumbQueue = thumbQueue.slice(1)
+                    thumbBusy = true
+                    thumbCurrentPath = path
 
-                var out = thumbCachePath(path)
-                if (isVideo(path)) {
-                    ffmpegProc.command = [
-                        "ffmpeg", "-y", "-loglevel", "error",
-                        "-ss", "1",
-                        "-i", path,
-                        "-frames:v", "1",
-                        "-vf", "scale=260:-1:force_original_aspect_ratio=decrease",
-                        "-q:v", "3",
-                        out
-                    ]
-                } else {
-                    ffmpegProc.command = [
-                        "ffmpeg", "-y", "-loglevel", "error",
-                        "-i", path,
-                        "-frames:v", "1",
-                        "-vf", "scale=260:-1:force_original_aspect_ratio=decrease",
-                        "-q:v", "3",
-                        out
-                    ]
-                }
-                ffmpegProc.running = true
+                    var out = thumbCachePath(path)
+                    if (isVideo(path)) {
+                        ffmpegProc.command = [
+                            "ffmpeg", "-y", "-loglevel", "error",
+                            "-ss", "1",
+                            "-i", path,
+                            "-frames:v", "1",
+                            "-vf", "scale=260:-1:force_original_aspect_ratio=decrease",
+                            "-q:v", "3",
+                            out
+                        ]
+                    } else {
+                        ffmpegProc.command = [
+                            "ffmpeg", "-y", "-loglevel", "error",
+                            "-i", path,
+                            "-frames:v", "1",
+                            "-vf", "scale=260:-1:force_original_aspect_ratio=decrease",
+                            "-q:v", "3",
+                            out
+                        ]
+                    }
+                    ffmpegProc.running = true
             }
 
             function onThumbDone(ok) {
@@ -150,15 +168,15 @@ Scope {
 
             function applyWallpaper(idx) {
                 if (idx < 0 || idx >= folderModel.count) return
-                var path = folderModel.get(idx, "filePath")
-                if (!path || path === "") {
-                    statusMsg = "Empty path"
-                    return
-                }
+                    var path = folderModel.get(idx, "filePath")
+                    if (!path || path === "") {
+                        statusMsg = "Empty path"
+                        return
+                    }
 
-                var type = isVideo(path) ? "video" : "image"
-                Quickshell.execDetached(["bash", applyScript, type, path])
-                host.open = false
+                    var type = isVideo(path) ? "video" : "image"
+                    Quickshell.execDetached(["bash", applyScript, type, path])
+                    host.open = false
             }
 
             Process {
@@ -188,18 +206,9 @@ Scope {
                 caseSensitive: false
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: host.open = false
-            }
-
             GlassPanel {
                 id: glass
-                cornerRadius: Theme.radius
-                x: root.sideMargin
-                y: Theme.barHeight + Theme.gap + 10
-                width: root.panelWidth
-                height: root.panelHeight
+                anchors.fill: parent
 
                 ColumnLayout {
                     anchors.fill: parent

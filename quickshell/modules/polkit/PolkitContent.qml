@@ -21,8 +21,8 @@ Item {
         target: PolkitService
         function onInteractionAvailableChanged() {
             if (!PolkitService.interactionAvailable) return
-            input.text = ""
-            input.focusInput()
+                input.text = ""
+                input.focusInput()
         }
     }
     Component.onCompleted: input.focusInput()
@@ -35,8 +35,7 @@ Item {
         id: dialog
         anchors.centerIn: parent
         popIn: true
-        cornerRadius: Theme.radius
-        width: Math.round(380 * root.u)
+        width: Math.round(300 * root.u)
         implicitHeight: column.implicitHeight + padding * 2
 
         transform: Translate { id: shakeT }
@@ -142,8 +141,8 @@ Item {
                 readonly property var f: PolkitService.flow
                 text: {
                     if (!f) return ""
-                    if (f.supplementaryMessage) return f.supplementaryMessage
-                    return f.failed ? "Authentication failed. Try again." : ""
+                        if (f.supplementaryMessage) return f.supplementaryMessage
+                            return f.failed ? "Authentication failed. Try again." : ""
                 }
                 color: (f?.failed || f?.supplementaryIsError) ? Theme.warn : Theme.ink
                 font.family: Theme.font

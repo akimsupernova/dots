@@ -5,8 +5,6 @@ import qs.common
 GlassPanel {
     id: root
 
-    cornerRadius: Theme.radius
-
     property string rawData: ""
     property string statusMsg: ""
     property alias query: field.text
