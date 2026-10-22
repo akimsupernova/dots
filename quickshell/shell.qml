@@ -14,6 +14,7 @@ import qs.modules.welcome
 import qs.modules.sidebar
 import qs.modules.notifications
 import qs.modules.lock
+import qs.modules.ai
 
 ShellRoot {
     Variants {
@@ -36,5 +37,6 @@ ShellRoot {
     Sidebar {}
     NotificationPopups {}
     Lock {}
+    AiPanel {}
 }
 

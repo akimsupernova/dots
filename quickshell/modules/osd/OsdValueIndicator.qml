@@ -13,13 +13,12 @@ GlassPanel {
     readonly property real clamped: Math.max(0, Math.min(1, isNaN(value) ? 0 : value))
     property int barThickness: Math.max(4, Math.round(4 * u))
 
-    feather: 10 * u
-    coreRadius: 40 * u
-    padding: 13 * u
+    glassy: true
+    padding: 10 * u
     duration: 520
 
-    implicitWidth: Math.round(160 * u)
-    implicitHeight: Math.round(26 * u) + padding * 2
+    implicitWidth: Math.round(144 * u)
+    implicitHeight: Math.round(24 * u) + padding * 2
 
     onClampedChanged: if (reveal >= 1) bump.restart()
     SequentialAnimation {
@@ -30,7 +29,9 @@ GlassPanel {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 10 * root.u
+        anchors.leftMargin: 3 * root.u
+        anchors.rightMargin: 4 * root.u
+        spacing: 8 * root.u
 
         Item {
             id: iconWrap
@@ -51,7 +52,7 @@ GlassPanel {
         ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             Layout.fillWidth: true
-            Layout.maximumWidth: 90 * root.u
+            Layout.maximumWidth: 80 * root.u
             spacing: 4 * root.u
             opacity: root.stage(1.6)
             transform: Translate { x: (1 - root.stage(1.6)) * 10 * root.u }

@@ -16,6 +16,8 @@ Item {
     property color solidColor: Theme.tint
     property real solidRadius: Theme.radius
     property real cornerRadius: -1
+    property bool glassy: false
+    property real glassRadius: -1
 
     property real reveal: 0
     default property alias content: body.data
@@ -53,9 +55,30 @@ Item {
         radius: root.solidRadius
     }
 
+    Rectangle {
+        id: glassBody
+        anchors.fill: parent
+        visible: root.glassy && !root.solid
+        radius: root.glassRadius >= 0 ? root.glassRadius : height / 2
+        color: Qt.alpha(Theme.tint, Math.min(0.9, Theme.panelAlpha * 0.78 + root.tintBoost))
+        border.width: 1
+        border.color: Theme.inkA(0.30)
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: parent.radius - 1
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
+                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.06) }
+            }
+        }
+    }
+
     FeatherShape {
         anchors.fill: parent
-        visible: !root.solid
+        visible: !root.solid && !root.glassy
         color: Theme.tint
         maxAlpha: Math.min(0.95, Theme.panelAlpha + root.tintBoost)
         feather: root.feather

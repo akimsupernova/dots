@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync the wallpaper accent to kitty, GTK 3/4, qt5ct/qt6ct and Kvantum.
+"""Sync the wallpaper accent to kitty, fish prompt, GTK 3/4, qt5ct/qt6ct and Kvantum.
 
 Usage:
   theme_sync.py --accent #rrggbb [--mode dark|light]
@@ -150,6 +150,21 @@ def write_kitty(p):
     lines += [f"color{i} {hexc(c)}" for i, c in enumerate(p["ansi"])]
     write(CFG / "kitty" / "current-theme.conf", "\n".join(lines) + "\n")
     subprocess.run(["pkill", "-USR1", "-x", "kitty"], stderr=subprocess.DEVNULL)
+
+
+def write_fish(p):
+    """Prompt colors (user / host / cwd) via universal vars, so open fish shells update live."""
+    fish = shutil.which("fish")
+    if not fish:
+        return
+    h = lambda c: hexc(c)[1:]
+    vals = {
+        "fish_color_user": h(p["accent"]),
+        "fish_color_host": h(p["dim"]),
+        "fish_color_cwd": h(mix(p["accent"], p["fg"], .35)),
+    }
+    cmd = "; ".join(f"set -U {k} {v}" for k, v in vals.items())
+    subprocess.run([fish, "-c", cmd], stderr=subprocess.DEVNULL, timeout=5)
 
 
 def write_gtk(p):
@@ -387,7 +402,7 @@ def set_ini(path, section, key, value):
 def sync(accent_hex, mode="dark"):
     mode = mode if mode in ("dark", "light") else "dark"
     p = make_palette(accent_hex, mode)
-    steps = [("kitty", lambda: write_kitty(p)), ("gtk", lambda: write_gtk(p))]
+    steps = [("kitty", lambda: write_kitty(p)), ("fish", lambda: write_fish(p)), ("gtk", lambda: write_gtk(p))]
     kv_ok = False
     try:
         kv_ok = write_kvantum(p)

@@ -30,6 +30,7 @@ hl.bind("SUPER + A", hl.dsp.exec_cmd("pavucontrol"), { description = "Media: Vol
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call emoji toggle"), { description = "Shell: Emoji" })
 hl.bind("SUPER + G", hl.dsp.exec_cmd("qs ipc call namecard toggle"), { description = "Shell: Name Card" })
 hl.bind("SUPER + N", hl.dsp.exec_cmd("qs ipc call sidebar toggle"), { description = "Shell: Sidebar" })
+hl.bind("SUPER + I", hl.dsp.exec_cmd("qs ipc call ai toggle"), { description = "Shell: AI Panel" })
 hl.bind("SUPER + SHIFT + mouse_down", hl.dsp.exec_cmd([[sh -c '"$HOME/.config/quickshell/scripts/brightness.sh" down']]), { description = "Media: Brightness Up" })
 hl.bind("SUPER + SHIFT + mouse_up", hl.dsp.exec_cmd([[sh -c '"$HOME/.config/quickshell/scripts/brightness.sh" up']]),   { description = "Media: Brightness Down" })
 
