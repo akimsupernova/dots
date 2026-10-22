@@ -33,7 +33,7 @@ Item {
 
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/clear", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/ctx <tokens>", "/clear", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -46,14 +46,13 @@ Item {
         if (t.indexOf(" ") >= 0) return ""
         return root.cmds.filter(c => c.startsWith(t.toLowerCase())).join("   ·   ")
     }
-    readonly property bool secret: /^\/(apikey|key)\s+\S+\s+\S/i.test(field.text)
+    readonly property bool secret: /^\/(apikey|key)\s+\S+\s+\S/i.test(field.text) || /^\/(web|search)\s+key\s+\S/i.test(field.text)
 
     property real appear: 0
     NumberAnimation on appear { from: 0; to: 1; duration: 260; easing.type: Easing.OutCubic }
     opacity: appear
     transform: Translate { y: (1 - root.appear) * 14 * root.u }
 
-    // ---------- chat history ----------
     GlassPanel {
         id: chat
         visible: Ai.messages.length > 0
@@ -74,6 +73,12 @@ Item {
             model: Ai.messages
             boundsBehavior: Flickable.StopAtBounds
 
+            property bool stick: true
+            onContentHeightChanged: if (stick) Qt.callLater(positionViewAtEnd)
+            onMovementStarted: stick = false
+            onMovementEnded: stick = atYEnd
+            Component.onCompleted: Qt.callLater(positionViewAtEnd)
+
             delegate: AiMessage {
                 required property var modelData
                 width: list.width
@@ -82,12 +87,11 @@ Item {
 
             Connections {
                 target: Ai
-                function onMessagesChanged() { Qt.callLater(list.positionViewAtEnd) }
+                function onMessagesChanged() { list.stick = true; Qt.callLater(list.positionViewAtEnd) }
             }
         }
     }
 
-    // ---------- command hint ----------
     Rectangle {
         id: hintChip
         visible: root.hint !== ""
@@ -116,7 +120,6 @@ Item {
         }
     }
 
-    // ---------- pill ----------
     Rectangle {
         id: pill
         anchors.left: parent.left
@@ -145,7 +148,6 @@ Item {
             }
         }
 
-        // new chat
         Rectangle {
             id: plusBtn
             anchors.left: parent.left
@@ -179,7 +181,6 @@ Item {
             }
         }
 
-        // send / voice-style button
         Rectangle {
             id: sendBtn
             anchors.right: parent.right
@@ -197,10 +198,48 @@ Item {
             scale: sendArea.pressed ? 0.94 : (sendArea.containsMouse ? 1.04 : 1)
             Behavior on scale { NumberAnimation { duration: 170; easing.type: Easing.OutBack } }
 
+            Row {
+                id: spectrum
+                readonly property real maxH: Math.round(16 * root.u)
+                anchors.centerIn: parent
+                height: maxH
+                spacing: Math.max(2, Math.round(2.5 * root.u))
+                visible: !Ai.busy && field.text.length === 0
+
+                Repeater {
+                    model: [
+                        { lo: 0.25, hi: 0.70, d: 520 },
+                        { lo: 0.30, hi: 1.00, d: 430 },
+                        { lo: 0.20, hi: 0.85, d: 610 },
+                        { lo: 0.35, hi: 0.95, d: 480 },
+                        { lo: 0.25, hi: 0.60, d: 560 }
+                    ]
+
+                    Rectangle {
+                        id: bar
+                        required property var modelData
+                        property real level: 0.3
+                        width: Math.max(2, Math.round(2.4 * root.u))
+                        height: Math.max(2, spectrum.maxH * level)
+                        y: (spectrum.height - height) / 2
+                        radius: width / 2
+                        color: "white"
+
+                        SequentialAnimation {
+                            running: spectrum.visible
+                            loops: Animation.Infinite
+                            NumberAnimation { target: bar; property: "level"; to: bar.modelData.hi; duration: bar.modelData.d; easing.type: Easing.InOutSine }
+                            NumberAnimation { target: bar; property: "level"; to: bar.modelData.lo; duration: bar.modelData.d; easing.type: Easing.InOutSine }
+                        }
+                    }
+                }
+            }
+
             Icon {
                 id: sendIcon
                 anchors.centerIn: parent
-                name: Ai.busy ? "sparkle" : (field.text.length > 0 ? "arrow-up" : "wave")
+                visible: Ai.busy || field.text.length > 0
+                name: Ai.busy ? "sparkle" : "arrow-up"
                 size: Math.round(17 * root.u)
                 color: "white"
 
@@ -222,7 +261,6 @@ Item {
             }
         }
 
-        // provider chip (click to cycle configured providers)
         Text {
             id: chip
             anchors.right: sendBtn.left
@@ -275,7 +313,6 @@ Item {
         }
     }
 
-    // ---------- "+" menu ----------
     MouseArea {
         id: scrim
         z: 5
@@ -358,6 +395,13 @@ Item {
             }
             AiMenuItem {
                 width: col.width
+                icon: "search"
+                text: "Web search"
+                checked: Ai.web.on
+                onClicked: { Ai.toggleWeb(); root.closeMenu() }
+            }
+            AiMenuItem {
+                width: col.width
                 icon: "settings"
                 text: "Model…"
                 onClicked: root.prefill("/model ")
@@ -385,7 +429,6 @@ Item {
         }
     }
 
-    // provider flyout
     Rectangle {
         id: flyout
         z: 11

@@ -31,11 +31,13 @@ Item {
             selectByMouse: true
             wrapMode: TextEdit.Wrap
             textFormat: TextEdit.MarkdownText
-            text: root.msg.pending ? "Thinking…" : (root.msg.text ?? "")
+            text: root.msg.pending ? (root.msg.status ?? "Thinking…")
+                  : ((root.msg.note ? "*" + root.msg.note + "*\n\n" : "") + (root.msg.text ?? "") + (root.msg.sources ?? ""))
             color: root.msg.error ? Theme.warn : Theme.ink
             opacity: root.msg.pending ? 0.5 : (root.isSys ? 0.8 : 1)
             selectionColor: Theme.accent1
             selectedTextColor: "#101216"
+            onLinkActivated: link => { if (/^https?:\/\//i.test(link)) Qt.openUrlExternally(link) }
             font.family: Theme.font
             font.pixelSize: Math.round(10.5 * root.u)
 
