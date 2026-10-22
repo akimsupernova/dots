@@ -30,14 +30,8 @@ Scope {
             readonly property int panelHeight: Math.min(Math.round((screen?.height ?? 1080) * 0.85), Math.round(580 * u))
             readonly property int sideMargin: Math.max(0, Math.round(((screen?.width ?? 1920) - panelWidth) / 2))
 
-            anchors { top: true; left: true; right: true }
-            margins {
-                top: Theme.barHeight + Theme.gap + 10
-                left: sideMargin
-                right: sideMargin
-            }
+            anchors { top: true; bottom: true; left: true; right: true }
 
-            implicitHeight: panelHeight
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
             focusable: true
@@ -261,9 +255,21 @@ Scope {
                 onExited: code => root.statusMsg = code === 0 ? "OK ✓ saved" : "Failed to write file"
             }
 
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    if (resDrop.open) resDrop.open = false
+                    else if (root.confirming) root.revert()
+                    else host.open = false
+                }
+            }
+
             FocusScope {
                 id: ui
-                anchors.fill: parent
+                x: root.sideMargin
+                y: Theme.barHeight + Theme.gap + 10
+                width: root.panelWidth
+                height: root.panelHeight
                 focus: true
 
                 Keys.onPressed: event => {
@@ -290,6 +296,7 @@ Scope {
                     anchors.fill: parent
                     feather: 14 * root.u
                     coreRadius: 18 * root.u
+                    cornerRadius: Theme.radius
                     padding: 22 * root.u
 
                     ColumnLayout {

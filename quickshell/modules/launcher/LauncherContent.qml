@@ -7,6 +7,7 @@ GlassPanel {
     id: root
 
     popIn: true
+    cornerRadius: Theme.radius
 
     property bool showAllWhenEmpty: true
     property var results: []

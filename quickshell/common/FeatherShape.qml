@@ -8,6 +8,7 @@ Item {
     property real feather: 24
     property real coreRadius: 28
     property int steps: 18
+    property real cornerRadius: -1
 
     function smoothstep(x) { return x * x * (3 - 2 * x) }
 
@@ -25,7 +26,8 @@ Item {
             y: inset
             width: root.width - inset * 2
             height: root.height - inset * 2
-            radius: Math.max(0, root.coreRadius + root.feather - inset)
+            radius: root.cornerRadius >= 0 ? root.cornerRadius
+                                           : Math.max(0, root.coreRadius + root.feather - inset)
             antialiasing: true
             color: Qt.rgba(root.color.r, root.color.g, root.color.b, 1 - (1 - tCur) / (1 - tPrev))
         }

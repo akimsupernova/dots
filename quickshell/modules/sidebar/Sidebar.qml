@@ -18,9 +18,9 @@ Scope {
                     ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
             anchors { top: true; right: true; bottom: true }
-            property int topGap:    Theme.gap + Theme.barHeight - Math.round(25 * Theme.u)
-            property int bottomGap: -Math.round(6 * Theme.u)
-            property int rightGap:  -Math.round(6 * Theme.u)
+            property int topGap:    Theme.gap + Theme.barHeight + Theme.gap
+            property int bottomGap: Theme.gap
+            property int rightGap:  Theme.gap
 
             margins {
                 top: topGap
@@ -28,8 +28,7 @@ Scope {
                 bottom: bottomGap
             }
             implicitWidth: Math.round(336 * Theme.u)
-            exclusiveZone: 0
-            exclusionMode: ExclusionMode.Ignore
+            exclusiveZone: -1
             color: "transparent"
 
             WlrLayershell.namespace: "Glassveil Shell Sidebar"

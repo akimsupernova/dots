@@ -9,38 +9,65 @@ Item {
     readonly property real vol: sink?.audio?.volume ?? 0
     readonly property bool muted: sink?.audio?.muted ?? false
     readonly property int pct: Math.round(vol * 100)
+    readonly property real fillFrac: muted ? 0 : Math.max(0, Math.min(1, vol))
+
+    readonly property string iconName: muted ? "speaker-mute"
+                                     : vol <= 0 ? "speaker-none"
+                                     : vol < 0.5 ? "speaker-1"
+                                     : "speaker"
+    readonly property string labelText: muted ? "" : String(pct)
 
     PwObjectTracker { objects: root.sink ? [root.sink] : [] }
 
-    implicitWidth: row.implicitWidth
+    implicitWidth: pill.width + 8
     implicitHeight: Theme.barHeight
 
-    TextMetrics {
-        id: widest
-        text: ""
-        font.family: Theme.font
-        font.pixelSize: Theme.fontSize
-    }
-
-    Row {
-        id: row
-        spacing: 1
+    Rectangle {
+        id: pill
         anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: 38
+        height: 17
+        radius: height / 2
+        color: Theme.inkA(0.2)
 
-        ProgressIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            icon: root.muted ? "speaker-mute" : "speaker"
-            value: root.muted ? 0 : root.vol
-            color: Theme.ink
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            VolumeLabel {
+                anchors.centerIn: parent
+                tint: root.muted ? Theme.subtext : Theme.ink
+                icon: root.iconName
+                text: root.labelText
+            }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            width: widest.width
-            text: root.muted ? "mute" : root.pct + "%"
-            color: root.muted ? Theme.subtext : Theme.ink
-            font.family: Theme.font
-            font.pixelSize: Theme.fontSize
+        Item {
+            id: fillClip
+            height: parent.height
+            width: parent.width * root.fillFrac
+            visible: width > 0.5
+            clip: true
+            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+            Rectangle {
+                width: pill.width
+                height: pill.height
+                radius: pill.radius
+                color: Theme.ink
+            }
+
+            Item {
+                width: pill.width
+                height: pill.height
+                VolumeLabel {
+                    anchors.centerIn: parent
+                    tint: Theme.tint
+                    icon: root.iconName
+                    text: root.labelText
+                }
+            }
         }
     }
 

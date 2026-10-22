@@ -11,7 +11,11 @@ Singleton {
 
     property var times: ({})
     property real tick: Date.now()
-    property var toasts: []
+    readonly property int toastMs: 2000
+    readonly property int maxToasts: 4
+    readonly property ListModel toastModel: toastStore
+
+    ListModel { id: toastStore }
 
     readonly property var all: server.trackedNotifications.values.slice().reverse()
     readonly property int count: server.trackedNotifications.values.length
@@ -28,8 +32,33 @@ Singleton {
         return Math.floor(h / 24) + "d"
     }
 
+    function byId(id) {
+        const list = server.trackedNotifications.values
+        for (let i = 0; i < list.length; i++)
+            if (list[i].id === id) return list[i]
+        return null
+    }
+
+    function toastIndex(id) {
+        for (let i = 0; i < toastStore.count; i++)
+            if (toastStore.get(i).nid === id) return i
+        return -1
+    }
+
+    function showToast(n) {
+        const at = root.toastIndex(n.id)
+        if (at > 0) toastStore.move(at, 0, 1)
+        else if (at < 0) toastStore.insert(0, { nid: n.id })
+        while (toastStore.count > root.maxToasts) toastStore.remove(toastStore.count - 1)
+    }
+
+    function hideId(id) {
+        const at = root.toastIndex(id)
+        if (at >= 0) toastStore.remove(at)
+    }
+
     function hideToast(n) {
-        root.toasts = root.toasts.filter(t => t !== n)
+        root.hideId(n.id)
     }
 
     function dismiss(n) {
@@ -39,8 +68,15 @@ Singleton {
 
     function clearAll() {
         const list = server.trackedNotifications.values.slice()
-        root.toasts = []
+        toastStore.clear()
         for (let i = 0; i < list.length; i++) list[i].dismiss()
+    }
+
+    Connections {
+        target: UiState
+        function onSidebarOpenChanged() {
+            if (UiState.sidebarOpen) toastStore.clear()
+        }
     }
 
     NotificationServer {
@@ -57,7 +93,7 @@ Singleton {
 
             const critical = n.urgency === NotificationUrgency.Critical
             if (!root.dnd || critical)
-                root.toasts = [n].concat(root.toasts.filter(t => t !== n)).slice(0, 4)
+                root.showToast(n)
         }
     }
 

@@ -30,7 +30,6 @@ KV_LIGHT = ["KvLibadwaita", "KvFlatLight", "KvAdapta", "KvArc"]
 KV_SEARCH = [HOME / ".local/share/Kvantum", Path("/usr/share/Kvantum")]
 
 
-# ---------------------------------------------------------------- colors
 def parse(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
@@ -76,7 +75,6 @@ def push(c, against, target, toward):
 BLACK, WHITE = (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)
 
 
-# ---------------------------------------------------------------- palette
 def make_palette(accent_hex, mode):
     acc = parse(accent_hex)
     h, s, l = to_hsl(acc)
@@ -127,7 +125,6 @@ def make_palette(accent_hex, mode):
     }
 
 
-# ---------------------------------------------------------------- writers
 def write(path, text):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -243,7 +240,6 @@ def write_qt(p, use_kvantum):
             set_ini(conf, "Appearance", "style", "kvantum")
 
 
-# ---------------------------------------------------------------- Kvantum
 HEX_ANY = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b")
 SVG_COLOR = re.compile(r"((?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*[:=]\s*[\"']?)"
                        r"(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3}))\b")
@@ -293,8 +289,8 @@ def make_recolor(kv_text, svg_text, p, base_window):
         h, s, l = to_hsl(c)
         if is_sat(c):
             return hsl(ah, min(1.0, s * ratio), l + (al - dl))
-        dist = l if p["dark"] else (1 - l)       # distance from the theme's background end
-        k = 1 - dist                             # keep near-white/near-black ends stable
+        dist = l if p["dark"] else (1 - l)
+        k = 1 - dist
         return hsl(th, min(ts, 0.25) * max(0.25, 1 - dist * 0.9), l + shift * k)
     return f
 
@@ -338,7 +334,6 @@ def write_kvantum(p):
     svg = SVG_COLOR.sub(lambda m: m.group(1) + rc_hex(m.group(2)), svg)
     kv = HEX_ANY.sub(lambda m: rc_hex(m.group(0)), kv)
 
-    # exact palette colors for the sections Kvantum reads for text/base/window
     colors = kv_colors(p)
     if "[GeneralColors]" in kv:
         def patch(section_match):
@@ -361,7 +356,6 @@ def write_kvantum(p):
     return True
 
 
-# ---------------------------------------------------------------- ini helper
 def set_ini(path, section, key, value):
     path = Path(path)
     lines = path.read_text().splitlines() if path.exists() else []
@@ -370,7 +364,7 @@ def set_ini(path, section, key, value):
     for i, ln in enumerate(lines):
         m = sec_re.match(ln)
         if m:
-            if cur == section and not done:       # section ended without the key
+            if cur == section and not done:
                 lines.insert(i, f"{key}={value}")
                 done = True
                 break
@@ -390,7 +384,6 @@ def set_ini(path, section, key, value):
     write(path, "\n".join(lines) + "\n")
 
 
-# ---------------------------------------------------------------- entry
 def sync(accent_hex, mode="dark"):
     mode = mode if mode in ("dark", "light") else "dark"
     p = make_palette(accent_hex, mode)

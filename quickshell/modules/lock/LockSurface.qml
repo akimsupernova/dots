@@ -197,7 +197,7 @@ Item {
                         id: dotRow
                         y: (dots.height - height) / 2
                         x: width <= dots.width ? (dots.width - width) / 2 : dots.width - width
-                        spacing: Math.round(7 * root.u)
+                        spacing: Math.round(2 * root.u)
                         Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                         Repeater {
@@ -206,9 +206,10 @@ Item {
                             Icon {
                                 id: glyph
                                 required property int index
-                                name: index % 2 === 0 ? "sparkle" : "heart-fill"
-                                size: Math.round(14 * root.u)
-                                color: index % 2 === 0 ? "white" : Theme.warn
+                                readonly property var names:  ["flower", "crescent", "gem", "clover"]
+                                name: names[index % names.length]
+                                size: Math.round(13 * root.u)
+                                color: "white"
                                 NumberAnimation on scale { from: 0.2; to: 1; duration: 220; easing.type: Easing.OutBack }
                             }
                         }

@@ -35,7 +35,6 @@ Rectangle {
 
     onSelectedChanged: if (selected) wiggle.restart()
 
-    // riak yang melebar selama hitung mundur berjalan
     Rectangle {
         id: ripple
         anchors.fill: parent

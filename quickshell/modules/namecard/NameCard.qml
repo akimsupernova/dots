@@ -15,8 +15,8 @@ Scope {
     property string pickKey: ""
 
     readonly property var slotNames: ({
-        hero: "Hero", photo1: "Foto kiri", photo2: "Foto kanan atas",
-        sticker: "Kartu pink", avatar: "Avatar"
+        hero: "Hero", photo1: "Left photo", photo2: "Top right photo",
+        sticker: "Pink card", avatar: "Avatar"
     })
 
     property string cavaMethod: "pipewire"

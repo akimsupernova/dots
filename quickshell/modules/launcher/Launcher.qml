@@ -98,7 +98,7 @@ Scope {
     }
     GlobalShortcut {
         name: "launcherToggleRelease"
-        description: "Toggles launcher on release (untuk menekan Super saja)"
+        description: "Toggles launcher on release (for tapping Super alone)"
         onPressed: root.superReleaseMightTrigger = true
         onReleased: {
             if (!root.superReleaseMightTrigger) {
@@ -110,7 +110,7 @@ Scope {
     }
     GlobalShortcut {
         name: "launcherToggleReleaseInterrupt"
-        description: "Membatalkan toggle-on-release saat Super dipakai untuk kombinasi lain"
+        description: "Cancels toggle-on-release when Super is used in another combination"
         onPressed: root.superReleaseMightTrigger = false
     }
 }

@@ -33,18 +33,7 @@ Scope {
             readonly property real u: Theme.u
             readonly property int columns: Math.max(3, Math.floor((panelWidth - 60 * u) / (thumbSize + 14)))
 
-            anchors {
-                top: true
-                left: true
-                right: true
-            }
-            margins {
-                top: Theme.barHeight + Theme.gap + 10
-                left: sideMargin
-                right: sideMargin
-            }
-
-            implicitHeight: panelHeight
+            anchors { top: true; bottom: true; left: true; right: true }
 
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
@@ -199,9 +188,18 @@ Scope {
                 caseSensitive: false
             }
 
+            MouseArea {
+                anchors.fill: parent
+                onClicked: host.open = false
+            }
+
             GlassPanel {
                 id: glass
-                anchors.fill: parent
+                cornerRadius: Theme.radius
+                x: root.sideMargin
+                y: Theme.barHeight + Theme.gap + 10
+                width: root.panelWidth
+                height: root.panelHeight
 
                 ColumnLayout {
                     anchors.fill: parent

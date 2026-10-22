@@ -21,7 +21,6 @@ def clean_key(keypart: str) -> str:
     keypart = re.sub(r"mainMod\s*\.\.\s*", "Super", keypart)
     keypart = keypart.replace('"', "").replace("'", "")
     keypart = re.sub(r"\s+", "", keypart)
-    # normalize SUPER → Super
     keypart = re.sub(r"SUPER", "Super", keypart, flags=re.I)
     keypart = re.sub(r"SHIFT", "Shift", keypart, flags=re.I)
     keypart = re.sub(r"CTRL|CONTROL", "Ctrl", keypart, flags=re.I)
@@ -38,7 +37,6 @@ def extract_description(expr: str):
     if not m:
         return None
     desc = m.group(1).strip()
-    # "App: Browser" → show "Browser" (part after :)
     if ":" in desc:
         cat, label = desc.split(":", 1)
         label = label.strip()
@@ -51,7 +49,6 @@ def fallback_action(act: str) -> str:
         mm = re.search(r"exec_cmd\((.+)\)\s*$", act)
         if mm:
             action = mm.group(1).strip().strip("\"'")
-            # drop trailing options table if it was captured
             action = re.split(r"\)\s*,\s*\{", action)[0]
             if action.startswith("[["):
                 action = action[2:]
@@ -87,19 +84,15 @@ def fallback_action(act: str) -> str:
             action = action[:67] + "…"
     return action
 
-# Match hl.bind( ... ) including simple multiline (single line)
 for m in re.finditer(r"hl\.bind\((.+?)\)\s*(?:$|--)", text, re.M):
     expr = m.group(1)
 
-    # key = first argument (string / mainMod ..)
-    # take until first top-level comma (rough)
     parts = re.split(r",\s*", expr, maxsplit=1)
     if len(parts) < 2:
         continue
     keypart, rest = parts[0], parts[1]
     key = clean_key(keypart)
 
-    # prioritize description =
     desc = extract_description(expr)
     if desc:
         out[key] = desc

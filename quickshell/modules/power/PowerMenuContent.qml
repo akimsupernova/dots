@@ -6,6 +6,7 @@ GlassPanel {
     id: root
 
     popIn: true
+    cornerRadius: Theme.radius
 
     property int delayMs: 3000
     property string pending: ""

@@ -6,6 +6,8 @@ Item {
     id: root
 
     readonly property real pct: BatteryState.percent
+    readonly property string iconName: BatteryState.charging ? "battery-charge" : "battery-full"
+    readonly property string labelText: String(Math.round(pct * 100))
     readonly property color fillColor: BatteryState.low ? Theme.warn
                                     : (BatteryState.charging || BatteryState.full) ? Qt.alpha(Theme.ok, 0.95)
                                     : Theme.ink
@@ -13,7 +15,6 @@ Item {
     visible: BatteryState.hasBattery
     implicitWidth: visible ? pill.width + 8 : 0
     implicitHeight: Theme.barHeight
-
 
     Rectangle {
         id: pill
@@ -28,13 +29,19 @@ Item {
             anchors.fill: parent
             clip: true
 
-            BatteryLabel { anchors.centerIn: parent; tint: Theme.ink }
+            BatteryLabel {
+                anchors.centerIn: parent
+                tint: BatteryState.low ? Theme.warn : Theme.ink
+                icon: root.iconName
+                text: root.labelText
+            }
         }
 
         Item {
             id: fillClip
             height: parent.height
-            width: Math.max(parent.height, parent.width * root.pct)
+            width: root.pct <= 0 ? 0 : Math.max(Math.min(3, parent.width), parent.width * root.pct)
+            visible: width > 0.5
             clip: true
             Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
@@ -49,7 +56,12 @@ Item {
             Item {
                 width: pill.width
                 height: pill.height
-                BatteryLabel { anchors.centerIn: parent; tint: Theme.tint }
+                BatteryLabel {
+                    anchors.centerIn: parent
+                    tint: Theme.tint
+                    icon: root.iconName
+                    text: root.labelText
+                }
             }
         }
     }

@@ -35,6 +35,7 @@ Item {
         id: dialog
         anchors.centerIn: parent
         popIn: true
+        cornerRadius: Theme.radius
         width: Math.round(380 * root.u)
         implicitHeight: column.implicitHeight + padding * 2
 

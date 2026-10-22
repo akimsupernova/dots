@@ -12,6 +12,10 @@ Item {
     property bool shown: true
     property int duration: 950
     property bool blockClicks: true
+    property bool solid: false
+    property color solidColor: Theme.tint
+    property real solidRadius: Theme.radius
+    property real cornerRadius: -1
 
     property real reveal: 0
     default property alias content: body.data
@@ -42,12 +46,21 @@ Item {
     opacity: popIn ? stage(0) : 1
     scale: popIn ? 0.94 + 0.06 * stage(0) : 1
 
+    Rectangle {
+        anchors.fill: parent
+        visible: root.solid
+        color: root.solidColor
+        radius: root.solidRadius
+    }
+
     FeatherShape {
         anchors.fill: parent
+        visible: !root.solid
         color: Theme.tint
         maxAlpha: Math.min(0.95, Theme.panelAlpha + root.tintBoost)
         feather: root.feather
         coreRadius: root.coreRadius
+        cornerRadius: root.cornerRadius
     }
 
     MouseArea {

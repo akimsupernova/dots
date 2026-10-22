@@ -28,7 +28,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.round(18 * root.u)
+        radius: Theme.radius
         color: Qt.rgba(0, 0, 0, 0.4)
 
         MouseArea {
@@ -42,7 +42,7 @@ Item {
         anchors.centerIn: parent
         width: parent.width - Math.round(24 * root.u)
         height: Math.min(parent.height - Math.round(24 * root.u), Math.round(470 * root.u))
-        radius: Math.round(18 * root.u)
+        radius: Theme.radius
         color: Qt.rgba(Theme.tint.r, Theme.tint.g, Theme.tint.b, 0.97)
         border.width: 1
         border.color: Theme.inkA(0.14)

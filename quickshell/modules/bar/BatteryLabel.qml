@@ -2,21 +2,25 @@ import QtQuick
 import qs.common
 
 Row {
+    id: root
+
     property color tint: Theme.ink
-    spacing: 0
+    property string icon: "battery-full"
+    property string text: ""
+    spacing: 1
 
     Icon {
-        visible: BatteryState.charging
         anchors.verticalCenter: parent.verticalCenter
-        name: "bolt"
+        name: root.icon
         size: 11
-        color: parent.tint
+        color: root.tint
     }
 
     Text {
+        visible: root.text !== ""
         anchors.verticalCenter: parent.verticalCenter
-        text: Math.round(BatteryState.percent * 100)
-        color: parent.tint
+        text: root.text
+        color: root.tint
         font.family: Theme.font
         font.pixelSize: 11
         font.bold: true

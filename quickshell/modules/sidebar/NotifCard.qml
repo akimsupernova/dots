@@ -12,7 +12,18 @@ Rectangle {
     property real u: Theme.u
     property bool toast: false
     property bool expanded: false
+    property real reveal: 1
     signal closeRequested()
+
+    function stage(i) {
+        const t = Math.max(0, Math.min(1, (reveal - i * 0.14) / 0.6))
+        return 1 - Math.pow(1 - t, 3)
+    }
+
+    function pop(i) {
+        const t = Math.max(0, Math.min(1, (reveal - i * 0.14) / 0.6))
+        return 1 + 3.2 * Math.pow(t - 1, 3) + 2.2 * Math.pow(t - 1, 2)
+    }
 
     readonly property bool critical: notif.urgency === NotificationUrgency.Critical
     readonly property string iconSrc: {
@@ -50,6 +61,8 @@ Rectangle {
             Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: Math.round(34 * root.u)
             Layout.preferredHeight: Math.round(34 * root.u)
+            scale: 0.35 + 0.65 * root.pop(0)
+            opacity: Math.min(1, root.stage(0) * 1.8)
 
             Rectangle {
                 anchors.fill: parent
@@ -79,6 +92,8 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2 * root.u
+            opacity: root.stage(1)
+            transform: Translate { x: (1 - root.stage(1)) * 16 * root.u }
 
             RowLayout {
                 Layout.fillWidth: true

@@ -132,7 +132,7 @@ PanelWindow {
             Text {
                 anchors.centerIn: parent
                 visible: fm.count === 0
-                text: "Tidak ada gambar di folder ini"
+                text: "No images in this folder"
                 color: win.ink
                 opacity: 0.6
                 font.family: Theme.font

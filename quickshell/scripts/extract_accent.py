@@ -109,9 +109,9 @@ def pick_accent(px):
     return to_hex(r, g, b)
 
 
-INK_LIGHT_GLASS = (0x15, 0x17, 0x1a)   # dark text on light glass
-INK_DARK_GLASS = (0xf4, 0xf6, 0xfa)    # light text on dark glass
-TARGET_CONTRAST = 7.0                  # dimmed text (opacity ~.6) still >= ~4.5
+INK_LIGHT_GLASS = (0x15, 0x17, 0x1a)
+INK_DARK_GLASS = (0xf4, 0xf6, 0xfa)
+TARGET_CONTRAST = 7.0
 MIN_ALPHA, MAX_ALPHA = 0.50, 0.92
 
 
@@ -152,7 +152,6 @@ def pick_glass(px):
     ordered = sorted(px, key=lum255)
     extremes = [ordered[int(n * 0.04)], ordered[int(n * 0.50)], ordered[int(n * 0.96)]]
 
-    # slightly boost average saturation so wallpaper color shows through the glass
     h, sat, v = colorsys.rgb_to_hsv(*(c / 255 for c in avg))
     vivid = tuple(c * 255 for c in colorsys.hsv_to_rgb(h, min(1.0, sat * 1.5 + 0.05), v))
     light_tint = mix(vivid, (255, 255, 255), 0.66)
@@ -204,7 +203,6 @@ def main(argv):
         f.write(payload)
 
     if "--no-theme" not in argv:
-        # kitty / GTK / Qt / Kvantum follow the same accent (see theme_sync.py)
         mode = os.environ.get("GLASSVEIL_THEME_MODE", "dark").lower()
         if mode == "auto":
             mode = glass["auto"]

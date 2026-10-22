@@ -54,7 +54,7 @@ PanelWindow {
         RowLayout {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            anchors.rightMargin: 8
+            anchors.rightMargin: 5
             spacing: 0
 
             Tray {}

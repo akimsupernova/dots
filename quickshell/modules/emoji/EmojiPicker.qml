@@ -30,13 +30,9 @@ Scope {
             readonly property int panelWidth: Math.min(Math.round(440 * u), screen?.width ?? 500)
             readonly property int sideMargin: Math.max(0, Math.round(((screen?.width ?? 1920) - panelWidth) / 2))
 
-            anchors { top: true; left: true; right: true }
-            margins {
-                top: Theme.barHeight + Theme.gap + 10
-                left: sideMargin
-                right: sideMargin
-            }
-            implicitHeight: Math.min(Math.round(470 * u), Math.round((screen?.height ?? 1080) * 0.62))
+            readonly property int panelHeight: Math.min(Math.round(470 * u), Math.round((screen?.height ?? 1080) * 0.62))
+
+            anchors { top: true; bottom: true; left: true; right: true }
 
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
@@ -61,7 +57,7 @@ Scope {
                         content.statusMsg = "Copied " + root.lastEmoji
                         if (!root.keepOpen) closeTimer.restart()
                     } else {
-                        content.statusMsg = "wl-copy gagal (sudah pasang wl-clipboard?)"
+                        content.statusMsg = "wl-copy failed (is wl-clipboard installed?)"
                     }
                 }
             }
@@ -72,9 +68,17 @@ Scope {
                 onTriggered: host.open = false
             }
 
+            MouseArea {
+                anchors.fill: parent
+                onClicked: host.open = false
+            }
+
             EmojiPickerContent {
                 id: content
-                anchors.fill: parent
+                x: root.sideMargin
+                y: Theme.barHeight + Theme.gap + 10
+                width: root.panelWidth
+                height: root.panelHeight
 
                 onPicked: (emoji, keepOpen) => {
                     root.lastEmoji = emoji
