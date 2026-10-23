@@ -222,7 +222,7 @@ Turn it on with the **Web search** item in the **+** menu or with `/web on`.
 
 ```text
 Web
-- searched: musim hujan indonesia
+- searched: When does the Indonesian rainy season occur?
 - read: bmkg.go.id
 ```
 
