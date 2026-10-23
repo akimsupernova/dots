@@ -168,11 +168,11 @@ GlassPanel {
 
                     AnimatedImage {
                         readonly property real s: mascot.width / 346
-                        x: -108 * s
-                        y: -56 * s
+                        x: -80 * s
+                        y: -40 * s
                         width: 498 * s
                         height: 385 * s
-                        source: (root.shown && page0.active) ? Qt.resolvedUrl("../../assets/namecard/herta.gif") : ""
+                        source: (root.shown && page0.active) ? Qt.resolvedUrl("../../assets/namecard/glassveilbrand.png") : ""
                         playing: root.shown && page0.active
                         cache: false
                         asynchronous: true
@@ -274,6 +274,8 @@ GlassPanel {
 
                 ColumnLayout {
                     anchors.fill: parent
+                    anchors.leftMargin: Math.round(6 * root.u)
+                    anchors.rightMargin: Math.round(2 * root.u)
                     spacing: 8 * root.u
 
                     Text {
@@ -313,10 +315,10 @@ GlassPanel {
 
                                 Item {
                                     Layout.preferredWidth: Math.round(128 * root.u)
-                                    Layout.preferredHeight: Math.round(20 * root.u)
+                                    Layout.preferredHeight: Math.round(22 * root.u)
                                     Row {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 3 * root.u
+                                        spacing: 2 * root.u
                                         Repeater {
                                             model: keyRow.modelData.keys
                                             KeyCap {
