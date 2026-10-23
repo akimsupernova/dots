@@ -15,6 +15,7 @@ Item {
     property bool solid: false
     property color solidColor: Theme.tint
     property real solidRadius: Theme.radius
+    property real solidLeftRadius: -1
     property real cornerRadius: -1
     property bool glassy: false
     property real glassRadius: -1
@@ -53,6 +54,8 @@ Item {
         visible: root.solid
         color: root.solidColor
         radius: root.solidRadius
+        topLeftRadius: root.solidLeftRadius >= 0 ? root.solidLeftRadius : root.solidRadius
+        bottomLeftRadius: root.solidLeftRadius >= 0 ? root.solidLeftRadius : root.solidRadius
     }
 
     Rectangle {

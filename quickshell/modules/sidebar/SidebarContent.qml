@@ -81,6 +81,7 @@ FocusScope {
     GlassPanel {
         anchors.fill: parent
         solid: true
+        solidLeftRadius: Math.round(38 * root.u)
         feather: 10 * root.u
         coreRadius: 18 * root.u
         padding: 20 * root.u
