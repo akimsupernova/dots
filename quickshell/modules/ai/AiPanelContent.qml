@@ -33,7 +33,7 @@ Item {
 
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/web on|off", "/ctx <tokens>", "/clear", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/clear", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -46,13 +46,14 @@ Item {
         if (t.indexOf(" ") >= 0) return ""
         return root.cmds.filter(c => c.startsWith(t.toLowerCase())).join("   ·   ")
     }
-    readonly property bool secret: /^\/(apikey|key)\s+\S+\s+\S/i.test(field.text) || /^\/(web|search)\s+key\s+\S/i.test(field.text)
+    readonly property bool secret: /^\/(apikey|key)\s+\S+\s+\S/i.test(field.text) || /^\/web\s+key\s+\S/i.test(field.text)
 
     property real appear: 0
     NumberAnimation on appear { from: 0; to: 1; duration: 260; easing.type: Easing.OutCubic }
     opacity: appear
     transform: Translate { y: (1 - root.appear) * 14 * root.u }
 
+    // ---------- chat history ----------
     GlassPanel {
         id: chat
         visible: Ai.messages.length > 0
@@ -73,6 +74,8 @@ Item {
             model: Ai.messages
             boundsBehavior: Flickable.StopAtBounds
 
+            // stay at the newest message (also when the panel is reopened and the
+            // delegates are still settling), unless the user scrolls up to read
             property bool stick: true
             onContentHeightChanged: if (stick) Qt.callLater(positionViewAtEnd)
             onMovementStarted: stick = false
@@ -92,6 +95,7 @@ Item {
         }
     }
 
+    // ---------- command hint ----------
     Rectangle {
         id: hintChip
         visible: root.hint !== ""
@@ -120,6 +124,7 @@ Item {
         }
     }
 
+    // ---------- pill ----------
     Rectangle {
         id: pill
         anchors.left: parent.left
@@ -148,6 +153,7 @@ Item {
             }
         }
 
+        // new chat
         Rectangle {
             id: plusBtn
             anchors.left: parent.left
@@ -181,6 +187,7 @@ Item {
             }
         }
 
+        // send / voice-style button
         Rectangle {
             id: sendBtn
             anchors.right: parent.right
@@ -198,6 +205,7 @@ Item {
             scale: sendArea.pressed ? 0.94 : (sendArea.containsMouse ? 1.04 : 1)
             Behavior on scale { NumberAnimation { duration: 170; easing.type: Easing.OutBack } }
 
+            // idle: animated spectrum bars
             Row {
                 id: spectrum
                 readonly property real maxH: Math.round(16 * root.u)
@@ -236,21 +244,35 @@ Item {
             }
 
             Icon {
-                id: sendIcon
+                id: busyIcon
                 anchors.centerIn: parent
-                visible: Ai.busy || field.text.length > 0
-                name: Ai.busy ? "sparkle" : "arrow-up"
+                visible: Ai.busy
+                name: "sparkle"
                 size: Math.round(17 * root.u)
                 color: "white"
 
-                RotationAnimator on rotation {
-                    running: Ai.busy
+                NumberAnimation on rotation {
+                    running: busyIcon.visible
                     from: 0
                     to: 360
-                    duration: 1600
+                    duration: 9000
                     loops: Animation.Infinite
                 }
-                onNameChanged: if (!Ai.busy) rotation = 0
+                SequentialAnimation on scale {
+                    running: busyIcon.visible
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 1.18; duration: 1400; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.9;  duration: 1400; easing.type: Easing.InOutSine }
+                }
+            }
+
+            Icon {
+                id: sendIcon
+                anchors.centerIn: parent
+                visible: !Ai.busy && field.text.length > 0
+                name: "arrow-up"
+                size: Math.round(17 * root.u)
+                color: "white"
             }
             MouseArea {
                 id: sendArea
@@ -261,6 +283,7 @@ Item {
             }
         }
 
+        // provider chip (click to cycle configured providers)
         Text {
             id: chip
             anchors.right: sendBtn.left
@@ -313,6 +336,7 @@ Item {
         }
     }
 
+    // ---------- "+" menu ----------
     MouseArea {
         id: scrim
         z: 5
@@ -429,11 +453,13 @@ Item {
         }
     }
 
+    // provider flyout
     Rectangle {
         id: flyout
         z: 11
         x: menu.x + menu.width + Math.round(6 * root.u)
-        y: Math.max(0, menu.y + col.y + providerRow.y - menu.pad)
+        y: Math.max(0, Math.min(menu.y + col.y + providerRow.y - menu.pad,
+                                menu.y + menu.height - height))
         width: Math.round(200 * root.u)
         height: flyCol.height + menu.pad * 2
         radius: Math.round(16 * root.u)
