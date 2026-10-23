@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import qs.common
 import qs.services
 
@@ -68,14 +69,28 @@ Item {
 
         ListView {
             id: list
+
+            readonly property real maskRadius: Math.round(10 * root.u)
+            readonly property real fadeLen: Math.round(26 * root.u)
+
             anchors.fill: parent
-            clip: true
+            clip: false
             spacing: 0
             model: Ai.messages
             boundsBehavior: Flickable.StopAtBounds
 
-            // stay at the newest message (also when the panel is reopened and the
-            // delegates are still settling), unless the user scrolls up to read
+            readonly property real topScrolled: contentY - originY + topMargin
+            readonly property real bottomScrolled: (contentHeight + originY + bottomMargin) - (contentY + height)
+            readonly property real topFade: Math.max(0, Math.min(1, topScrolled / (fadeLen * 0.5)))
+            readonly property real bottomFade: Math.max(0, Math.min(1, bottomScrolled / (fadeLen * 0.5)))
+
+            layer.enabled: true
+            layer.smooth: true
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: maskItem
+            }
+
             property bool stick: true
             onContentHeightChanged: if (stick) Qt.callLater(positionViewAtEnd)
             onMovementStarted: stick = false
@@ -91,6 +106,26 @@ Item {
             Connections {
                 target: Ai
                 function onMessagesChanged() { list.stick = true; Qt.callLater(list.positionViewAtEnd) }
+            }
+        }
+
+        Rectangle {
+            id: maskItem
+            visible: false
+            layer.enabled: true
+            layer.smooth: true
+            antialiasing: true
+            width: list.width
+            height: list.height
+            radius: list.maskRadius
+
+            readonly property real fp: Math.min(0.5, list.fadeLen / Math.max(1, height))
+
+            gradient: Gradient {
+                GradientStop { position: 0.0;                color: Qt.rgba(1, 1, 1, 1 - list.topFade) }
+                GradientStop { position: maskItem.fp;        color: "white" }
+                GradientStop { position: 1.0 - maskItem.fp;  color: "white" }
+                GradientStop { position: 1.0;                color: Qt.rgba(1, 1, 1, 1 - list.bottomFade) }
             }
         }
     }
