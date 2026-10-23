@@ -2,6 +2,10 @@
   <img src="quickshell/assets/preview/preview1.png" alt="Glassveil Shell desktop preview" width="100%">
 </p>
 
+<p align="center">
+  <img src="quickshell/assets/namecard/glassveilbrand.png" alt="Glassveil logo" width="120">
+</p>
+
 <h1 align="center">Glassveil Shell</h1>
 
 <p align="center">
