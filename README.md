@@ -130,7 +130,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + I` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + R` | Wallpaper picker |
-| `SUPER + SHIFT + R` | Random wallpaper (no picker) |
+| `SUPER + SHIFT + R` | Random wallpaper |
 | `SUPER + M` | Monitor settings |
 | `SUPER + .` | Emoji picker (click to copy) |
 | `SUPER + G` | Name card |
