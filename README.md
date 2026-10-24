@@ -192,7 +192,7 @@ Extra personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) live 
 
 ## Settings panel
 
-A glass panel on the left side of the screen with seven tabs. Open it with `SUPER + B`, with the gear button at the top of the sidebar (`SUPER + N`), or from the terminal:
+Panel on the left side of the screen with seven tabs. Open it with `SUPER + B`, with the gear button at the top of the sidebar (`SUPER + N`), or from the terminal:
 
 ```bash
 qs ipc call settings toggle
