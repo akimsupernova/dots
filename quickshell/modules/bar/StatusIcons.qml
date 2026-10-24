@@ -8,7 +8,7 @@ import qs.services
 Row {
     id: root
 
-    spacing: 10
+    spacing: 5
 
     readonly property var source: Pipewire.defaultAudioSource
     readonly property bool micMuted: source?.audio?.muted ?? false

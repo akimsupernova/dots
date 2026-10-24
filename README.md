@@ -9,7 +9,7 @@
 <h1 align="center">Glassveil Shell</h1>
 
 <p align="center">
-  A minimal, glassy Hyprland desktop powered by Quickshell.
+  A minimal, Hyprland desktop powered by Quickshell.
 </p>
 
 <p align="center">

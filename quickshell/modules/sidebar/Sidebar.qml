@@ -8,6 +8,8 @@ import qs.services
 Scope {
     id: host
 
+    property string lastTab: "calendar"
+
     LazyLoader {
         active: UiState.sidebarOpen
 
@@ -15,7 +17,7 @@ Scope {
             id: panel
 
             screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
-                    ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
+            ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
             anchors { top: true; right: true; bottom: true }
             property int topGap:    Theme.gap + Theme.barHeight + Theme.gap
@@ -44,6 +46,8 @@ Scope {
             SidebarContent {
                 anchors.fill: parent
                 focus: true
+                tab: host.lastTab
+                onTabChanged: host.lastTab = tab
                 onRequestClose: UiState.sidebarOpen = false
             }
         }

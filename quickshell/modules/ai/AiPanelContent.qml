@@ -403,15 +403,26 @@ Item {
         width: Math.round(220 * root.u)
         height: col.height + pad * 2
         radius: Math.round(16 * root.u)
-        color: Qt.alpha(Theme.tint, Math.min(0.96, Theme.panelAlpha + 0.2))
+        color: Qt.alpha(Theme.tint, Math.min(0.9, Theme.panelAlpha * 0.78))
         border.width: 1
-        border.color: Theme.inkA(0.26)
+        border.color: Theme.inkA(0.30)
 
         opacity: root.menuOpen ? 1 : 0
         visible: opacity > 0
         scale: 0.96 + 0.04 * opacity
         transformOrigin: Item.BottomLeft
         Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: parent.radius - 1
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
+                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.06) }
+            }
+        }
 
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: mouse => { mouse.accepted = true } }
 
@@ -500,11 +511,22 @@ Item {
         radius: Math.round(16 * root.u)
         color: menu.color
         border.width: 1
-        border.color: Theme.inkA(0.26)
+        border.color: Theme.inkA(0.30)
 
         opacity: (root.menuOpen && root.subOpen) ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: parent.radius - 1
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
+                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.06) }
+            }
+        }
 
         HoverHandler { id: flyHover }
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: mouse => { mouse.accepted = true } }
