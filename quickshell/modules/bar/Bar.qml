@@ -62,6 +62,7 @@ PanelWindow {
                 Layout.leftMargin: 10
                 Layout.rightMargin: 6
             }
+            WeatherStatus { Layout.alignment: Qt.AlignVCenter }
             Battery {}
             Volume {}
         }

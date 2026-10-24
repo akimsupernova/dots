@@ -28,6 +28,7 @@
 - [Theming](#theming)
 - [Wallpaper](#wallpaper)
 - [Brightness and volume](#brightness-and-volume)
+- [Clock and weather](#clock-and-weather)
 - [Customization](#customization)
 - [Controlling the shell from the terminal](#controlling-the-shell-from-the-terminal)
 - [Repository layout](#repository-layout)
@@ -129,6 +130,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + I` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + R` | Wallpaper picker |
+| `SUPER + SHIFT + R` | Random wallpaper (no picker) |
 | `SUPER + M` | Monitor settings |
 | `SUPER + .` | Emoji picker (click to copy) |
 | `SUPER + G` | Name card |
@@ -361,6 +363,55 @@ python ~/.config/quickshell/scripts/theme_sync.py --default             # back t
 - To force a DDC bus: `DDC_BUS=<number>` before running `scripts/brightness.sh`.
 - Volume uses `wpctl` (PipeWire). The shell shows an on-screen indicator for both.
 
+## Clock and weather
+
+**Desktop clock.** Drag it with the left mouse button. **Hold the left button and scroll** up or down to make it bigger or smaller. **Right-click it** to switch between the digital style and the round ring style. The choice is remembered in `~/.local/state/quickshell/clock-style.json`.
+
+```bash
+qs ipc call clock toggleStyle
+qs ipc call clock setStyle ring        # or: digital
+qs ipc call clock setZoom 1.4          # 0.5 .. 2.5
+qs ipc call clock resetZoom
+```
+
+The ring shows how much of the day has passed. To show the battery level instead, set `property string ringMode: "battery"` in `quickshell/modules/clock/ClockWidget.qml` (it falls back to the day on machines without a battery). The ring size is `ringSize` in the same file.
+
+**Weather.** The temperature and a weather icon appear in the bar, left of the battery, and on the ring clock. Click the bar widget to refresh. Data comes from [Open-Meteo](https://open-meteo.com), which needs no account or API key.
+
+The settings live in `~/.config/glassveil/weather.json`, created with defaults the first time the shell starts. The file is watched, so saving it applies the change at once.
+
+```json
+{
+  "enabled": true,
+  "city": "",
+  "latitude": null,
+  "longitude": null,
+  "units": "metric",
+  "refreshMinutes": 30
+}
+```
+
+| Key | Meaning |
+| --- | --- |
+| `enabled` | `false` hides the weather in the bar and on the ring clock |
+| `city` | For example `"Jakarta"`. Empty means the place is detected from your IP address |
+| `latitude`, `longitude` | Set both to skip the city lookup |
+| `units` | `"metric"` for °C, `"imperial"` for °F |
+| `refreshMinutes` | How often to update, from 5 to 1440 |
+
+You can also change it from the terminal:
+
+```bash
+qs ipc call weather setCity "Bandung"
+qs ipc call weather setUnits imperial
+qs ipc call weather setCoords -6.9 107.6
+qs ipc call weather status
+qs ipc call weather refresh
+qs ipc call weather toggle
+```
+
+The shell needs internet access for the weather. If the request fails it keeps the last value and retries by itself.
+
 ## Customization
 
 | I want to... | Edit |
@@ -375,6 +426,8 @@ python ~/.config/quickshell/scripts/theme_sync.py --default             # back t
 | Window and layer rules (blur, floating) | `hypr/modules/rules.lua` |
 | Change shell size, fonts, glass strength | `quickshell/common/Theme.qml` |
 | Change AI providers or default models | `quickshell/services/Ai.qml` |
+| Change the weather city, units or refresh time | `~/.config/glassveil/weather.json` |
+| Change the weather icons | `quickshell/assets/icons/weather-*.svg` |
 | Change the terminal font and look | `kitty/kitty.conf` |
 
 Remember: edit in `~/.config/...` for live changes, or edit the repo and run `./setup install --no-deps`.
@@ -394,7 +447,7 @@ qs ipc call wallpaper toggle
 qs ipc call lock lock
 ```
 
-Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `sidebar`, `wallpaper`, `welcome`. Run `qs ipc show` to see the functions each one offers.
+Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see the functions each one offers.
 
 ## Repository layout
 
