@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import qs.common
 import qs.services
 
 Scope {
@@ -30,13 +31,14 @@ Scope {
     }
 
     IdleMonitor {
-        enabled: BatteryState.hasBattery && !Toggles.keepAwake
-        timeout: 180
+        enabled: !Toggles.keepAwake
+                 && (Prefs.lockWhen === "always" || (Prefs.lockWhen === "battery" && BatteryState.hasBattery))
+        timeout: Prefs.lockTimeout * 60
         respectInhibitors: true
         onIsIdleChanged: {
             if (isIdle) {
                 root.lock()
-                screenOff.restart()
+                if (Prefs.lockScreenOff) screenOff.restart()
             } else {
                 screenOff.stop()
                 root.dpms(true)

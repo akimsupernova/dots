@@ -24,6 +24,7 @@
 - [Requirements](#requirements)
 - [Install](#install)
 - [Key bindings](#key-bindings)
+- [Settings panel](#settings-panel)
 - [AI panel](#ai-panel)
 - [Theming](#theming)
 - [Wallpaper](#wallpaper)
@@ -38,9 +39,10 @@
 
 ## Features
 
-- **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emoji picker, wallpaper picker, monitor settings, cheatsheet, name card, notification popups and volume/brightness OSD.
+- **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emoji picker, wallpaper picker, monitor settings, settings panel, cheatsheet, name card, notification popups and volume/brightness OSD.
+- **Settings panel** with tabs for appearance, bar, clock and weather, wallpaper and displays, notifications, lock screen and night light. Every option applies live and is remembered.
 - **AI panel** (`SUPER + I`) that connects to OpenAI, Claude, Gemini, local Ollama and more with a single `/apikey` command, with optional web search.
-- **Wallpaper-driven theme.** The accent color is taken from your wallpaper and applied to the shell, kitty, the fish prompt, GTK 3/4, Qt 5/6 and Kvantum.
+- **Wallpaper-driven theme.** The accent color is taken from your wallpaper and applied to the shell, kitty, the fish prompt, GTK 3/4, Qt 5/6 and Kvantum. The Glassveil style (auto, light or dark) you pick in Settings is applied to all of them, not only the shell.
 - **Image and video wallpapers** (`awww` for images, `mpvpaper` for videos).
 - **Hyprland Lua configuration**, split into small modules.
 - **Safe installer** that backs up your existing configs and can restore them.
@@ -129,6 +131,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER` (tap) | App launcher |
 | `SUPER + I` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
+| `SUPER + B` | Settings panel |
 | `SUPER + R` | Wallpaper picker |
 | `SUPER + SHIFT + R` | Random wallpaper |
 | `SUPER + M` | Monitor settings |
@@ -186,6 +189,42 @@ Extra personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) live 
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up / down |
 | `SUPER + mouse wheel` | Volume (scroll up = louder) |
 | `SUPER + SHIFT + mouse wheel` | Brightness (scroll up = brighter) |
+
+## Settings panel
+
+A glass panel on the left side of the screen with seven tabs. Open it with `SUPER + B`, with the gear button at the top of the sidebar (`SUPER + N`), or from the terminal:
+
+```bash
+qs ipc call settings toggle
+```
+
+Changes apply at once and are saved to `~/.config/glassveil/settings.json`. **Reset all settings** in the About tab puts every option back to its default.
+
+| Tab | What you can change |
+| --- | --- |
+| Appearance | **Glassveil style** (Auto, Light or Dark), accent color (Auto from the wallpaper or a preset), interface size, bar height, gap around the bar, corner radius, bar font size |
+| Bar | Which parts show in the bar: window title, resources, media, workspaces, clock, tray, status icons, battery, volume and weather |
+| Clock & weather | Clock style and size, 24-hour time, date and weather on the desktop clock |
+| Wallpaper | Random wallpaper, the full picker, a grid of your wallpapers, and **Displays** (see below) |
+| Notifications | Do not disturb, how long pop-ups stay (1 to 15 s), how many show at once (1 to 8), keep critical ones until closed, clear all, and buttons to send a test or critical notification |
+| Lock screen & night light | Lock when idle (battery only, always or never), lock after 1 to 60 minutes, turn the screen off after locking, a Lock now button, and night light with a color temperature slider (2500 to 6500 K) and an optional schedule |
+| About | System info, links and the reset button |
+
+### Glassveil style and app themes
+
+The style you choose in **Appearance** controls the shell **and** your apps. When it changes, the panel runs `theme_sync.py`, which rewrites the kitty, fish, GTK 3/4, Qt 5/6 and Kvantum themes to match, so a light wallpaper no longer turns every app white when you picked Dark. **Auto** follows the wallpaper. Apps that are already open may need a restart to pick up the new colors, and Qt apps need `kvantum` installed for the full effect. A fixed accent color from the same tab is applied to the apps as well.
+
+### Displays
+
+The Wallpaper tab ends with the same display settings as the monitor panel (`SUPER + M`): a map where you click a monitor to select it and drag to arrange, then resolution and refresh rate, orientation, scale and position for each monitor. After you press **Apply**, you have 10 seconds to press **Keep**, otherwise the old settings come back. Kept settings are written to `~/.config/hypr/modules/monitors.lua`. The panel stays open while a change waits for confirmation, and closing it reverts the change.
+
+### Night light
+
+Night light uses `hyprsunset` (installed by `./setup install`). With the schedule on, it turns on and off by itself between the times you set. Switching it by hand, for example from the sidebar, holds until the schedule changes again. Changing the temperature while it is on restarts `hyprsunset`, so the screen can flicker for a moment.
+
+### Lock screen
+
+Auto-lock uses the idle time of the session. **Battery only** (the default) locks laptops and leaves desktops without a battery alone. Turning on **Keep awake** in the sidebar pauses auto-lock. `SUPER + L` still locks right away.
 
 ## AI panel
 
@@ -338,19 +377,20 @@ Generated files are overwritten on every wallpaper change, so do not edit them b
 
 ### Light and dark
 
-`GLASSVEIL_THEME_MODE` (set in `hypr/modules/env.lua`) controls the mode: `auto` (follow the wallpaper), `dark` or `light`.
+Pick **Glassveil style** in Settings → Appearance: `Auto` (follow the wallpaper), `Light` or `Dark`. The same choice is used by the shell and by every themed app. `GLASSVEIL_THEME_MODE` (set in `hypr/modules/env.lua`) is only a fallback for when `~/.config/glassveil/settings.json` does not exist yet.
 
 ### Run the sync manually
 
 ```bash
-python ~/.config/quickshell/scripts/theme_sync.py --from-state          # reuse the last accent
+python ~/.config/quickshell/scripts/theme_sync.py                       # use your Settings choices and the last wallpaper accent
+python ~/.config/quickshell/scripts/theme_sync.py --glass dark          # force auto, light or dark for this run
 python ~/.config/quickshell/scripts/theme_sync.py --accent "#33ccff"    # force a color
 python ~/.config/quickshell/scripts/theme_sync.py --default             # back to the default accent
 ```
 
 ## Wallpaper
 
-- Open the picker with `SUPER + R`.
+- Open the picker with `SUPER + R`, or use the **Wallpaper** tab in the Settings panel (random wallpaper, a grid of your wallpapers and display settings).
 - Images are set with `awww`, videos (`mp4`, `webm`, `mkv`, `mov`, `gif`, ...) with `mpvpaper`.
 - Put your wallpapers in `~/Pictures/Wallpapers` (the default one is copied there on install).
 - The current wallpaper is remembered in `~/.config/wallpaper/current` and restored at login.
@@ -424,7 +464,8 @@ The shell needs internet access for the weather. If the request fails it keeps t
 | Change keyboard layout, touchpad | `hypr/modules/input.lua` |
 | Run programs at startup | `hypr/modules/autostart.lua` |
 | Window and layer rules (blur, floating) | `hypr/modules/rules.lua` |
-| Change shell size, fonts, glass strength | `quickshell/common/Theme.qml` |
+| Change style, accent, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
+| Change shell fonts and glass strength | `quickshell/common/Theme.qml` |
 | Change AI providers or default models | `quickshell/services/Ai.qml` |
 | Change the weather city, units or refresh time | `~/.config/glassveil/weather.json` |
 | Change the weather icons | `quickshell/assets/icons/weather-*.svg` |
@@ -447,7 +488,7 @@ qs ipc call wallpaper toggle
 qs ipc call lock lock
 ```
 
-Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see the functions each one offers.
+Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see the functions each one offers.
 
 ## Repository layout
 
@@ -462,7 +503,7 @@ Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`
 │   ├── shell.qml             root, loads every module
 │   ├── common/               shared parts (Theme, GlassPanel, Icon, buttons, ...)
 │   ├── services/             state and backends (Network, Notifs, Ai, Brightness, ...)
-│   ├── modules/              one folder per feature (bar, launcher, sidebar, ai, osd, ...)
+│   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, osd, ...)
 │   ├── scripts/              wallpaper, brightness, accent extraction, theme sync
 │   └── assets/               icons, wallpaper, emoji list, previews
 ├── kitty/  fish/  gtk-3.0/  gtk-4.0/  qt5ct/  qt6ct/  nwg-look/
@@ -487,6 +528,10 @@ Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`
 **Wi-Fi or Bluetooth menus are empty.** They need `NetworkManager` and `bluetooth` services: `sudo systemctl enable --now NetworkManager bluetooth`.
 
 **The wallpaper does not change or colors do not update.** Check `$XDG_RUNTIME_DIR/apply-wallpaper.log`, and run `theme_sync.py --from-state` by hand to see errors.
+
+**Apps do not match the Glassveil style.** Close and reopen them, since GTK and Qt read their colors at start. For Qt apps make sure `kvantum` and `qt5ct`/`qt6ct` are installed. Run `python ~/.config/quickshell/scripts/theme_sync.py` by hand to see errors.
+
+**Night light does nothing.** It needs `hyprsunset` (`sudo pacman -S hyprsunset`). The Settings panel shows a note when it is missing.
 
 **The AI panel says "model not found".** Set a current model with `/model <name>`. Check your provider's documentation for model names.
 

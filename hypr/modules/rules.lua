@@ -64,3 +64,12 @@ hl.layer_rule({
     ignore_alpha = 0.05,
     animation    = "slide right",
 })
+
+hl.layer_rule({
+    name  = "glassveil-settings",
+    match = { namespace = "^Glassveil Shell Settings$" },
+
+    blur         = true,
+    ignore_alpha = 0.05,
+    animation    = "slide left",
+})

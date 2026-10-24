@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""Sync the wallpaper accent to kitty, fish prompt, GTK 3/4, qt5ct/qt6ct and Kvantum.
 
-Usage:
-  theme_sync.py --accent #rrggbb [--mode dark|light]
-  theme_sync.py --from-state          (accent.json written by extract_accent.py)
-  theme_sync.py --default             (shell default accent)
-
-Env:
-  GLASSVEIL_THEME_MODE   dark | light   (default: dark)
-  XDG_CONFIG_HOME        output root for testing
-"""
 import colorsys
 import json
 import os
@@ -417,21 +407,41 @@ def sync(accent_hex, mode="dark"):
     return p
 
 
+def load_json(path):
+    try:
+        data = json.loads(Path(path).read_text())
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def resolve(glass=None, pref_accent=None, accent=None):
+    """Return (accent_hex, mode) from explicit args, then settings.json, then the wallpaper state."""
+    state = load_json(STATE)
+    settings = load_json(CFG / "glassveil" / "settings.json")
+
+    g = str(glass or settings.get("glass") or os.environ.get("GLASSVEIL_THEME_MODE") or "auto").lower()
+    if g not in ("auto", "light", "dark"):
+        g = "auto"
+    if g == "auto":
+        auto = (state.get("glass") or {}).get("auto") if isinstance(state.get("glass"), dict) else None
+        g = auto if auto in ("light", "dark") else "dark"
+
+    pref = pref_accent if pref_accent is not None else settings.get("accent")
+    acc = next((c for c in (accent, pref, state.get("accent"))
+                if isinstance(c, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", c)), DEFAULT_ACCENT)
+    return acc, g
+
+
 def main(argv):
-    mode = os.environ.get("GLASSVEIL_THEME_MODE", "dark").lower()
-    if "--mode" in argv:
-        mode = argv[argv.index("--mode") + 1]
-    accent = None
-    if "--accent" in argv:
-        accent = argv[argv.index("--accent") + 1]
-    elif "--from-state" in argv:
-        try:
-            accent = json.loads(STATE.read_text()).get("accent")
-        except Exception:
-            accent = None
-    if not accent or not re.fullmatch(r"#[0-9a-fA-F]{6}", accent):
-        accent = DEFAULT_ACCENT
-    sync(accent, mode)
+    def opt(name):
+        if name in argv and argv.index(name) + 1 < len(argv):
+            return argv[argv.index(name) + 1]
+        return None
+
+    accent = DEFAULT_ACCENT if "--default" in argv else opt("--accent")
+    acc, mode = resolve(glass=opt("--mode") or opt("--glass"), pref_accent=opt("--pref-accent"), accent=accent)
+    sync(acc, mode)
     return 0
 
 

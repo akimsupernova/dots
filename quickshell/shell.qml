@@ -12,6 +12,7 @@ import qs.modules.power
 import qs.modules.namecard
 import qs.modules.welcome
 import qs.modules.sidebar
+import qs.modules.settings
 import qs.modules.notifications
 import qs.modules.lock
 import qs.modules.ai
@@ -35,6 +36,7 @@ ShellRoot {
     NameCard {}
     Welcome {}
     Sidebar {}
+    SettingsPanel {}
     NotificationPopups {}
     Lock {}
     AiPanel {}

@@ -10,12 +10,20 @@ Row {
     property int to: 100000
     property string suffix: ""
     property real valueWidth: 46 * u
+    property bool wrap: false
+    property var formatText: null
     signal changed(int v)
 
     spacing: 4 * u
 
     function bump(dir) {
-        const v = Math.max(from, Math.min(to, value + dir * step))
+        let v = value + dir * step
+        if (wrap) {
+            const span = to - from + 1
+            v = ((v - from) % span + span) % span + from
+        } else {
+            v = Math.max(from, Math.min(to, v))
+        }
         if (v !== value) changed(v)
     }
 
@@ -53,7 +61,7 @@ Row {
         width: root.valueWidth
         anchors.verticalCenter: parent.verticalCenter
         horizontalAlignment: Text.AlignHCenter
-        text: root.value + root.suffix
+        text: root.formatText ? root.formatText(root.value) : root.value + root.suffix
         color: Theme.ink
         font.family: Theme.font
         font.pixelSize: Math.round(10 * root.u)

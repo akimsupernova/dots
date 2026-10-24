@@ -203,12 +203,10 @@ def main(argv):
         f.write(payload)
 
     if "--no-theme" not in argv:
-        mode = os.environ.get("GLASSVEIL_THEME_MODE", "dark").lower()
-        if mode == "auto":
-            mode = glass["auto"]
         try:
             import theme_sync
-            theme_sync.sync(accent, mode)
+            acc, mode = theme_sync.resolve()
+            theme_sync.sync(acc, mode)
         except Exception as e:
             print(f"theme sync failed: {e}", file=sys.stderr)
     return 0

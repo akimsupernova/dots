@@ -14,16 +14,15 @@ Scope {
 
     property int timeSize: 90
     property int dateSize: 20
-    property bool showDate: true
-    property string timeFormat: "hh:mm"
+    property bool showDate: Prefs.clockDate
+    property string timeFormat: Prefs.clock24h ? "hh:mm" : "h:mm AP"
     property string dateFormat: "dddd, dd/MM"
 
-    property string style: "digital"
+    property string style: Prefs.clockStyle
     property int ringSize: 280
-    property string ringMode: "day"
-    property bool showWeather: true
-
-    property real zoom: 1.0
+    property string ringMode: Prefs.clockRing
+    property bool showWeather: Prefs.clockWeather
+    property real zoom: Prefs.clockZoom
 
     readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/quickshell"
     property var saved: ({})
@@ -41,39 +40,8 @@ Scope {
         }
     }
 
-    FileView {
-        id: styleFile
-        path: root.stateDir + "/clock-style.json"
-        onLoaded: {
-            try {
-                const j = JSON.parse(text())
-                if (j.style === "digital" || j.style === "ring") root.style = j.style
-                if (typeof j.zoom === "number" && isFinite(j.zoom)) root.zoom = Math.max(0.5, Math.min(2.5, j.zoom))
-            } catch (e) {}
-        }
-    }
-
-    function saveLook() {
-        styleFile.setText(JSON.stringify({ style: root.style, zoom: Math.round(root.zoom * 100) / 100 }))
-    }
-
-    function setStyle(name) {
-        if (name !== "digital" && name !== "ring") return
-        root.style = name
-        root.saveLook()
-    }
-
-    function setZoom(z) {
-        if (typeof z !== "number" || !isFinite(z)) return
-        root.zoom = Math.max(0.5, Math.min(2.5, z))
-        zoomSave.restart()
-    }
-
-    Timer {
-        id: zoomSave
-        interval: 400
-        onTriggered: root.saveLook()
-    }
+    function setStyle(name) { Prefs.set("clockStyle", name) }
+    function setZoom(z) { Prefs.set("clockZoom", z) }
 
     function save(screenName, x, y) {
         const next = Object.assign({}, root.saved)

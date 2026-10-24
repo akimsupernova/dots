@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import qs.common
 
 Singleton {
     id: root
@@ -11,8 +12,8 @@ Singleton {
 
     property var times: ({})
     property real tick: Date.now()
-    readonly property int toastMs: 2000
-    readonly property int maxToasts: 4
+    readonly property int toastMs: Prefs.notifTimeout * 1000
+    readonly property int maxToasts: Prefs.notifMax
     readonly property ListModel toastModel: toastStore
 
     ListModel { id: toastStore }

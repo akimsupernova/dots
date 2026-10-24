@@ -27,6 +27,7 @@ PanelWindow {
         color: Theme.tint
 
         ActiveWindow {
+            visible: Prefs.barTitle
             anchors.left: parent.left
             anchors.leftMargin: 10
             anchors.right: middle.left
@@ -40,13 +41,16 @@ PanelWindow {
             spacing: 2.5
 
             BarGroup {
-                Resources { Layout.alignment: Qt.AlignVCenter }
+                visible: Prefs.barResources || Prefs.barMedia
+                Resources { visible: Prefs.barResources; Layout.alignment: Qt.AlignVCenter }
                 Media     { Layout.alignment: Qt.AlignVCenter }
             }
             BarGroup {
+                visible: Prefs.barWorkspaces
                 Workspaces { Layout.alignment: Qt.AlignVCenter }
             }
             BarGroup {
+                visible: Prefs.barClock
                 Clock   { Layout.alignment: Qt.AlignVCenter }
             }
         }
@@ -57,14 +61,15 @@ PanelWindow {
             anchors.rightMargin: 5
             spacing: 0
 
-            Tray {}
+            Tray { visible: Prefs.barTray }
             StatusIcons {
-                Layout.leftMargin: 10
+                visible: Prefs.barStatus
+                Layout.leftMargin: 5
                 Layout.rightMargin: 6
             }
             WeatherStatus { Layout.alignment: Qt.AlignVCenter }
             Battery {}
-            Volume {}
+            Volume { visible: Prefs.barVolume }
         }
     }
 }

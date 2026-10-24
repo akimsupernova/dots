@@ -8,12 +8,10 @@ Item {
     property int topInset: 0
     property bool draggable: true
     property var savedPos: null
-
     property string style: "digital"
     property int ringSize: 280
     property string ringMode: "day"
     property bool showWeather: true
-
     property real zoom: 1
     readonly property real minZoom: 0.5
     readonly property real maxZoom: 2.5
@@ -28,7 +26,6 @@ Item {
     property bool showDate: true
     property string timeFormat: "hh:mm"
     property string dateFormat: "dddd, dd/MM"
-
     property int morphDuration: 520
     property real morph: root.style === "ring" ? 1 : 0
     Behavior on morph {
@@ -45,7 +42,6 @@ Item {
     signal moved(real x, real y)
     signal toggleStyle()
     signal zoomRequested(real value)
-
     property bool _armed: false
     Timer {
         running: true

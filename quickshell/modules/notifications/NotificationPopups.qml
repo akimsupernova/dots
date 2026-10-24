@@ -95,6 +95,7 @@ Scope {
                         Timer {
                             interval: Notifs.toastMs
                             running: !hover.hovered && !slot.leaving && cardLoader.item !== null
+                                     && !(slot.critical && Prefs.notifCriticalSticky)
                             onTriggered: slot.leave()
                         }
 

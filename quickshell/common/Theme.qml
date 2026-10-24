@@ -12,7 +12,7 @@ Singleton {
     readonly property string defaultAccent: "#33ccff"
     property color _accent: defaultAccent
     Behavior on _accent { ColorAnimation { duration: 600; easing.type: Easing.OutCubic } }
-    readonly property color accent1: root._accent
+    readonly property color accent1: Prefs.accent !== "" ? Prefs.accent : root._accent
 
     function setAccentFromJson(text) {
         try {
@@ -40,7 +40,7 @@ Singleton {
     readonly property color warn:    "#ff5c6c"
     readonly property color ok:      "#5be38a"
 
-    property string glass: "auto"
+    property string glass: Prefs.glass
     property string _autoMode: "light"
     property var _glassSet: ({
         light: { tint: "#f4f7ff", ink: "#15171a", alpha: 0.66 },
@@ -58,7 +58,7 @@ Singleton {
     Behavior on tint { ColorAnimation { duration: 600; easing.type: Easing.OutCubic } }
     Behavior on panelAlpha { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
 
-    readonly property real u: 1.25
+    readonly property real u: Prefs.uiScale
 
     function _hex(c) { return typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c) }
     function setGlassFromJson(g) {
@@ -75,12 +75,12 @@ Singleton {
 
     function inkA(a) { return Qt.rgba(ink.r, ink.g, ink.b, a) }
 
-    readonly property int radius: 5
-    readonly property int gap:    5
-    readonly property int barHeight: 25
+    readonly property int radius: Prefs.radius
+    readonly property int gap:    Prefs.gap
+    readonly property int barHeight: Prefs.barHeight
 
     readonly property string font: "Google Sans"
-    readonly property int fontSize: 13
+    readonly property int fontSize: Prefs.fontSize
 
     readonly property int textYOffset: 0
 }

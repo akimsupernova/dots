@@ -17,6 +17,7 @@ hl.bind("SUPER + F", hl.dsp.window.fullscreen(), { description = "Window: Toggle
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("qs ipc call power toggle"), { description = "Shell: Power Menu" })
 hl.bind("SUPER + R", hl.dsp.exec_cmd("qs ipc call wallpaper toggle"), { description = "Shell: Wallpaper Toggle" })
 hl.bind("SUPER + SHIFT + R", hl.dsp.exec_cmd([[sh -c 'bash "$HOME/.config/quickshell/scripts/random-wallpaper.sh"']]), { description = "Shell: Random Wallpaper" })
+hl.bind("SUPER + B", hl.dsp.exec_cmd("qs ipc call settings toggle"), { description = "Shell: Settings" })
 hl.bind("SUPER + H", hl.dsp.exec_cmd("qs ipc call welcome toggle"), { description = "Shell: Welcome Card" })
 hl.bind("SUPER + slash", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { description = "Shell: Cheatsheet" })
 hl.bind("SUPER + left",  hl.dsp.focus({ direction = "left" }),  { description = "Focus: Left" })

@@ -12,7 +12,7 @@ Item {
                                     : (BatteryState.charging || BatteryState.full) ? Qt.alpha(Theme.ok, 0.95)
                                     : Theme.ink
 
-    visible: BatteryState.hasBattery
+    visible: BatteryState.hasBattery && Prefs.barBattery
     implicitWidth: visible ? pill.width + 8 : 0
     implicitHeight: Theme.barHeight
 

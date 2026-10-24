@@ -1,7 +1,6 @@
 -- User keybinds
 
-hl.bind("SUPER + B", hl.dsp.exec_cmd("firefox"), { description = "App: Firefox" })
-hl.bind("SUPER + K", hl.dsp.exec_cmd("kdenlive"), { description = "App: Kdenlive" })
+hl.bind("SUPER + K", hl.dsp.exec_cmd("firefox"), { description = "App: Firefox" })
 hl.bind("SUPER + T", hl.dsp.exec_cmd("konsole"), { description = "App: Konsole" })
 hl.bind("SUPER + D", hl.dsp.exec_cmd("davinci-resolve"), { description = "App: Davinci Resolve" })
 

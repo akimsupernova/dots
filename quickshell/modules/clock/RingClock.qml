@@ -10,11 +10,8 @@ Item {
     property string timeFormat: "hh:mm"
     property bool showDate: true
     property bool showWeather: true
-
     property bool active: true
-
     property string ringMode: "day"
-
     property color textColor: Theme.ink
     property color ringColor: Theme.accent1
     property color shadowColor: "#66000000"
@@ -44,21 +41,57 @@ Item {
         colTrack: Theme.inkA(0.16)
     }
 
+    readonly property var apMatch: root.timeFormat.match(/[aA][pP]/)
+    readonly property bool twelveHour: root.apMatch !== null
+    readonly property string digitsFormat: root.timeFormat.replace(/\s*[aA][pP]\s*/, "").trim()
+
+    readonly property real timeFont: root.size * (root.twelveHour ? 0.235 : 0.27)
+    readonly property real timeGap: root.size * 0.025
+
     Text {
-        id: timeText
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: -root.size * 0.01
-        width: root.size * 0.66
-        horizontalAlignment: Text.AlignHCenter
-        text: Qt.locale().toString(clock.date, root.timeFormat)
-        color: root.textColor
-        style: Text.Raised
-        styleColor: root.shadowColor
+        id: timeMetric
+        visible: false
+        text: "0"
         font.family: Theme.font
         font.pixelSize: root.size * 0.27
         font.weight: Font.Light
-        fontSizeMode: Text.HorizontalFit
-        minimumPixelSize: 20
+    }
+
+    Item {
+        id: timeText
+        anchors.centerIn: parent
+        anchors.verticalCenterOffset: -root.size * 0.01
+        width: digitsText.implicitWidth + (root.twelveHour ? root.timeGap + ampmText.implicitWidth : 0)
+        height: timeMetric.implicitHeight
+
+        Text {
+            id: digitsText
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            text: Qt.locale().toString(clock.date, root.twelveHour ? root.digitsFormat : root.timeFormat)
+            color: root.textColor
+            style: Text.Raised
+            styleColor: root.shadowColor
+            font.family: Theme.font
+            font.pixelSize: root.timeFont
+            font.weight: Font.Light
+        }
+
+        Text {
+            id: ampmText
+            visible: root.twelveHour
+            anchors.left: digitsText.right
+            anchors.leftMargin: root.timeGap
+            anchors.baseline: digitsText.baseline
+            text: root.twelveHour ? Qt.locale().toString(clock.date, root.apMatch[0]).toUpperCase() : ""
+            color: root.textColor
+            opacity: 0.85
+            style: Text.Raised
+            styleColor: root.shadowColor
+            font.family: Theme.font
+            font.pixelSize: root.size * 0.085
+            font.weight: Font.Medium
+        }
     }
 
     Row {

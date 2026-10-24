@@ -12,7 +12,7 @@ Item {
     }
     readonly property real progress: (player && player.length > 0) ? player.position / player.length : 0
 
-    visible: player !== null
+    visible: player !== null && Prefs.barMedia
     implicitWidth: visible ? row.implicitWidth : 0
     implicitHeight: Theme.barHeight
 

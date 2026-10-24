@@ -3,33 +3,15 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Current weather for the bar and the ring clock.
-//
-// Data comes from Open-Meteo (https://open-meteo.com), which needs no account or API key.
-// Settings live in ~/.config/glassveil/weather.json (created with defaults on first run):
-//
-//   {
-//     "enabled": true,          show the weather in the bar and on the ring clock
-//     "city": "",               e.g. "Jakarta"; empty = detect the place from your IP address
-//     "latitude": null,         set BOTH latitude and longitude to skip the city lookup
-//     "longitude": null,
-//     "units": "metric",        "metric" = °C, "imperial" = °F
-//     "refreshMinutes": 30      5 .. 1440
-//   }
-//
-// The file is watched, so saving it applies the change right away.
 Singleton {
     id: root
 
-    // ---------- config ----------
     property bool enabled: true
     property string city: ""
     property var latitude: null
     property var longitude: null
     property string units: "metric"
     property int refreshMinutes: 30
-
-    // ---------- state ----------
     property bool ready: false
     property bool loading: false
     property string error: ""
@@ -58,7 +40,6 @@ Singleton {
     property real _geoLon: 0
     property string _geoName: ""
 
-    // ---------- weather code -> icon / text (WMO codes used by Open-Meteo) ----------
     function iconFor(c, day) {
         if (c === 0 || c === 1) return day ? "weather-clear-day" : "weather-clear-night"
         if (c === 2) return day ? "weather-partly-day" : "weather-partly-night"
@@ -85,7 +66,6 @@ Singleton {
         return "Unknown"
     }
 
-    // ---------- config file ----------
     function _defaultJson() {
         return JSON.stringify({
             enabled: true,
@@ -104,7 +84,6 @@ Singleton {
     function _parse(raw) {
         let j = {}
         try { j = JSON.parse(raw) || {} } catch (e) {
-            // half-saved or broken file: keep the settings we already have
             if (root._sig !== "") return
             j = {}
         }
@@ -139,7 +118,6 @@ Singleton {
         }, null, 2) + "\n")
     }
 
-    // ---------- network ----------
     function _get(url, cb) {
         const xhr = new XMLHttpRequest()
         root._xhr = xhr
@@ -241,7 +219,6 @@ Singleton {
         root._resolve(gen, (lat, lon, name) => root._load(gen, lat, lon, name))
     }
 
-    // ---------- plumbing ----------
     Process {
         running: true
         command: ["sh", "-c", 'mkdir -p "$1"; [ -f "$2" ] || printf "%s\\n" "$3" > "$2"',
@@ -283,39 +260,48 @@ Singleton {
         onTriggered: if (root._xhr) root._xhr.abort()
     }
 
+    function setEnabled(on) {
+        root.enabled = on
+        root._save()
+        if (on) root.refresh()
+    }
+
+    function setCity(name) {
+        root.city = String(name).trim()
+        root.latitude = null
+        root.longitude = null
+        root._save()
+        root.refresh()
+    }
+
+    function setCoords(lat, lon) {
+        if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)) return
+        root.latitude = lat
+        root.longitude = lon
+        root._save()
+        root.refresh()
+    }
+
+    function setUnits(name) {
+        const n = String(name).toLowerCase()
+        root.units = (n === "imperial" || n === "fahrenheit" || n === "f") ? "imperial" : "metric"
+        root._save()
+        root.refresh()
+    }
+
+    function setRefreshMinutes(m) {
+        root.refreshMinutes = Math.max(5, Math.min(1440, Math.round(m)))
+        root._save()
+    }
+
     IpcHandler {
         target: "weather"
 
         function refresh(): void { root.refresh() }
-
-        function toggle(): void {
-            root.enabled = !root.enabled
-            root._save()
-            if (root.enabled) root.refresh()
-        }
-
-        function setCity(name: string): void {
-            root.city = name.trim()
-            root.latitude = null
-            root.longitude = null
-            root._save()
-            root.refresh()
-        }
-
-        function setCoords(lat: real, lon: real): void {
-            if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)) return
-            root.latitude = lat
-            root.longitude = lon
-            root._save()
-            root.refresh()
-        }
-
-        function setUnits(name: string): void {
-            const n = name.toLowerCase()
-            root.units = (n === "imperial" || n === "fahrenheit" || n === "f") ? "imperial" : "metric"
-            root._save()
-            root.refresh()
-        }
+        function toggle(): void { root.setEnabled(!root.enabled) }
+        function setCity(name: string): void { root.setCity(name) }
+        function setCoords(lat: real, lon: real): void { root.setCoords(lat, lon) }
+        function setUnits(name: string): void { root.setUnits(name) }
 
         function status(): string {
             if (!root.enabled) return "disabled"

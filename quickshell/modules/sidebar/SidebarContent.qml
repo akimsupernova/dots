@@ -152,7 +152,8 @@ FocusScope {
 
                 HeadBtn { icon: "image";           onClicked: root.runAndClose(["qs", "ipc", "call", "wallpaper", "toggle"]) }
                 HeadBtn { icon: "arrow-clockwise"; onClicked: Quickshell.reload(true) }
-                HeadBtn { icon: "settings";        onClicked: root.runAndClose(["qs", "ipc", "call", "monitor", "toggle"]) }
+                HeadBtn { icon: "monitor";         onClicked: root.runAndClose(["qs", "ipc", "call", "monitor", "toggle"]) }
+                HeadBtn { icon: "settings";        onClicked: UiState.settingsOpen = true }
                 HeadBtn { icon: "power";           onClicked: root.runAndClose(["qs", "ipc", "call", "power", "toggle"]) }
             }
 
