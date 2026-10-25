@@ -26,7 +26,10 @@ Singleton {
 
     readonly property string sysPrompt:
         "You are a helpful assistant inside a small desktop panel on Arch Linux with Hyprland. " +
-        "Keep answers concise. Use light markdown only (no tables)."
+        "Keep answers concise. Use light markdown only (no tables). " +
+        "You cannot create files, links or downloads, so never invent a path or a link. " +
+        "When the user wants a file made or edited, reply with the full new content in one fenced code block " +
+        "with the language after the opening fence. The panel adds Copy and Save buttons to code blocks."
 
     // models do not know today's date and assume the year of their training data
     function systemPrompt() {
@@ -138,6 +141,67 @@ Singleton {
     }
 
     Process { id: copyProc }
+
+    function copyText(t) {
+        if (!t) return
+        copyProc.running = false
+        copyProc.command = ["wl-copy", String(t)]
+        copyProc.running = true
+    }
+
+    // ---------- save a code block as a file in Downloads ----------
+    function _extFor(lang, text) {
+        const l = String(lang || "").toLowerCase()
+        const map = {
+            svg: "svg", xml: "xml", html: "html", htm: "html", css: "css", js: "js", javascript: "js",
+            ts: "ts", typescript: "ts", json: "json", py: "py", python: "py", sh: "sh", bash: "sh",
+            shell: "sh", zsh: "sh", fish: "fish", qml: "qml", lua: "lua", md: "md", markdown: "md",
+            yaml: "yaml", yml: "yml", toml: "toml", ini: "ini", conf: "conf", c: "c", cpp: "cpp",
+            "c++": "cpp", h: "h", rust: "rs", rs: "rs", go: "go", java: "java", csv: "csv",
+            sql: "sql", diff: "diff", patch: "patch", text: "txt", txt: "txt", plaintext: "txt"
+        }
+        if ((l === "" || l === "xml") && /<svg[\s>]/i.test(text)) return "svg"
+        return map[l] || "txt"
+    }
+
+    // reuse the name of a file the user attached with the same type (photo.svg -> photo-edited.svg)
+    function _saveBase(ext) {
+        for (let i = root.messages.length - 1; i >= 0; i--) {
+            const m = root.messages[i]
+            if (m.role !== "user" || !m.note || m.note.indexOf("Attached: ") !== 0) continue
+            const names = m.note.slice(10).split(", ")
+            for (const n of names) {
+                const dot = n.lastIndexOf(".")
+                if (dot > 0 && n.slice(dot + 1).toLowerCase() === ext) return n.slice(0, dot)
+            }
+        }
+        return ""
+    }
+
+    function saveText(text, lang) {
+        if (saveProc.running) return
+        const ext = _extFor(lang, String(text || ""))
+        saveProc.command = ["python3", Quickshell.shellPath("scripts/ai_save.py"), ext, _saveBase(ext), String(text || "")]
+        saveProc.running = true
+    }
+
+    function _saveDone(raw) {
+        let j = null
+        try { j = JSON.parse(String(raw).trim().split("\n").pop()) } catch (e) {}
+        if (j && j.ok) {
+            const shown = String(j.path).replace(Quickshell.env("HOME"), "~")
+            _sys("Saved to `" + shown + "` · [Open folder](file://" + encodeURI(j.dir) + ")")
+        } else {
+            _sys((j && j.error) ? j.error : "Could not save the file (is python3 installed?).", true)
+        }
+    }
+
+    Process {
+        id: saveProc
+        stdout: StdioCollector {
+            onStreamFinished: root._saveDone(this.text)
+        }
+    }
 
     // ---------- web search ----------
     function setWeb(patch) {
