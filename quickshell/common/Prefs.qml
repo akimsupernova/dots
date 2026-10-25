@@ -12,6 +12,9 @@ Singleton {
     property int barHeight: 25
     property int gap: 5
     property int radius: 5
+    property int winGap: -1
+    property int winGapOut: -1
+    property int winRounding: -1
     property int fontSize: 13
 
     property bool barTitle: true
@@ -51,6 +54,9 @@ Singleton {
         barHeight:    { t: "num", min: 20, max: 40, int: true },
         gap:          { t: "num", min: 0, max: 12, int: true },
         radius:       { t: "num", min: 0, max: 20, int: true },
+        winGap:       { t: "num", min: -1, max: 40, int: true },
+        winGapOut:    { t: "num", min: -1, max: 60, int: true },
+        winRounding:  { t: "num", min: -1, max: 30, int: true },
         fontSize:     { t: "num", min: 11, max: 16, int: true },
         barTitle:     { t: "bool" },
         barResources: { t: "bool" },

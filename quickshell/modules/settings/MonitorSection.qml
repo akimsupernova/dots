@@ -66,8 +66,14 @@ Item {
         return m.name + "," + m.mode + "," + m.x + "x" + m.y + "," + m.scale + ",transform," + m.transform
     }
 
+    function luaMon(m) {
+        if (m.disabled) return 'hl.monitor({ output = "' + m.name + '", disabled = true })'
+        return 'hl.monitor({ output = "' + m.name + '", mode = "' + m.mode + '", position = "' + m.x + "x" + m.y
+               + '", scale = "' + m.scale + '", transform = ' + m.transform + ' })'
+    }
+
     function batchFor(list) {
-        return ["hyprctl", "--batch", list.map(m => "keyword monitor " + monArg(m)).join(" ; ")]
+        return ["hyprctl", "eval", list.map(luaMon).join("; ")]
     }
 
     function normMode(s) {

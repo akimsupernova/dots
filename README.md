@@ -39,7 +39,7 @@
 
 ## Features
 
-- **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emoji picker, wallpaper picker, monitor settings, settings panel, cheatsheet, name card, notification popups and volume/brightness OSD.
+- **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emojis, wallpapes, monitor settings, settings panel, cheatsheet, name card, notification popups and volume/brightness OSD.
 - **Settings panel** with tabs for appearance, bar, clock and weather, wallpaper and displays, notifications, lock screen and night light. Every option applies live and is remembered.
 - **AI panel** (`SUPER + I`) that connects to OpenAI, Claude, Gemini, local Ollama and more with a single `/apikey` command, with optional web search.
 - **Wallpaper-driven theme.** The accent color is taken from your wallpaper and applied to the shell, kitty, the fish prompt, GTK 3/4, Qt 5/6 and Kvantum. The Glassveil style (auto, light or dark) you pick in Settings is applied to all of them, not only the shell.
@@ -132,10 +132,10 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + I` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + B` | Settings panel |
-| `SUPER + R` | Wallpaper picker |
+| `SUPER + R` | Wallpapers |
 | `SUPER + SHIFT + R` | Random wallpaper |
 | `SUPER + M` | Monitor settings |
-| `SUPER + .` | Emoji picker (click to copy) |
+| `SUPER + .` | Emojis (click to copy) |
 | `SUPER + G` | Name card |
 | `SUPER + H` | Welcome card |
 | `SUPER + /` | Key binding cheatsheet |
@@ -202,10 +202,10 @@ Changes apply at once and are saved to `~/.config/glassveil/settings.json`. **Re
 
 | Tab | What you can change |
 | --- | --- |
-| Appearance | **Glassveil style** (Auto, Light or Dark), accent color (Auto from the wallpaper or a preset), interface size, bar height, gap around the bar, corner radius, bar font size |
+| Appearance | **Glassveil style** (Auto, Light or Dark), accent color (Auto from the wallpaper or a preset), interface size, bar height, gap around the bar, shell corner radius, bar font size, and for app windows the gap between windows, the gap to the screen edge and the window corner radius |
 | Bar | Which parts show in the bar: window title, resources, media, workspaces, clock, tray, status icons, battery, volume and weather |
 | Clock & weather | Clock style and size, 24-hour time, date and weather on the desktop clock |
-| Wallpaper | Random wallpaper, the full picker, a grid of your wallpapers, and **Displays** (see below) |
+| Wallpaper | Random wallpaper, a grid of your wallpapers, and **Displays** (see below) |
 | Notifications | Do not disturb, how long pop-ups stay (1 to 15 s), how many show at once (1 to 8), keep critical ones until closed, clear all, and buttons to send a test or critical notification |
 | Lock screen & night light | Lock when idle (battery only, always or never), lock after 1 to 60 minutes, turn the screen off after locking, a Lock now button, and night light with a color temperature slider (2500 to 6500 K) and an optional schedule |
 | About | System info, links and the reset button |
@@ -213,6 +213,10 @@ Changes apply at once and are saved to `~/.config/glassveil/settings.json`. **Re
 ### Glassveil style and app themes
 
 The style you choose in **Appearance** controls the shell **and** your apps. When it changes, the panel runs `theme_sync.py`, which rewrites the kitty, fish, GTK 3/4, Qt 5/6 and Kvantum themes to match, so a light wallpaper no longer turns every app white when you picked Dark. **Auto** follows the wallpaper. Apps that are already open may need a restart to pick up the new colors, and Qt apps need `kvantum` installed for the full effect. A fixed accent color from the same tab is applied to the apps as well.
+
+### Window gaps and corners
+
+The three **App windows** sliders in Appearance change Hyprland itself (`general:gaps_in`, `general:gaps_out` and `decoration:rounding`) and are applied again when Quickshell starts and after every Hyprland config reload. Until you move one, your Hyprland config is left alone. **Use config** puts them back and reloads Hyprland.
 
 ### Displays
 
@@ -228,7 +232,7 @@ Auto-lock uses the idle time of the session. **Battery only** (the default) lock
 
 ## AI panel
 
-Press `SUPER + I` for a glass "Ask AI" pill at the bottom of the screen.
+Press `SUPER + I` to open AI panel.
 
 Supported providers: **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and local **Ollama** (no key needed).
 
@@ -257,7 +261,7 @@ Supported providers: **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistr
 
 Provider aliases: `chatgpt` = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama.
 
-The **+** button opens a menu with the same actions: new chat, copy the last reply, provider picker, a **Web search** toggle, model, API key and help.
+The **+** button opens a menu with the same actions: new chat, copy the last reply, provider, a **Web search** toggle, model, API key and help.
 
 ### Web search
 
@@ -390,7 +394,7 @@ python ~/.config/quickshell/scripts/theme_sync.py --default             # back t
 
 ## Wallpaper
 
-- Open the picker with `SUPER + R`, or use the **Wallpaper** tab in the Settings panel (random wallpaper, a grid of your wallpapers and display settings).
+- Open wallpaper panel with `SUPER + R`, or use the **Wallpaper** tab in the Settings panel (random wallpaper, a grid of your wallpapers and display settings).
 - Images are set with `awww`, videos (`mp4`, `webm`, `mkv`, `mov`, `gif`, ...) with `mpvpaper`.
 - Put your wallpapers in `~/Pictures/Wallpapers` (the default one is copied there on install).
 - The current wallpaper is remembered in `~/.config/wallpaper/current` and restored at login.
@@ -465,7 +469,7 @@ The shell needs internet access for the weather. If the request fails it keeps t
 | Run programs at startup | `hypr/modules/autostart.lua` |
 | Window and layer rules (blur, floating) | `hypr/modules/rules.lua` |
 | Change style, accent, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
-| Change shell fonts and glass strength | `quickshell/common/Theme.qml` |
+| Change shell fonts and strength | `quickshell/common/Theme.qml` |
 | Change AI providers or default models | `quickshell/services/Ai.qml` |
 | Change the weather city, units or refresh time | `~/.config/glassveil/weather.json` |
 | Change the weather icons | `quickshell/assets/icons/weather-*.svg` |
@@ -501,7 +505,7 @@ Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`
 │   └── custom/keybinds.lua   your personal key bindings
 ├── quickshell/
 │   ├── shell.qml             root, loads every module
-│   ├── common/               shared parts (Theme, GlassPanel, Icon, buttons, ...)
+│   ├── common/               shared parts (Theme, Panel, Icon, buttons, ...)
 │   ├── services/             state and backends (Network, Notifs, Ai, Brightness, ...)
 │   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, osd, ...)
 │   ├── scripts/              wallpaper, brightness, accent extraction, theme sync

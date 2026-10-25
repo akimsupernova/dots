@@ -1,4 +1,6 @@
+import QtQuick
 import Quickshell
+import qs.services
 import qs.modules.bar
 import qs.modules.cheatsheet
 import qs.modules.launcher
@@ -18,6 +20,8 @@ import qs.modules.lock
 import qs.modules.ai
 
 ShellRoot {
+    Component.onCompleted: HyprLook.init()
+
     Variants {
         model: Quickshell.screens
         Bar {}

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.common
+import qs.services
 
 ColumnLayout {
     id: root
@@ -111,7 +112,7 @@ ColumnLayout {
 
         SettingRow {
             stacked: true
-            label: "Corner radius"
+            label: "Shell corner radius"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -130,6 +131,68 @@ ColumnLayout {
                 from: 11; to: 16; stepSize: 1; suffix: " px"
                 realValue: Prefs.fontSize
                 onEdited: v => Prefs.set("fontSize", v)
+            }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            text: "App windows"
+            color: Theme.ink
+            opacity: 0.65
+            font.family: Theme.font
+            font.pixelSize: Math.round(9.5 * root.u)
+            font.bold: true
+        }
+
+        SettingRow {
+            stacked: true
+            label: "Gap between windows"
+            hint: "Changes Hyprland itself, not only the shell"
+
+            ValueSlider {
+                Layout.fillWidth: true
+                from: 0; to: 40; stepSize: 1; suffix: " px"
+                realValue: HyprLook.gapBetween
+                onEdited: v => Prefs.set("winGap", v)
+            }
+        }
+
+        SettingRow {
+            stacked: true
+            label: "Gap to the screen edge"
+
+            ValueSlider {
+                Layout.fillWidth: true
+                from: 0; to: 60; stepSize: 1; suffix: " px"
+                realValue: HyprLook.gapEdge
+                onEdited: v => Prefs.set("winGapOut", v)
+            }
+        }
+
+        SettingRow {
+            stacked: true
+            label: "Window corner radius"
+
+            ValueSlider {
+                Layout.fillWidth: true
+                from: 0; to: 30; stepSize: 1; suffix: " px"
+                realValue: HyprLook.rounding
+                onEdited: v => Prefs.set("winRounding", v)
+            }
+        }
+
+        SettingRow {
+            label: "Window look"
+            hint: "Go back to the values in your Hyprland config"
+
+            GlassButton {
+                text: "Use config"
+                enabled: Prefs.winGap >= 0 || Prefs.winGapOut >= 0 || Prefs.winRounding >= 0
+                onClicked: {
+                    Prefs.set("winGap", -1)
+                    Prefs.set("winGapOut", -1)
+                    Prefs.set("winRounding", -1)
+                }
             }
         }
     }
