@@ -9,7 +9,7 @@
 <h1 align="center">Glassveil Shell</h1>
 
 <p align="center">
-  A minimal, Hyprland desktop powered by Quickshell.
+  A minimal Hyprland desktop, built with Quickshell.
 </p>
 
 <p align="center">
@@ -20,6 +20,7 @@
 
 ## Contents
 
+- [What is this?](#what-is-this)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Install](#install)
@@ -37,21 +38,29 @@
 - [Uninstall](#uninstall)
 - [License](#license)
 
+## What is this?
+
+A ready-made desktop for Arch Linux.
+
+- **Hyprland** manages your windows.
+- **Quickshell** draws the bar, the panels and the menus.
+
+You install it with one command. After that you can change most things from the **Settings panel**. No file editing needed.
+
 ## Features
 
-- **Quickshell shell** with a bar, app launcher, sidebar (notifications, Wi-Fi, Bluetooth, calendar, pomodoro), power menu, lock screen, emojis, wallpapes, monitor settings, settings panel, cheatsheet, name card, notification popups and volume/brightness OSD.
-- **Settings panel** with tabs for appearance, bar, clock and weather, wallpaper and displays, notifications, lock screen and night light. Every option applies live and is remembered.
-- **AI panel** (`SUPER + I`) that connects to OpenAI, Claude, Gemini, local Ollama and more with a single `/apikey` command, with optional web search.
-- **Wallpaper-driven theme.** The accent color is taken from your wallpaper and applied to the shell, kitty, the fish prompt, GTK 3/4, Qt 5/6 and Kvantum. The Glassveil style (auto, light or dark) you pick in Settings is applied to all of them, not only the shell.
-- **Image and video wallpapers** (`awww` for images, `mpvpaper` for videos).
-- **Hyprland Lua configuration**, split into small modules.
-- **Safe installer** that backs up your existing configs and can restore them.
+- **Bar, launcher, sidebar, power menu, lock screen** and more. The sidebar holds notifications, Wi-Fi, Bluetooth, a calendar and a pomodoro timer.
+- **Settings panel** (`SUPER + B`). Change the look, bar, clock, wallpaper, monitors, notifications, lock screen and night light. Changes apply right away and are remembered.
+- **AI panel** (`SUPER + I`). Chat with OpenAI, Claude, Gemini, local Ollama and more. You can attach files and, with Ollama, make pictures.
+- **Wallpaper colors.** The accent color comes from your wallpaper. It is used by the shell, kitty, fish, GTK apps, Qt apps and Kvantum. You can also choose light or dark.
+- **Image and video wallpapers.**
+- **Safe installer.** It backs up your old configs and can restore them.
 
 ## Requirements
 
-- Arch Linux or a derivative (CachyOS works)
+- Arch Linux or a similar system (CachyOS works)
 - Hyprland **0.55 or newer** (the config is written in Lua)
-- A normal user account with `sudo` (do not run the installer as root)
+- A normal user account with `sudo`. Do not run the installer as root.
 
 ## Install
 
@@ -61,15 +70,15 @@ cd dots
 ./setup install
 ```
 
-The installer asks before doing anything risky. In order, it:
+The installer asks before it does anything risky. It does these steps:
 
 1. Offers a full system upgrade (`pacman -Syu`).
-2. Installs `yay` if it is missing, then installs all required packages.
-3. Offers to enable NetworkManager, Bluetooth and LACT services, and to set up DDC/CI access for monitor brightness (adds you to the `i2c` group).
-4. Backs up your existing configs, then copies the dotfiles into place.
-5. Sets the default wallpaper and schedules a welcome card for your first login.
+2. Installs `yay` if you do not have it, then installs all packages.
+3. Offers to turn on the NetworkManager, Bluetooth and LACT services. It can also set up monitor brightness control for external screens.
+4. Backs up your old configs, then copies the new ones.
+5. Sets the default wallpaper and shows a welcome card at your first login.
 
-After the first login a welcome card appears. Reopen it any time with `SUPER + H`. Press `SUPER + /` to see all key bindings.
+After you log in, a welcome card appears. Open it again with `SUPER + H`. Press `SUPER + /` to see all key bindings.
 
 ### Installer options
 
@@ -77,8 +86,8 @@ After the first login a welcome card appears. Reopen it any time with `SUPER + H
 ./setup install             # packages + dotfiles
 ./setup install --no-deps   # dotfiles only, skip packages
 ./setup install -n          # dry run: show what would happen, change nothing
-./setup install -y          # answer yes to everything (--noconfirm); does not reboot
-./setup install --reboot    # reboot when finished without asking
+./setup install -y          # say yes to everything; does not reboot
+./setup install --reboot    # reboot when done, without asking
 ./setup install --no-reboot # do not ask about rebooting
 ./setup deps                # install yay and packages only
 ./setup welcome             # show the welcome card again at next login
@@ -88,22 +97,22 @@ After the first login a welcome card appears. Reopen it any time with `SUPER + H
 
 ### Important: files are copied, not linked
 
-`./setup install` **copies** the folders into `~/.config`. Editing files inside the cloned repo does nothing until you run `./setup install` again. To tweak your running system, edit the files in `~/.config` directly and copy changes back to the repo when you are happy.
+`./setup install` **copies** the folders into `~/.config`. If you edit files inside the cloned repo, nothing changes until you run `./setup install` again. To try a change on your running system, edit the files in `~/.config` and copy them back to the repo later.
 
-When you re-run the installer:
+When you run the installer again:
 
-- Your original configs are backed up once to `~/.local/share/akim-dotfiles-backup/<timestamp>/`.
-- `hypr/modules/monitors.lua` is **kept** (your monitor setup is not overwritten).
+- Your old configs are backed up once, in `~/.local/share/akim-dotfiles-backup/<time>/`.
+- `hypr/modules/monitors.lua` is **kept**, so your monitor setup stays.
 
 ### What gets installed where
 
 | Repo folder | Installed to |
 | --- | --- |
 | `fish`, `gtk-3.0`, `gtk-4.0`, `hypr`, `kitty`, `nwg-look`, `qt5ct`, `qt6ct`, `quickshell` | `~/.config/` |
-| `icons` (cursor theme config) | `~/.icons/` |
+| `icons` (cursor theme) | `~/.icons/` |
 | `fonts` (Google Sans) | `~/.local/share/fonts/` |
 
-Installer state (manifest, backup location, last command log) lives in `~/.local/state/glassveil-shell/`.
+The installer keeps its notes (what it installed, where the backup is, the last log) in `~/.local/state/glassveil-shell/`.
 
 ### Packages
 
@@ -113,16 +122,16 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | --- | --- |
 | Desktop | `hyprland`, `quickshell`, `hyprsunset`, `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk`, `polkit`, `qt6-wayland`, `qt5-wayland` |
 | Wallpaper | `awww`, `mpvpaper`, `ffmpeg`, `python-pillow` |
-| Theming | `nwg-look`, `qt5ct`, `qt6ct`, `kvantum`, `kvantum-qt5`, `breeze-icons`, `adwaita-icon-theme`, `bibata-cursor-theme-bin` |
+| Theming | `nwg-look`, `qt5ct`, `qt6ct`, `kvantum`, `kvantum-qt5`, `breeze-icons`, `adwaita-icon-theme`, `bibata-cursor-theme-bin`, `dconf`, `gsettings-desktop-schemas` |
 | Fonts | `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
 | Audio | `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`, `alsa-utils`, `pavucontrol`, `cava`, `playerctl`, `sof-firmware` |
 | Network and devices | `networkmanager`, `bluez`, `bluez-utils`, `upower`, `brightnessctl`, `ddcutil` |
-| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils` |
+| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils`, `zenity` (file chooser), `poppler` (reads PDF files) |
 | Apps | `zen-browser-bin`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
 
 ## Key bindings
 
-`SUPER` is the Windows key. Press `SUPER + /` for a live cheatsheet generated from the config.
+`SUPER` is the Windows key. Press `SUPER + /` to see a live list of every key binding.
 
 ### Shell
 
@@ -135,11 +144,11 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + R` | Wallpapers |
 | `SUPER + SHIFT + R` | Random wallpaper |
 | `SUPER + M` | Monitor settings |
-| `SUPER + .` | Emojis (click to copy) |
+| `SUPER + .` | Emojis (click one to copy it) |
 | `SUPER + G` | Name card |
 | `SUPER + H` | Welcome card |
-| `SUPER + /` | Key binding cheatsheet |
-| `SUPER + L` | Lock screen |
+| `SUPER + /` | Key binding list |
+| `SUPER + L` | Lock the screen |
 | `SUPER + SHIFT + P` | Power menu |
 
 ### Apps
@@ -149,28 +158,28 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + Return` | Terminal (kitty) |
 | `SUPER + W` | Browser (zen-browser) |
 | `SUPER + E` | File manager (dolphin) |
-| `SUPER + C` | Editor (kate) |
+| `SUPER + C` | Text editor (kate) |
 | `SUPER + X` | Steam |
 | `SUPER + O` | OBS Studio |
 | `SUPER + A` | Volume control (pavucontrol) |
 | `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
 
-Extra personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) live in [`hypr/custom/keybinds.lua`](hypr/custom/keybinds.lua).
+More personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) are in [`hypr/custom/keybinds.lua`](hypr/custom/keybinds.lua).
 
 ### Windows and workspaces
 
 | Keys | Action |
 | --- | --- |
 | `SUPER + Q` | Close window |
-| `SUPER + F` | Toggle fullscreen |
-| `SUPER + V` | Toggle floating |
+| `SUPER + F` | Fullscreen on or off |
+| `SUPER + V` | Floating on or off |
 | `SUPER + P` | Pseudo-tile |
-| `SUPER + J` | Toggle split direction |
+| `SUPER + J` | Change split direction |
 | `SUPER + arrows` | Move focus |
 | `SUPER + 1…0` | Go to workspace 1 to 10 |
 | `SUPER + ALT + 1…0` | Move window to workspace 1 to 10 |
-| `SUPER + S` | Toggle scratchpad |
-| `SUPER + SHIFT + S` | Move window to scratchpad |
+| `SUPER + S` | Show or hide the scratchpad |
+| `SUPER + SHIFT + S` | Move window to the scratchpad |
 | `SUPER + left mouse drag` | Move window |
 | `SUPER + right mouse drag` | Resize window |
 
@@ -178,7 +187,7 @@ Extra personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) live 
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + SPACE` | Select an area, copy it to the clipboard |
+| `SUPER + SPACE` | Select an area and copy it to the clipboard |
 | `ALT + SPACE` | Full screenshot, saved to `~/Pictures/Screenshots` and copied |
 
 ### Media
@@ -192,49 +201,57 @@ Extra personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) live 
 
 ## Settings panel
 
-Panel on the left side of the screen with seven tabs. Open it with `SUPER + B`, with the gear button at the top of the sidebar (`SUPER + N`), or from the terminal:
+Open it with `SUPER + B`, or click the gear at the top of the sidebar (`SUPER + N`).
 
-```bash
-qs ipc call settings toggle
-```
-
-Changes apply at once and are saved to `~/.config/glassveil/settings.json`. **Reset all settings** in the About tab puts every option back to its default.
+Every change applies at once and is saved in `~/.config/glassveil/settings.json`. To undo everything, press **Reset** in the About tab.
 
 | Tab | What you can change |
 | --- | --- |
-| Appearance | **Glassveil style** (Auto, Light or Dark), accent color (Auto from the wallpaper or a preset), interface size, bar height, gap around the bar, shell corner radius, bar font size, and for app windows the gap between windows, the gap to the screen edge and the window corner radius |
-| Bar | Which parts show in the bar: window title, resources, media, workspaces, clock, tray, status icons, battery, volume and weather |
-| Clock & weather | Clock style and size, 24-hour time, date and weather on the desktop clock |
-| Wallpaper | Random wallpaper, a grid of your wallpapers, and **Displays** (see below) |
-| Notifications | Do not disturb, how long pop-ups stay (1 to 15 s), how many show at once (1 to 8), keep critical ones until closed, clear all, and buttons to send a test or critical notification |
-| Lock screen & night light | Lock when idle (battery only, always or never), lock after 1 to 60 minutes, turn the screen off after locking, a Lock now button, and night light with a color temperature slider (2500 to 6500 K) and an optional schedule |
-| About | System info, links and the reset button |
+| Appearance | **Glassveil style** (Auto, Light or Dark), accent color, interface size, bar height, spacing, corner roundness, font size. Also the gap between windows, the gap to the screen edge and the corner roundness of windows. |
+| Bar | Which items show in the bar: window title, system use, media, workspaces, clock, tray, status icons, battery, volume, weather |
+| Clock & weather | Clock style and size, 24-hour time, date, weather |
+| Wallpaper | Random wallpaper, all your wallpapers, and the **monitor settings** |
+| Notifications | Do not disturb, how long pop-ups stay, how many show at once, keep urgent ones until you close them, clear all, test buttons |
+| Lock screen & night light | Auto-lock, lock time, screen off after lock, a **Lock now** button, and night light |
+| About | System info, links and the Reset button |
 
-### Glassveil style and app themes
+### Glassveil style
 
-The style you choose in **Appearance** controls the shell **and** your apps. When it changes, the panel runs `theme_sync.py`, which rewrites the kitty, fish, GTK 3/4, Qt 5/6 and Kvantum themes to match, so a light wallpaper no longer turns every app white when you picked Dark. **Auto** follows the wallpaper. Apps that are already open may need a restart to pick up the new colors, and Qt apps need `kvantum` installed for the full effect. A fixed accent color from the same tab is applied to the apps as well.
+This setting changes the shell **and** your apps (kitty, fish, GTK apps, Qt apps).
+
+- **Auto** follows your wallpaper. Light wallpaper gives a light theme.
+- **Light** or **Dark** stays fixed, whatever the wallpaper looks like.
+
+Apps that are already open may need a restart to show the new colors.
 
 ### Window gaps and corners
 
-The three **App windows** sliders in Appearance change Hyprland itself (`general:gaps_in`, `general:gaps_out` and `decoration:rounding`) and are applied again when Quickshell starts and after every Hyprland config reload. Until you move one, your Hyprland config is left alone. **Use config** puts them back and reloads Hyprland.
+The three sliders under **App windows** change Hyprland itself. Until you move one, your Hyprland config is not touched. The sliders are applied again after each login and each Hyprland reload. Press **Use config** to go back to the values in your config files.
 
-### Displays
+### Monitor settings
 
-The Wallpaper tab ends with the same display settings as the monitor panel (`SUPER + M`): a map where you click a monitor to select it and drag to arrange, then resolution and refresh rate, orientation, scale and position for each monitor. After you press **Apply**, you have 10 seconds to press **Keep**, otherwise the old settings come back. Kept settings are written to `~/.config/hypr/modules/monitors.lua`. The panel stays open while a change waits for confirmation, and closing it reverts the change.
+At the end of the Wallpaper tab. Click a monitor on the map to select it. Drag it to move it. You can set the resolution, refresh rate, rotation, scale and position.
+
+After you press **Apply**, you have 10 seconds to press **Keep**. If you do nothing, the old settings come back. This protects you from a black screen. Saved settings go to `~/.config/hypr/modules/monitors.lua`.
+
+The same settings are also on `SUPER + M`.
 
 ### Night light
 
-Night light uses `hyprsunset` (installed by `./setup install`). With the schedule on, it turns on and off by itself between the times you set. Switching it by hand, for example from the sidebar, holds until the schedule changes again. Changing the temperature while it is on restarts `hyprsunset`, so the screen can flicker for a moment.
+Makes the screen warmer, so it is easier on the eyes at night. Pick a warmth level and, if you like, a schedule. It needs `hyprsunset` (the installer adds it). When you change the warmth, the screen can flicker for a moment.
 
 ### Lock screen
 
-Auto-lock uses the idle time of the session. **Battery only** (the default) locks laptops and leaves desktops without a battery alone. Turning on **Keep awake** in the sidebar pauses auto-lock. `SUPER + L` still locks right away.
+- **Lock when idle** has three choices: *Battery only* (laptops lock, desktops do not), *Always* or *Never*.
+- Pick how many minutes of no use before the lock.
+- **Keep awake** in the sidebar pauses auto-lock.
+- `SUPER + L` always locks right away.
 
 ## AI panel
 
-Press `SUPER + I` to open AI panel.
+Press `SUPER + I`. A box appears at the bottom of the screen. Type your question and press Enter.
 
-Supported providers: **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and local **Ollama** (no key needed).
+Works with **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and **Ollama** (runs on your own computer, no key needed).
 
 ### Getting started
 
@@ -242,65 +259,98 @@ Supported providers: **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistr
 2. Type `/apikey openai sk-...` (or `claude`, `gemini`, ...) and press Enter.
 3. Ask something.
 
+For Ollama, install it first, pull a model (for example `ollama pull llama3.2`), then type `/provider ollama`.
+
 ### Commands
 
 | Command | What it does |
 | --- | --- |
-| `/apikey` | Show saved keys (masked) |
+| `/apikey` | Show saved keys (hidden except the ends) |
 | `/apikey <provider> <key>` | Save a key and switch to that provider |
 | `/apikey remove <provider>` | Delete a saved key |
-| `/provider <name>` | Switch provider (or click the provider name in the pill) |
-| `/model <name>` | Change the model for the current provider (`/model default` resets it) |
-| `/endpoint <provider> <url>` | Use a custom endpoint (OpenAI-compatible, or the Ollama server URL) |
+| `/provider <name>` | Switch provider (or click the provider name in the input bar) |
+| `/model <name>` | Change the model (`/model default` resets it) |
+| `/endpoint <provider> <url>` | Use another address (OpenAI-compatible, or your Ollama server) |
+| `/attach <path>` | Attach a file (see [Attach files](#attach-files)) |
+| `/detach` | Remove all attached files |
+| `/image <text>` | Make a picture with an Ollama image model (see [Make pictures](#make-pictures)) |
+| `/imagemodel <name>` | Choose the model for `/image` (`/imagemodel default` clears it) |
 | `/web on\|off` | Let the AI search the internet (see [Web search](#web-search)) |
 | `/web backend <name>` | Choose the search service: `ddg`, `searxng` or `ollama` |
-| `/web url <url>` / `/web key <key>` | Configure the SearXNG instance or the Ollama search key |
-| `/ctx <tokens>` | Ollama context window (default 16384) |
+| `/web url <url>` / `/web key <key>` | Set the SearXNG address or the Ollama search key |
+| `/ctx <tokens>` | Ollama memory size per chat (default 16384) |
 | `/clear` | Start a new chat |
-| `/help` | List commands |
+| `/help` | Show the commands |
 
-Provider aliases: `chatgpt` = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama.
+Short names: `chatgpt` = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama.
 
-The **+** button opens a menu with the same actions: new chat, copy the last reply, provider, a **Web search** toggle, model, API key and help.
+The **+** button opens a menu with the same actions: new chat, copy the last reply, provider, web search, attach file, generate image (Ollama only), model, API key and help.
+
+### Attach files
+
+There are three ways:
+
+- Choose **Attach file…** in the **+** menu.
+- Drag a file from your file manager onto the panel.
+- Type `/attach ~/notes.txt`.
+
+The file shows as a small tag above the input bar. Click the **x** to remove it. It is sent with your next message. If you type nothing, the AI describes or summarizes the file.
+
+| File | What happens | Works with |
+| --- | --- | --- |
+| Text, code, logs, Markdown, JSON, CSV | The text is added to your message (very long files are cut) | All providers |
+| PDF | The text is read out and added to your message | All providers |
+| Images (PNG, JPEG, and WebP, GIF, BMP with `python-pillow`) | The image is sent to the model | Ollama models that can see images |
+
+Good to know:
+
+- The model must be able to see images. Try `qwen3.5`, `gemma3`, `llama3.2-vision` or `qwen2.5vl`. If it cannot, the panel tells you and does not send the image.
+- The **Attach file…** button opens a file chooser (`zenity`, which the installer adds). The AI panel closes while you choose, then opens again with your file. 
+- PDFs need `poppler` (the installer adds it). A scanned PDF has no text to read.
+- Attached text stays in the chat, so you can ask more questions about it later.
+
+### Make pictures
+
+Ollama can run image models. This feature is new, and it is still experimental in Ollama.
+
+```text
+ollama pull x/z-image-turbo
+/imagemodel x/z-image-turbo
+/image a lighthouse in a storm, oil painting
+```
+
+- If the model you chat with is itself an image model, every message you send makes a picture. You do not need `/imagemodel` then.
+- The picture shows in the chat. Click it to open it. A copy is saved in `~/Pictures/Glassveil/`.
+- The first picture can take a while, because the model has to load.
+- Models that only read images, like Qwen 3.5, cannot draw. Use a separate image model for `/image`.
 
 ### Web search
 
-Turn it on with the **Web search** item in the **+** menu or with `/web on`.
+Turn it on with **Web search** in the **+** menu, or type `/web on`.
 
-**Local models (Ollama).** The model decides for itself. It gets two tools, `web_search` and `web_fetch`, and uses them only when it needs current or external information. It can search several times and open pages to read them. Under the reply you see what it did:
+- **Ollama:** the model decides when to search or open a page. It needs a model that supports tools. If it does not, it answers without searching and shows a small note.
+- **Other providers:** every message is searched first. The top results are added to your question, and the sources show under the reply.
 
-```text
-Web
-- searched: When does the Indonesian rainy season occur?
-- read: bmkg.go.id
-```
-
-- It needs a model with **tool support** (models tagged `tools` in the Ollama library). If the model has none, the panel does not fail: the model simply answers on its own and a small note says web search was not available.
-- Ollama is called through its native `/api/chat`, so the context window is set per request. The default is 16384 tokens; change it with `/ctx <tokens>` (larger uses more VRAM). Reading pages needs room, so do not go too low.
-- Pages are fetched with `curl`. Addresses on your own machine and network (localhost, `192.168.x.x`, `10.x.x.x`, link-local and similar) are blocked, and every redirect is checked again, so a web page cannot easily make the model reach local services.
-- Search results and page text are given to the model as untrusted data.
-
-**Other providers** (OpenAI, Claude, Gemini, ...). Every message is searched first and the top results are added to the prompt, with a **Sources** list under the reply.
-
-**Search services**
+Search services:
 
 ```text
-/web backend ddg                no key; reads DuckDuckGo results (default)
-/web backend searxng            your own SearXNG instance
+/web backend ddg                no key; reads DuckDuckGo (default)
+/web backend searxng            your own SearXNG server
 /web url https://search.example.org
-/web backend ollama             Ollama web search API (free account key)
+/web backend ollama             Ollama web search (free account key)
 /web key <key>                  key from https://ollama.com/settings/keys
 ```
 
-**Good to know**
+Good to know:
 
-- `ddg` reads DuckDuckGo's HTML page, so it can be rate-limited or stop working if DuckDuckGo changes it. `searxng` or `ollama` are more stable.
-- Your search queries and the pages the model opens leave your machine, even when the model itself is local.
-- The Ollama search key is stored in `~/.config/glassveil/ai.json` like the other keys.
+- `ddg` reads a DuckDuckGo page, so it can be slow or stop working. `searxng` and `ollama` are more stable.
+- Your searches leave your computer, even when the model runs locally.
+- Pages on your own computer or network (localhost, `192.168.x.x`, `10.x.x.x` and similar) are blocked, so a web page cannot trick the model into reaching them.
 
-#### Setting up SearXNG (recommended)
+<details>
+<summary><b>Set up SearXNG (optional, for advanced users)</b></summary>
 
-[SearXNG](https://docs.searxng.org/) is a self-hosted metasearch engine. It collects results from several search engines (Google included) without an API key. It needs Docker (`sudo pacman -S docker && sudo systemctl enable --now docker`) or Podman (use `podman` instead of `docker` below).
+[SearXNG](https://docs.searxng.org/) is a search service you run yourself. It needs Docker (`sudo pacman -S docker && sudo systemctl enable --now docker`) or Podman (use `podman` instead of `docker` below).
 
 ```bash
 mkdir -p ~/.config/searxng
@@ -321,13 +371,13 @@ docker run -d --name searxng --restart unless-stopped \
   docker.io/searxng/searxng:latest
 ```
 
-Check that JSON works (a `403` means `json` is missing from `formats` or the settings file was not picked up):
+Check that it works. A `403` means `json` is missing from `formats`.
 
 ```bash
 curl "http://127.0.0.1:8888/search?q=test&format=json" | head -c 300
 ```
 
-Then in the AI panel:
+Then, in the AI panel:
 
 ```text
 /web url http://127.0.0.1:8888
@@ -337,25 +387,26 @@ Then in the AI panel:
 
 Notes:
 
-- `-p 127.0.0.1:8888:8080` keeps the instance reachable from your own machine only. Do not publish it on `0.0.0.0` with the limiter off.
-- Individual engines (Google in particular) are sometimes blocked for a while. Results still come from the others.
-- Update with `docker pull docker.io/searxng/searxng:latest`, then remove and re-run the container.
-- Run `docker` with `sudo`, or add your user to the `docker` group.
+- `-p 127.0.0.1:8888:8080` keeps it private to your computer. Do not open it to the network.
+- Some engines (Google in particular) are sometimes blocked for a while. Results still come from the others.
+- To update: `docker pull docker.io/searxng/searxng:latest`, then remove and run the container again.
 
-### Privacy and security
+</details>
 
-- Keys are stored in plain text in `~/.config/glassveil/ai.json` with mode `600`. That folder is outside this repository. **Never commit that file.**
-- Commands that start with `/` (including your key) are never added to the chat history and never sent to a provider.
-- Only the messages you type (up to the last 20 of the current session), a short system prompt (with the current date) and, when web search is on, the search results or pages it fetched are sent to the provider you selected. The AI cannot read your files, screen, clipboard or run commands.
-- Chat history is kept in memory only and disappears when the shell restarts.
-- Use `/provider ollama` to keep your chat on your own machine. With web search on, your queries and the pages opened still go to the internet (and to the search service you chose).
+### Privacy
+
+- Keys are saved as plain text in `~/.config/glassveil/ai.json`. Only you can read it. The file is outside this repo. **Never commit it.**
+- Lines that start with `/` (including your key) are never sent to a provider and never kept in the chat.
+- The provider gets only: your last 20 messages, any files you attach, a short system note with today's date, and web results if search is on. The AI cannot see your screen, clipboard or other files, and it cannot run commands.
+- The chat is kept in memory only. It is gone when the shell restarts.
+- To keep everything on your computer, use `/provider ollama`. With web search on, your searches still go to the internet.
 
 ### Notes
 
-- Default model names change over time. If you get a "model not found" error, set one with `/model <name>`.
-- Replies are shown when complete (no streaming yet).
-- Attachments (images, files, screenshots) are not supported.
-- Web search needs `curl` (installed by `./setup install`).
+- Model names change over time. If you see "model not found", set a new one with `/model <name>`.
+- Replies show when they are complete (no live typing yet).
+- Screenshots are not attached by the panel. Save the screenshot, then attach the file.
+- Web search needs `curl` (the installer adds it).
 
 ## Theming
 
@@ -364,52 +415,56 @@ The whole desktop follows the **accent color of your wallpaper**.
 ```text
 wallpaper changed
   └─ apply-wallpaper.sh
-       └─ extract_accent.py      writes ~/.local/state/quickshell/accent.json
-            └─ theme_sync.py     rewrites the themes of the apps below
+       └─ extract_accent.py      saves the color to ~/.local/state/quickshell/accent.json
+            └─ theme_sync.py     updates the apps below
 ```
 
-| Target | What is generated |
+| App | What is updated |
 | --- | --- |
-| Quickshell | Reads `accent.json` live (see `quickshell/common/Theme.qml`) |
+| Quickshell | Reads the color live |
 | kitty | `~/.config/kitty/current-theme.conf` |
-| fish | Prompt colors (user, host, current directory) as universal variables, so open terminals update instantly |
-| GTK 3 / 4 | `gtk.css` color definitions plus the dark/light preference |
+| fish | Prompt colors, so open terminals update at once |
+| GTK 3 / 4 | `gtk.css` colors and the light/dark choice |
 | Qt 5 / 6 | A `glassveil` color scheme for `qt5ct` and `qt6ct` |
-| Kvantum | A generated `Glassveil` theme based on an installed Kvantum theme |
+| Kvantum | A `Glassveil` theme made from an installed Kvantum theme |
 
-Generated files are overwritten on every wallpaper change, so do not edit them by hand.
+These files are rewritten at every change, so do not edit them by hand.
 
 ### Light and dark
 
-Pick **Glassveil style** in Settings → Appearance: `Auto` (follow the wallpaper), `Light` or `Dark`. The same choice is used by the shell and by every themed app. `GLASSVEIL_THEME_MODE` (set in `hypr/modules/env.lua`) is only a fallback for when `~/.config/glassveil/settings.json` does not exist yet.
+Pick **Glassveil style** in Settings → Appearance: `Auto`, `Light` or `Dark`. The shell and all apps use the same choice.
 
-### Run the sync manually
+`GLASSVEIL_THEME_MODE` (in `hypr/modules/env.lua`) is only a backup. It is used when `~/.config/glassveil/settings.json` does not exist yet.
+
+### Run the sync by hand
 
 ```bash
-python ~/.config/quickshell/scripts/theme_sync.py                       # use your Settings choices and the last wallpaper accent
-python ~/.config/quickshell/scripts/theme_sync.py --glass dark          # force auto, light or dark for this run
+python ~/.config/quickshell/scripts/theme_sync.py                       # use your Settings and the last wallpaper color
+python ~/.config/quickshell/scripts/theme_sync.py --style dark          # force auto, light or dark this time
 python ~/.config/quickshell/scripts/theme_sync.py --accent "#33ccff"    # force a color
-python ~/.config/quickshell/scripts/theme_sync.py --default             # back to the default accent
+python ~/.config/quickshell/scripts/theme_sync.py --default             # back to the default color
 ```
 
 ## Wallpaper
 
-- Open wallpaper panel with `SUPER + R`, or use the **Wallpaper** tab in the Settings panel (random wallpaper, a grid of your wallpapers and display settings).
-- Images are set with `awww`, videos (`mp4`, `webm`, `mkv`, `mov`, `gif`, ...) with `mpvpaper`.
-- Put your wallpapers in `~/Pictures/Wallpapers` (the default one is copied there on install).
-- The current wallpaper is remembered in `~/.config/wallpaper/current` and restored at login.
+- Press `SUPER + R` to open the wallpapers. You can also use the **Wallpaper** tab in Settings.
+- Images use `awww`. Videos (`mp4`, `webm`, `mkv`, `mov`, `gif`, ...) use `mpvpaper`.
+- Put your wallpapers in `~/Pictures/Wallpapers`. The installer adds a default one.
+- The current wallpaper is remembered in `~/.config/wallpaper/current` and comes back at login.
 - Logs: `$XDG_RUNTIME_DIR/apply-wallpaper.log` and `restore-wallpaper.log`.
 
 ## Brightness and volume
 
 - **Laptop screens** use `brightnessctl`.
-- **External monitors** use DDC/CI through `ddcutil`. The installer offers to load `i2c-dev` at boot and add you to the `i2c` group. **Log out and back in** (or reboot) after that.
-- To force a DDC bus: `DDC_BUS=<number>` before running `scripts/brightness.sh`.
-- Volume uses `wpctl` (PipeWire). The shell shows an on-screen indicator for both.
+- **External monitors** use DDC/CI through `ddcutil`. The installer can set this up for you (it adds you to the `i2c` group). **Log out and in again** (or reboot) after that.
+- To force one DDC bus, set `DDC_BUS=<number>` when you run `scripts/brightness.sh`.
+- Volume uses `wpctl` (PipeWire). The shell shows a small indicator on screen for volume and brightness.
 
 ## Clock and weather
 
-**Desktop clock.** Drag it with the left mouse button. **Hold the left button and scroll** up or down to make it bigger or smaller. **Right-click it** to switch between the digital style and the round ring style. The choice is remembered in `~/.local/state/quickshell/clock-style.json`.
+You can set the clock and the weather in **Settings → Clock & weather**.
+
+**Desktop clock.** Drag it with the left mouse button. **Hold the left button and scroll** to make it bigger or smaller. **Right-click it** to switch between the digital style and the round style. The choice is saved in `~/.local/state/quickshell/clock-style.json`.
 
 ```bash
 qs ipc call clock toggleStyle
@@ -418,11 +473,14 @@ qs ipc call clock setZoom 1.4          # 0.5 .. 2.5
 qs ipc call clock resetZoom
 ```
 
-The ring shows how much of the day has passed. To show the battery level instead, set `property string ringMode: "battery"` in `quickshell/modules/clock/ClockWidget.qml` (it falls back to the day on machines without a battery). The ring size is `ringSize` in the same file.
+The ring shows how much of the day has passed. To show the battery instead, set `property string ringMode: "battery"` in `quickshell/modules/clock/ClockWidget.qml`. On a PC with no battery it shows the day. The ring size is `ringSize` in the same file.
 
-**Weather.** The temperature and a weather icon appear in the bar, left of the battery, and on the ring clock. Click the bar widget to refresh. Data comes from [Open-Meteo](https://open-meteo.com), which needs no account or API key.
+**Weather.** The temperature and an icon show in the bar (left of the battery) and on the round clock. Click the bar item to refresh. The data comes from [Open-Meteo](https://open-meteo.com). It needs no account or key.
 
-The settings live in `~/.config/glassveil/weather.json`, created with defaults the first time the shell starts. The file is watched, so saving it applies the change at once.
+<details>
+<summary><b>Weather settings file (optional)</b></summary>
+
+The settings are in `~/.config/glassveil/weather.json`. It is created the first time the shell starts. When you save it, the change applies at once.
 
 ```json
 {
@@ -437,13 +495,13 @@ The settings live in `~/.config/glassveil/weather.json`, created with defaults t
 
 | Key | Meaning |
 | --- | --- |
-| `enabled` | `false` hides the weather in the bar and on the ring clock |
-| `city` | For example `"Jakarta"`. Empty means the place is detected from your IP address |
+| `enabled` | `false` hides the weather |
+| `city` | For example `"Jakarta"`. Empty means your place is found from your IP address |
 | `latitude`, `longitude` | Set both to skip the city lookup |
 | `units` | `"metric"` for °C, `"imperial"` for °F |
 | `refreshMinutes` | How often to update, from 5 to 1440 |
 
-You can also change it from the terminal:
+You can also use the terminal:
 
 ```bash
 qs ipc call weather setCity "Bandung"
@@ -454,45 +512,50 @@ qs ipc call weather refresh
 qs ipc call weather toggle
 ```
 
-The shell needs internet access for the weather. If the request fails it keeps the last value and retries by itself.
+The shell needs internet for the weather. If a request fails, it keeps the last value and tries again later.
+
+</details>
 
 ## Customization
 
+Most things are in the **Settings panel**. For the rest, edit these files:
+
 | I want to... | Edit |
 | --- | --- |
+| Change the look, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
 | Change default apps (terminal, browser, file manager) | `hypr/modules/programs.lua` |
-| Add or change key bindings | `hypr/custom/keybinds.lua` (personal) or `hypr/modules/keybinds.lua` |
-| Set up monitors | `hypr/modules/monitors.lua` (kept when you re-run the installer) |
-| Change gaps, rounding, blur | `hypr/modules/appearance.lua` |
+| Add or change key bindings | `hypr/custom/keybinds.lua` (yours) or `hypr/modules/keybinds.lua` |
+| Set up monitors | The Settings panel, or `hypr/modules/monitors.lua` (kept when you run the installer again) |
+| Change gaps, rounding, blur | `hypr/modules/appearance.lua` (the sliders in Settings win until you press **Use config**) |
 | Change animations | `hypr/modules/animations.lua` |
 | Change keyboard layout, touchpad | `hypr/modules/input.lua` |
 | Run programs at startup | `hypr/modules/autostart.lua` |
-| Window and layer rules (blur, floating) | `hypr/modules/rules.lua` |
-| Change style, accent, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
-| Change shell fonts and strength | `quickshell/common/Theme.qml` |
+| Window rules (blur, floating) | `hypr/modules/rules.lua` |
+| Change shell fonts and transparency | `quickshell/common/Theme.qml` |
 | Change AI providers or default models | `quickshell/services/Ai.qml` |
-| Change the weather city, units or refresh time | `~/.config/glassveil/weather.json` |
+| Change the weather place or units | `~/.config/glassveil/weather.json` |
 | Change the weather icons | `quickshell/assets/icons/weather-*.svg` |
 | Change the terminal font and look | `kitty/kitty.conf` |
 
-Remember: edit in `~/.config/...` for live changes, or edit the repo and run `./setup install --no-deps`.
+Remember: edit files in `~/.config/...` to see changes at once. Or edit the repo and run `./setup install --no-deps`.
 
-New layer-shell windows need a rule in `rules.lua` to get blur. Their namespace is set in QML with `WlrLayershell.namespace` (for example `"Glassveil Shell AI"`).
+A new shell window needs a rule in `rules.lua` to get blur. Its name is set in the QML file with `WlrLayershell.namespace` (for example `"Glassveil Shell AI"`).
 
 ## Controlling the shell from the terminal
 
-Every module can be controlled through Quickshell IPC:
+You can control every part of the shell from a terminal:
 
 ```bash
 qs ipc show                       # list all targets and functions
 qs ipc call launcher toggle
 qs ipc call ai toggle
+qs ipc call settings toggle
 qs ipc call sidebar toggle
 qs ipc call wallpaper toggle
 qs ipc call lock lock
 ```
 
-Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see the functions each one offers.
+Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see what each one can do.
 
 ## Repository layout
 
@@ -500,44 +563,50 @@ Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`
 .
 ├── setup                     installer / uninstaller
 ├── hypr/
-│   ├── hyprland.lua          entry point, loads the modules below
+│   ├── hyprland.lua          starting point, loads the modules below
 │   ├── modules/              appearance, animations, input, keybinds, rules, ...
-│   └── custom/keybinds.lua   your personal key bindings
+│   └── custom/keybinds.lua   your own key bindings
 ├── quickshell/
-│   ├── shell.qml             root, loads every module
-│   ├── common/               shared parts (Theme, Panel, Icon, buttons, ...)
-│   ├── services/             state and backends (Network, Notifs, Ai, Brightness, ...)
-│   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, osd, ...)
-│   ├── scripts/              wallpaper, brightness, accent extraction, theme sync
+│   ├── shell.qml             main file, loads every module
+│   ├── common/               shared parts (Theme, Panel, Icon, buttons, settings storage, ...)
+│   ├── services/             state and background work (Network, Notifs, Ai, Brightness, ...)
+│   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, ...)
+│   ├── scripts/              wallpaper, brightness, theme sync, AI file and image helpers
 │   └── assets/               icons, wallpaper, emoji list, previews
 ├── kitty/  fish/  gtk-3.0/  gtk-4.0/  qt5ct/  qt6ct/  nwg-look/
-├── icons/                    cursor theme config
+├── icons/                    cursor theme
 └── fonts/                    Google Sans
 ```
 
 ## Troubleshooting
 
-**The installer fails.** It prints the failing step, the last lines of output and common fixes (locked database, conflicts, keyring, mirrors, AUR builds). The full log of the last command is in `~/.local/state/glassveil-shell/last-command.log`. Fix the problem and run `./setup install` again; it is safe to repeat. If you installed the packages yourself, use `./setup install --no-deps`.
+**The installer fails.** It shows the failing step, the last lines of output and common fixes. The full log of the last command is in `~/.local/state/glassveil-shell/last-command.log`. Fix the problem and run `./setup install` again. It is safe to repeat. If you installed the packages yourself, use `./setup install --no-deps`.
 
-**Hyprland shows a config error.** Check your version with `Hyprland --version`; it must be 0.55 or newer.
+**Hyprland shows a config error.** Check the version with `Hyprland --version`. It must be 0.55 or newer.
 
-**The shell does not start or looks broken.** Run `quickshell` in a terminal to see the errors. After editing files, restart it with `pkill quickshell; quickshell &`.
+**The shell does not start or looks broken.** Run `quickshell` in a terminal to see the errors. After you edit files, restart it with `pkill quickshell; quickshell &`.
 
-**`qs ipc call ...` does nothing.** Make sure the shell is running, then check the target name with `qs ipc show`.
+**`qs ipc call ...` does nothing.** Make sure the shell is running. Check the target name with `qs ipc show`.
 
-**Emoji or some fonts do not show.** Run `fc-cache -f` and make sure `noto-fonts-emoji` and `noto-fonts-cjk` are installed.
+**Emoji or some fonts do not show.** Run `fc-cache -f`. Make sure `noto-fonts-emoji` and `noto-fonts-cjk` are installed.
 
-**Brightness keys do nothing on an external monitor.** Your monitor must support DDC/CI (enable it in the monitor's own menu). Make sure you are in the `i2c` group (`id`) and have logged in again since the install.
+**Brightness keys do nothing on an external monitor.** The monitor must support DDC/CI (turn it on in the monitor's own menu). Run `id` to check that you are in the `i2c` group, and log in again after the install.
 
-**Wi-Fi or Bluetooth menus are empty.** They need `NetworkManager` and `bluetooth` services: `sudo systemctl enable --now NetworkManager bluetooth`.
+**Wi-Fi or Bluetooth menus are empty.** They need the `NetworkManager` and `bluetooth` services: `sudo systemctl enable --now NetworkManager bluetooth`.
 
-**The wallpaper does not change or colors do not update.** Check `$XDG_RUNTIME_DIR/apply-wallpaper.log`, and run `theme_sync.py --from-state` by hand to see errors.
+**The wallpaper or colors do not change.** Read `$XDG_RUNTIME_DIR/apply-wallpaper.log`. Run `theme_sync.py` by hand to see errors.
 
-**Apps do not match the Glassveil style.** Close and reopen them, since GTK and Qt read their colors at start. For Qt apps make sure `kvantum` and `qt5ct`/`qt6ct` are installed. Run `python ~/.config/quickshell/scripts/theme_sync.py` by hand to see errors.
+**Apps do not match the Glassveil style.** Close and open them again. GTK and Qt apps read their colors only when they start. For Qt apps, make sure `kvantum` and `qt5ct` / `qt6ct` are installed.
 
 **Night light does nothing.** It needs `hyprsunset` (`sudo pacman -S hyprsunset`). The Settings panel shows a note when it is missing.
 
-**The AI panel says "model not found".** Set a current model with `/model <name>`. Check your provider's documentation for model names.
+**The window gap sliders do nothing.** They need Hyprland 0.55 or newer. Try `hyprctl eval 'hl.config({ general = { gaps_in = 10 } })'` in a terminal. If that fails too, the problem is in Hyprland, not the shell.
+
+**Attach file… does nothing.** Install a file chooser: `sudo pacman -S zenity`. You can also drag the file onto the panel or use `/attach <path>`.
+
+**The AI cannot see my image.** The model must support images. Try `qwen3.5`, `gemma3` or `llama3.2-vision`. Run `ollama show <model>` and look for `vision` under capabilities.
+
+**The AI says "model not found".** Set a current model with `/model <name>`. Check your provider's website for model names.
 
 ## Uninstall
 
@@ -545,7 +614,7 @@ Available targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`
 ./setup uninstall
 ```
 
-Removes the installed dotfiles and restores your previous configuration from the backup. Files the installer did not create are left alone.
+This removes the installed dotfiles and restores your old configs from the backup. Files the installer did not create are left alone.
 
 ## License
 

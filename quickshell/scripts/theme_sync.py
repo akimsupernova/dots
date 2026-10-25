@@ -440,7 +440,7 @@ def main(argv):
         return None
 
     accent = DEFAULT_ACCENT if "--default" in argv else opt("--accent")
-    acc, mode = resolve(glass=opt("--mode") or opt("--glass"), pref_accent=opt("--pref-accent"), accent=accent)
+    acc, mode = resolve(glass=opt("--mode") or opt("--style") or opt("--glass"), pref_accent=opt("--pref-accent"), accent=accent)
     sync(acc, mode)
     return 0
 

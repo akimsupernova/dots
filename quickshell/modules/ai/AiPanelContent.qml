@@ -17,6 +17,10 @@ Item {
 
     signal closeRequested()
 
+    Component.onCompleted: {
+        if (Ai.draft !== "") { field.text = Ai.draft; Ai.draft = "" }
+    }
+
     function closeMenu() { menuOpen = false; subOpen = false; field.forceActiveFocus() }
     function prefill(t) {
         field.text = t
@@ -34,7 +38,7 @@ Item {
 
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/web on|off", "/clear", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/attach <path>", "/image <text>", "/clear", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -54,13 +58,12 @@ Item {
     opacity: appear
     transform: Translate { y: (1 - root.appear) * 14 * root.u }
 
-    // ---------- chat history ----------
     GlassPanel {
         id: chat
         visible: Ai.messages.length > 0
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: hintChip.visible ? hintChip.top : pill.top
+        anchors.bottom: hintChip.visible ? hintChip.top : (attachRow.visible ? attachRow.top : pill.top)
         anchors.bottomMargin: root.gap
         height: Math.min(Math.round(340 * root.u), list.contentHeight + padding * 2)
         padding: Math.round(14 * root.u)
@@ -130,13 +133,106 @@ Item {
         }
     }
 
-    // ---------- command hint ----------
+    Flow {
+        id: attachRow
+        visible: Ai.attachments.length > 0 || Ai.attaching
+        anchors.left: parent.left
+        anchors.leftMargin: root.pillH / 2
+        anchors.right: parent.right
+        anchors.rightMargin: root.pillH / 2
+        anchors.bottom: pill.top
+        anchors.bottomMargin: Math.round(8 * root.u)
+        spacing: Math.round(6 * root.u)
+
+        Repeater {
+            model: Ai.attachments
+
+            Rectangle {
+                id: chipItem
+                required property var modelData
+                required property int index
+
+                height: Math.round(26 * root.u)
+                width: Math.min(attachRow.width, chipRow.implicitWidth + Math.round(18 * root.u))
+                radius: height / 2
+                color: Qt.alpha(Theme.tint, 0.8)
+                border.width: 1
+                border.color: Theme.inkA(0.2)
+
+                Row {
+                    id: chipRow
+                    anchors.centerIn: parent
+                    spacing: Math.round(6 * root.u)
+
+                    Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: chipItem.modelData.kind === "image" ? "image" : "book"
+                        size: Math.round(12 * root.u)
+                        color: Theme.ink
+                        opacity: 0.8
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, Math.round(150 * root.u))
+                        elide: Text.ElideMiddle
+                        text: chipItem.modelData.name
+                        color: Theme.ink
+                        opacity: 0.85
+                        font.family: Theme.font
+                        font.pixelSize: Math.round(9.5 * root.u)
+                    }
+                    Item {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.round(14 * root.u)
+                        height: width
+
+                        Icon {
+                            anchors.centerIn: parent
+                            name: "x"
+                            size: Math.round(10 * root.u)
+                            color: Theme.ink
+                            opacity: removeArea.containsMouse ? 1 : 0.6
+                        }
+                        MouseArea {
+                            id: removeArea
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Ai.removeAttachment(chipItem.index)
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            visible: Ai.attaching
+            height: Math.round(26 * root.u)
+            width: readingText.implicitWidth + Math.round(24 * root.u)
+            radius: height / 2
+            color: Qt.alpha(Theme.tint, 0.8)
+            border.width: 1
+            border.color: Theme.inkA(0.2)
+
+            Text {
+                id: readingText
+                anchors.centerIn: parent
+                text: "Reading file…"
+                color: Theme.ink
+                opacity: 0.7
+                font.family: Theme.font
+                font.pixelSize: Math.round(9.5 * root.u)
+            }
+        }
+    }
+
     Rectangle {
         id: hintChip
         visible: root.hint !== ""
         anchors.left: parent.left
         anchors.leftMargin: root.pillH / 2
-        anchors.bottom: pill.top
+        anchors.bottom: attachRow.visible ? attachRow.top : pill.top
         anchors.bottomMargin: Math.round(8 * root.u)
         width: Math.min(parent.width - root.pillH, hintText.implicitWidth + Math.round(24 * root.u))
         height: Math.round(26 * root.u)
@@ -159,7 +255,6 @@ Item {
         }
     }
 
-    // ---------- pill ----------
     Rectangle {
         id: pill
         anchors.left: parent.left
@@ -188,7 +283,6 @@ Item {
             }
         }
 
-        // new chat
         Rectangle {
             id: plusBtn
             anchors.left: parent.left
@@ -222,7 +316,6 @@ Item {
             }
         }
 
-        // send / voice-style button
         Rectangle {
             id: sendBtn
             anchors.right: parent.right
@@ -240,14 +333,13 @@ Item {
             scale: sendArea.pressed ? 0.94 : (sendArea.containsMouse ? 1.04 : 1)
             Behavior on scale { NumberAnimation { duration: 170; easing.type: Easing.OutBack } }
 
-            // idle: animated spectrum bars
             Row {
                 id: spectrum
                 readonly property real maxH: Math.round(16 * root.u)
                 anchors.centerIn: parent
                 height: maxH
                 spacing: Math.max(2, Math.round(2.5 * root.u))
-                visible: !Ai.busy && field.text.length === 0
+                visible: !Ai.busy && field.text.length === 0 && Ai.attachments.length === 0
 
                 Repeater {
                     model: [
@@ -304,7 +396,7 @@ Item {
             Icon {
                 id: sendIcon
                 anchors.centerIn: parent
-                visible: !Ai.busy && field.text.length > 0
+                visible: !Ai.busy && (field.text.length > 0 || Ai.attachments.length > 0)
                 name: "arrow-up"
                 size: Math.round(17 * root.u)
                 color: "white"
@@ -318,7 +410,6 @@ Item {
             }
         }
 
-        // provider chip (click to cycle configured providers)
         Text {
             id: chip
             anchors.right: sendBtn.left
@@ -371,7 +462,6 @@ Item {
         }
     }
 
-    // ---------- "+" menu ----------
     MouseArea {
         id: scrim
         z: 5
@@ -472,6 +562,19 @@ Item {
             }
             AiMenuItem {
                 width: col.width
+                icon: "folder"
+                text: "Attach file…"
+                onClicked: { Ai.draft = field.text; Ai.pickFile(); root.closeRequested() }
+            }
+            AiMenuItem {
+                width: col.width
+                visible: Ai.active === "ollama"
+                icon: "image"
+                text: "Generate image…"
+                onClicked: root.prefill("/image ")
+            }
+            AiMenuItem {
+                width: col.width
                 icon: "settings"
                 text: "Model…"
                 onClicked: root.prefill("/model ")
@@ -499,7 +602,6 @@ Item {
         }
     }
 
-    // provider flyout
     Rectangle {
         id: flyout
         z: 11

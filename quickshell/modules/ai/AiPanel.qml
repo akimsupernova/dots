@@ -39,6 +39,22 @@ Scope {
                 onClicked: host.open = false
             }
 
+            DropArea {
+                id: dropArea
+                anchors.fill: parent
+                onDropped: drop => { if (drop.hasUrls) Ai.attachUrls(drop.urls) }
+            }
+
+            Rectangle {
+                visible: dropArea.containsDrag
+                anchors.fill: parent
+                anchors.margins: Math.round(10 * Theme.u)
+                radius: Math.round(24 * Theme.u)
+                color: Qt.alpha(Theme.accent1, 0.10)
+                border.width: 2
+                border.color: Theme.accent1
+            }
+
             AiPanelContent {
                 id: content
                 anchors.horizontalCenter: parent.horizontalCenter

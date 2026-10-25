@@ -18,9 +18,29 @@ Item {
         anchors.right: root.isUser ? parent.right : undefined
         anchors.left: root.isUser ? undefined : parent.left
         width: root.isUser ? Math.min(root.maxW, txt.contentWidth + root.pad * 2) : root.maxW
-        height: txt.contentHeight + root.pad * 2
+        height: txt.contentHeight + root.pad * 2 + (pic.visible ? pic.height + root.pad : 0)
         radius: Math.round(14 * root.u)
         color: root.isUser ? Theme.inkA(0.16) : (root.isSys ? Theme.inkA(0.07) : "transparent")
+
+        Image {
+            id: pic
+            visible: !!root.msg.image && status === Image.Ready
+            x: root.pad
+            y: txt.y + txt.contentHeight + root.pad
+            width: Math.min(root.maxW - root.pad * 2, Math.round(380 * root.u))
+            height: implicitWidth > 0 ? width * implicitHeight / implicitWidth : 0
+            source: root.msg.image ? "file://" + encodeURI(root.msg.image) : ""
+            sourceSize.width: 1024
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            smooth: true
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Qt.openUrlExternally("file://" + encodeURI(root.msg.image))
+            }
+        }
 
         TextEdit {
             id: txt
