@@ -324,6 +324,17 @@ ollama pull x/z-image-turbo
 - The first picture can take a while, because the model has to load.
 - Models that only read images, like Qwen 3.5, cannot draw. Use a separate image model for `/image`.
 
+### Copy and save code
+
+When the AI answers with code or a file (for example an edited SVG), it shows the code in a box with two buttons:
+
+- **Copy** puts the code in your clipboard.
+- **Save** writes it to your Downloads folder and shows the path in the chat. Click **Open folder** to see it.
+
+If you attached a file, the saved copy keeps its name and adds `-edited` (for example `arch-edited.svg`). Nothing is ever overwritten. Long code is folded to a few lines in the chat. Click **Show all** to open it. **Copy** and **Save** always use the whole code.
+
+The AI cannot make real files or download links. If it shows a path like `/path/to/file.svg`, that path is made up. Use **Save** instead.
+
 ### Web search
 
 Turn it on with **Web search** in the **+** menu, or type `/web on`.
@@ -605,6 +616,8 @@ Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launche
 **Attach file… does nothing.** Install a file chooser: `sudo pacman -S zenity`. You can also drag the file onto the panel or use `/attach <path>`.
 
 **The AI cannot see my image.** The model must support images. Try `qwen3.5`, `gemma3` or `llama3.2-vision`. Run `ollama show <model>` and look for `vision` under capabilities.
+
+**The AI shows a strange file path or link.** The AI cannot create files. Use the **Save** button on its code box. If there is no code box, ask it to "reply with the full file in a code block".
 
 **The AI says "model not found".** Set a current model with `/model <name>`. Check your provider's website for model names.
 
