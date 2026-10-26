@@ -22,7 +22,7 @@ GlassPanel {
     readonly property var keyRows: [
         { keys: ["SUPER", "/"],          text: "Keybind cheatsheet" },
         { keys: ["SUPER"],               text: "App launcher (tap)" },
-        { keys: ["SUPER", "R"],          text: "Wallpaper picker" },
+        { keys: ["SUPER", "A"],          text: "AI panel" },
         { keys: ["SUPER", "G"],          text: "Name card" },
         { keys: ["SUPER", "B"],          text: "Settings" },
         { keys: ["SUPER", "."],          text: "Emojis" },

@@ -138,7 +138,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Keys | Action |
 | --- | --- |
 | `SUPER` (tap) | App launcher |
-| `SUPER + I` | AI panel |
+| `SUPER + A` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + B` | Settings panel |
 | `SUPER + R` | Wallpapers |
@@ -161,7 +161,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + C` | Text editor (kate) |
 | `SUPER + X` | Steam |
 | `SUPER + O` | OBS Studio |
-| `SUPER + A` | Volume control (pavucontrol) |
+| `SUPER + I` | Volume control (pavucontrol) |
 | `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
 
 More personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) are in [`hypr/custom/keybinds.lua`](hypr/custom/keybinds.lua).

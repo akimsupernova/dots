@@ -60,7 +60,7 @@ ColumnLayout {
             }
             GlassButton {
                 icon: "image"
-                text: "Open full picker"
+                text: "Open walpaper panel"
                 onClicked: Quickshell.execDetached(["qs", "ipc", "call", "wallpaper", "toggle"])
             }
         }
@@ -134,7 +134,7 @@ ColumnLayout {
                     anchors.margins: cell.pad
                     radius: Math.round(12 * page.u)
                     decodeSize: 360
-                    source: cell.video ? page.thumbUrl(cell.filePath) : cell.fileUrl
+                    source: page.thumbUrl(cell.filePath)
 
                     Icon {
                         anchors.centerIn: parent
