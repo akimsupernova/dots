@@ -573,11 +573,11 @@ ask_reboot() {
         return 0
       fi
       if ((ASSUME_YES)); then
-        info "Not rebooting automatically. Reboot when you are ready, or use --reboot next time."
+        info ""
         return 0
       fi
       if ! confirm "Reboot now? (recommended)"; then
-        info "OK. Reboot later to finish the setup (run: reboot)."
+        info "OK."
         return 0
       fi
       ;;
@@ -674,7 +674,7 @@ do_install() {
     warn "You were added to the 'i2c' group: log out and back in (or reboot) for monitor brightness to work."
   fi
   if ((first_install)); then
-    info "After logging in, a welcome card will appear. Reopen it anytime with SUPER + H."
+    info "Enjoy!"
   fi
   info "Press SUPER + / to open the key binding cheatsheet."
   echo
@@ -758,7 +758,7 @@ case "${CMD:-help}" in
   install)   do_install ;;
   uninstall) do_uninstall ;;
   deps)      check_not_root; build_flags; install_packages ;;
-  welcome)   check_not_root; schedule_welcome; info "The welcome card will appear when the shell starts next (or press SUPER + H now)." ;;
+  welcome)   check_not_root; schedule_welcome; info "Goodbye" ;;
   help)      usage ;;
   *)         usage; die "Unknown command: $CMD" ;;
 esac

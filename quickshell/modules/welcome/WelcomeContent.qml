@@ -38,13 +38,13 @@ GlassPanel {
         {
             icon: "image",
             title: "Wallpapers & colors",
-            body: "Drop images or videos into ~/Pictures/Wallpapers, then press SUPER + R. The glass panels follow your wallpaper's colors automatically.",
+            body: "Drop images or videos into ~/Pictures/Wallpapers, then press SUPER + R. Theme will follow your wallpaper's colors automatically.",
             path: ""
         },
         {
             icon: "sparkle",
-            title: "Glass theme",
-            body: "Auto adapts to the wallpaper. Force light or dark with the glass property in",
+            title: "Glassveil theme",
+            body: "Auto adapts to the wallpaper. Force light or dark with the glassveil property in",
             path: "quickshell/common/Theme.qml"
         },
         {
