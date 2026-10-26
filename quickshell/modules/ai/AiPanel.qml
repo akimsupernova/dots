@@ -34,9 +34,18 @@ Scope {
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
+            property real offX: 0
+            property real offY: 0
+
             MouseArea {
                 anchors.fill: parent
-                onClicked: host.open = false
+                onClicked: if (Prefs.aiCloseOutside) host.open = false
+            }
+
+            Connections {
+                target: Prefs
+                function onAiXChanged() { if (!dh.active && Prefs.aiRemember) win.offX = Prefs.aiX }
+                function onAiYChanged() { if (!dh.active && Prefs.aiRemember) win.offY = Prefs.aiY }
             }
 
             DropArea {
@@ -57,15 +66,56 @@ Scope {
 
             AiPanelContent {
                 id: content
+
+                readonly property real baseBottom: Math.round(Prefs.aiBottom * Theme.u)
+
                 anchors.horizontalCenter: parent.horizontalCenter
+                anchors.horizontalCenterOffset: win.offX
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: Math.round(70 * Theme.u)
-                width: Math.min(Math.round(520 * Theme.u), parent.width - 40)
-                height: pillH + Math.round(420 * Theme.u)
+                anchors.bottomMargin: baseBottom + win.offY
+                width: Math.min(Math.round(Prefs.aiWidth * Theme.u), parent.width - 40)
+                height: pillH + Math.round((Prefs.aiChatHeight + 80) * Theme.u)
                 onCloseRequested: host.open = false
+
+                DragHandler {
+                    id: dh
+                    target: null
+                    enabled: Prefs.aiDraggable
+                    acceptedModifiers: Prefs.aiDragKey === "ctrl" ? Qt.ControlModifier
+                                     : Prefs.aiDragKey === "shift" ? Qt.ShiftModifier
+                                     : Qt.AltModifier
+
+                    property real startX: 0
+                    property real startY: 0
+
+                    onActiveChanged: {
+                        if (active) {
+                            startX = win.offX
+                            startY = win.offY
+                            return
+                        }
+                        if (content.x + content.width <= 0 || content.x >= win.width
+                                || content.y + content.height <= 0 || content.y >= win.height) {
+                            win.offX = 0
+                            win.offY = 0
+                        }
+                        if (Prefs.aiRemember) {
+                            Prefs.set("aiX", Math.round(win.offX))
+                            Prefs.set("aiY", Math.round(win.offY))
+                        }
+                    }
+                    onCentroidChanged: {
+                        if (!active) return
+                        win.offX = startX + (centroid.scenePosition.x - centroid.scenePressPosition.x)
+                        win.offY = startY - (centroid.scenePosition.y - centroid.scenePressPosition.y)
+                    }
+                }
             }
 
-            Component.onCompleted: Qt.callLater(() => content.focusInput())
+            Component.onCompleted: {
+                if (Prefs.aiRemember) { win.offX = Prefs.aiX; win.offY = Prefs.aiY }
+                Qt.callLater(() => content.focusInput())
+            }
         }
     }
 }

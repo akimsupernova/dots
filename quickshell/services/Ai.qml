@@ -2,11 +2,11 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.common
 
 Singleton {
     id: root
 
-    // kind: openai = OpenAI-compatible chat/completions, anthropic = Messages API, gemini = generateContent
     readonly property var providers: ({
         openai:     { name: "OpenAI",     kind: "openai",    url: "https://api.openai.com/v1/chat/completions",        model: "gpt-4o-mini" },
         anthropic:  { name: "Claude",     kind: "anthropic", url: "https://api.anthropic.com/v1/messages",             model: "claude-sonnet-5-5" },
@@ -31,11 +31,22 @@ Singleton {
         "When the user wants a file made or edited, reply with the full new content in one fenced code block " +
         "with the language after the opening fence. The panel adds Copy and Save buttons to code blocks."
 
-    // models do not know today's date and assume the year of their training data
+    function _userPrompt() {
+        let s = ""
+        if (Prefs.aiStyle === "concise")
+            s += " The user wants very short answers: one or two sentences unless they ask for more."
+        else if (Prefs.aiStyle === "detailed")
+            s += " The user wants detailed answers: explain step by step and give examples when useful, even though a concise default was mentioned above."
+        const t = String(Prefs.aiInstructions || "").trim()
+        if (Prefs.aiInstructionsOn && t !== "")
+            s += " The user added these custom instructions. Follow them unless they conflict with the rules above:\n" + t + "\n"
+        return s
+    }
+
     function systemPrompt() {
         const d = new Date()
         const y = d.getFullYear()
-        return sysPrompt + " Today is " + Qt.formatDateTime(d, "dddd, d MMMM yyyy, HH:mm") +
+        return sysPrompt + _userPrompt() + " Today is " + Qt.formatDateTime(d, "dddd, d MMMM yyyy, HH:mm") +
             " (the current year is " + y + "). Your training data is older than today, so never assume " +
             "the current year is the last one you remember. For recent events or anything that may have changed, " +
             "use " + y + " or the word 'latest' in web searches, not a year from memory, and prefer recent sources."
@@ -44,7 +55,6 @@ Singleton {
     property var keys: ({})
     property var models: ({})
     property var urls: ({})
-    // web search for any provider (Ollama has no internet access by itself)
     property var web: ({ on: false, backend: "ddg", url: "", key: "" })
     readonly property var webBackends: ["ddg", "searxng", "ollama"]
     readonly property int webMax: 5
@@ -54,15 +64,11 @@ Singleton {
     property var messages: []
     property bool busy: false
 
-    // files waiting to be sent with the next message: { kind: image|text, name, b64?, text?, truncated? }
     property var attachments: []
     property var _attachQueue: []
     property bool attaching: false
-    // text typed in the panel while the file chooser had it closed
     property string draft: ""
-    // /api/show capabilities per "url|model" (undefined = not asked yet, null = unknown)
     property var caps: ({})
-    // optional separate image generation model (Ollama)
     property string imageModel: ""
 
     readonly property string label: (active && providers[active]) ? providers[active].name : "No provider"
@@ -74,7 +80,6 @@ Singleton {
     property var _xhr: null
     property var _sxhr: null
 
-    // ---------- helpers ----------
     function resolve(n) {
         const k = String(n || "").toLowerCase()
         if (providers[k]) return k
@@ -149,7 +154,6 @@ Singleton {
         copyProc.running = true
     }
 
-    // ---------- save a code block as a file in Downloads ----------
     function _extFor(lang, text) {
         const l = String(lang || "").toLowerCase()
         const map = {
@@ -164,7 +168,6 @@ Singleton {
         return map[l] || "txt"
     }
 
-    // reuse the name of a file the user attached with the same type (photo.svg -> photo-edited.svg)
     function _saveBase(ext) {
         for (let i = root.messages.length - 1; i >= 0; i--) {
             const m = root.messages[i]
@@ -203,7 +206,6 @@ Singleton {
         }
     }
 
-    // ---------- web search ----------
     function setWeb(patch) {
         root.web = Object.assign({}, root.web, patch)
         _save()
@@ -275,7 +277,6 @@ Singleton {
             return
         }
 
-        // ddg: no key, plain HTML results through curl (arguments are passed without a shell)
         ddgProc.cb = cb
         ddgProc.running = false
         ddgProc.command = ["curl", "-sSL", "--max-time", "15",
@@ -351,7 +352,6 @@ Singleton {
         _sys("Usage: `/web on|off` · `/web backend <name>` · `/web url <url>` · `/web key <key>`", true)
     }
 
-    // ---------- Ollama: the model decides when to search (tool calling) ----------
     readonly property var webTools: [
         { type: "function", function: {
             name: "web_search",
@@ -394,7 +394,6 @@ Singleton {
         return _unent(h.replace(/<[^>]*>/g, "")).replace(/[ \t\f\v]+/g, " ").replace(/\n\s*\n+/g, "\n").trim()
     }
 
-    // fetch one page with curl; redirects are followed by hand so every hop can be checked
     function _fetchPage(url, cb, depth) {
         const d = depth || 0
         const host = _hostOf(url)
@@ -495,7 +494,6 @@ Singleton {
             ? { role: m.role, content: m.text, images: m.images }
             : { role: m.role, content: m.text }))
         let round = 0
-        // some thinking models (Qwen 3.5) put the whole answer in `thinking` when an image is attached
         let thinkOff = hist.some(m => m.images && m.images.length > 0)
 
         const finish = (ok, out) => cb(ok, out, { sources: ok ? _traceText(trace) : "", note: note })
@@ -574,7 +572,6 @@ Singleton {
         run()
     }
 
-    // ---------- input ----------
     function submit(raw) {
         const text = String(raw || "").trim()
         if (!text && root.attachments.length === 0) return
@@ -718,7 +715,6 @@ Singleton {
         _sys("Unknown command `" + cmd + "`. Try `/help`.", true)
     }
 
-    // ---------- network ----------
     function _defaultPrompt(atts) {
         return atts.some(x => x.kind === "image") ? "Describe this image." : "Summarize this file."
     }
@@ -740,7 +736,6 @@ Singleton {
         const atts = root.attachments.slice()
 
         if (providers[id].kind === "ollama") {
-            // ask the model what it can do (vision, image generation) before sending
             root.busy = true
             _withCaps(modelOf(id), caps => {
                 root.busy = false
@@ -824,7 +819,6 @@ Singleton {
         })
     }
 
-    // ---------- attachments ----------
     function attach(path) {
         const p = String(path || "").trim()
         if (!p) return
@@ -887,13 +881,11 @@ Singleton {
         })
     }
 
-    // file chooser: the panel closes while it is open (it would sit on top of the dialog)
     function pickFile() {
         if (pickProc.running) return
         pickProc.running = true
     }
 
-    // ---------- Ollama: capabilities and image generation ----------
     function _capsKey(model) { return urlOf("ollama") + "|" + model }
 
     function _withCaps(model, cb) {
@@ -1098,7 +1090,6 @@ Singleton {
         onTriggered: if (root._xhr) root._xhr.abort()
     }
 
-    // ---------- storage (~/.config/glassveil/ai.json, chmod 600) ----------
     Process {
         running: true
         command: ["sh", "-c",

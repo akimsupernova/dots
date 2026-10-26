@@ -77,8 +77,8 @@ Item {
         onClicked: if (root.sink) root.sink.audio.muted = !root.sink.audio.muted
         onWheel: wheel => {
             if (!root.sink) return
-            const step = wheel.angleDelta.y > 0 ? 0.02 : -0.02
-            root.sink.audio.volume = Math.max(0, Math.min(1, root.sink.audio.volume + step))
+            const step = (wheel.angleDelta.y > 0 ? 1 : -1) * Prefs.audioStep / 100
+            root.sink.audio.volume = Math.max(0, Math.min(Prefs.audioMax / 100, root.sink.audio.volume + step))
         }
     }
 }

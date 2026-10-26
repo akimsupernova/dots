@@ -89,7 +89,7 @@ ColumnLayout {
 
         Text {
             Layout.fillWidth: true
-            text: "A desktop shell for Hyprland, built with Quickshell. The bar, sidebar, launcher, lock screen, notifications, wallpaper picker and AI panel share one theme that follows the colors of your wallpaper."
+            text: "Bringing a little more style and simplicity to your Hyprland setup."
             color: Theme.ink
             opacity: 0.85
             wrapMode: Text.WordWrap
@@ -159,7 +159,7 @@ ColumnLayout {
 
         Text {
             Layout.fillWidth: true
-            text: "These dotfiles pair a Hyprland setup, written in Lua, with the Quickshell shell you are looking at."
+            text: "These dotfiles pair a Hyprland setup, written in Lua, with the Quickshell you are looking at."
             color: Theme.ink
             opacity: 0.85
             wrapMode: Text.WordWrap

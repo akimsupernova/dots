@@ -65,10 +65,15 @@ Item {
         anchors.right: parent.right
         anchors.bottom: hintChip.visible ? hintChip.top : (attachRow.visible ? attachRow.top : pill.top)
         anchors.bottomMargin: root.gap
-        height: Math.min(Math.round(340 * root.u), list.contentHeight + padding * 2)
+        height: Math.min(Math.round(Prefs.aiChatHeight * root.u), list.contentHeight + padding * 2)
         padding: Math.round(14 * root.u)
         feather: Math.round(14 * root.u)
         coreRadius: Math.round(22 * root.u)
+
+        AiEffect {
+            anchors.fill: parent
+            u: root.u
+        }
 
         ListView {
             id: list
@@ -493,7 +498,8 @@ Item {
         width: Math.round(220 * root.u)
         height: col.height + pad * 2
         radius: Math.round(16 * root.u)
-        color: Qt.alpha(Theme.tint, Math.min(0.9, Theme.panelAlpha * 0.78))
+        readonly property color tintColor: Qt.alpha(Theme.tint, Math.min(0.9, Theme.panelAlpha * 0.78))
+        color: "transparent"
         border.width: 1
         border.color: Theme.inkA(0.30)
 
@@ -502,6 +508,9 @@ Item {
         scale: 0.96 + 0.04 * opacity
         transformOrigin: Item.BottomLeft
         Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        BlurBackdrop { source: chat; target: menu; radius: menu.radius }
+        Rectangle { anchors.fill: parent; radius: parent.radius; color: menu.tintColor }
 
         Rectangle {
             anchors.fill: parent
@@ -611,13 +620,16 @@ Item {
         width: Math.round(200 * root.u)
         height: flyCol.height + menu.pad * 2
         radius: Math.round(16 * root.u)
-        color: menu.color
+        color: "transparent"
         border.width: 1
         border.color: Theme.inkA(0.30)
 
         opacity: (root.menuOpen && root.subOpen) ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+        BlurBackdrop { source: chat; target: flyout; radius: flyout.radius }
+        Rectangle { anchors.fill: parent; radius: parent.radius; color: menu.tintColor }
 
         Rectangle {
             anchors.fill: parent

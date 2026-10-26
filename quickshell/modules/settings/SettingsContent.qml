@@ -13,9 +13,10 @@ FocusScope {
 
     readonly property var tabs: [
         { id: "appearance", icon: "palette",  title: "Appearance" },
-        { id: "bar",        icon: "bar-top",  title: "Bar" },
         { id: "clock",      icon: "clock",    title: "Clock & weather" },
         { id: "wallpaper",  icon: "image",    title: "Wallpaper" },
+        { id: "audio",      icon: "speaker",  title: "Audio" },
+        { id: "ai",         icon: "sparkle",  title: "AI" },
         { id: "notifications", icon: "bell",  title: "Notifications" },
         { id: "screen",     icon: "shield-lock", title: "Lock screen & night light" },
         { id: "about",      icon: "info",     title: "About" }
@@ -23,9 +24,10 @@ FocusScope {
     readonly property var current: root.tabs.find(t => t.id === root.tab) ?? root.tabs[0]
 
     Component { id: appearanceC; AppearancePage {} }
-    Component { id: barC;        BarPage {} }
     Component { id: clockC;      ClockPage {} }
     Component { id: wallpaperC;  WallpaperPage {} }
+    Component { id: audioC;      AudioPage {} }
+    Component { id: aiC;         AiPage {} }
     Component { id: notificationsC; NotificationsPage {} }
     Component { id: screenC;     ScreenPage {} }
     Component { id: aboutC;      AboutPage {} }
@@ -104,9 +106,10 @@ FocusScope {
                     width: scroll.width
                     sourceComponent: ({
                         appearance: appearanceC,
-                        bar: barC,
                         clock: clockC,
                         wallpaper: wallpaperC,
+                        audio: audioC,
+                        ai: aiC,
                         notifications: notificationsC,
                         screen: screenC,
                         about: aboutC

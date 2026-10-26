@@ -37,7 +37,7 @@ PanelWindow {
     }
 
     function pop() {
-        if (!ready) return
+        if (!ready || !Prefs.audioOsd) return
         shown = true
         hideTimer.restart()
     }

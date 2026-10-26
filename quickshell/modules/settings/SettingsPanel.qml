@@ -37,10 +37,33 @@ Scope {
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
+            property int regrabs: 0
+
             HyprlandFocusGrab {
+                id: grab
                 windows: [panel]
                 active: true
-                onCleared: UiState.closeSettingsByGrab()
+                onCleared: {
+                    if (hover.hovered && panel.regrabs < 5) {
+                        panel.regrabs++
+                        regrab.restart()
+                        regrabReset.restart()
+                        return
+                    }
+                    UiState.closeSettingsByGrab()
+                }
+            }
+
+            Timer {
+                id: regrab
+                interval: 30
+                onTriggered: { grab.active = false; grab.active = true }
+            }
+
+            Timer {
+                id: regrabReset
+                interval: 1500
+                onTriggered: panel.regrabs = 0
             }
 
             SettingsContent {
@@ -49,6 +72,8 @@ Scope {
                 tab: host.lastTab
                 onTabChanged: host.lastTab = tab
                 onRequestClose: UiState.settingsOpen = false
+
+                HoverHandler { id: hover }
             }
         }
     }

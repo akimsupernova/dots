@@ -3,7 +3,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 
 Row {
-    spacing: 1
+    spacing: 5
 
     Repeater {
         model: SystemTray.items
@@ -13,7 +13,7 @@ Row {
             required property var modelData
 
             width: 15
-            height: 14
+            height: 15
             acceptedButtons: Qt.LeftButton | Qt.MiddleButton
             cursorShape: Qt.PointingHandCursor
 

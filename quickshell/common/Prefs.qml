@@ -34,6 +34,25 @@ Singleton {
     property bool clockWeather: true
     property bool clock24h: true
 
+    property int audioStep: 2
+    property int audioMax: 100
+    property bool audioOsd: true
+
+    property string aiStyle: "default"
+    property bool aiInstructionsOn: true
+    property string aiInstructions: ""
+    property int aiWidth: 520
+    property int aiChatHeight: 340
+    property int aiBottom: 70
+    property bool aiDraggable: false
+    property string aiDragKey: "alt"
+    property bool aiRemember: true
+    property int aiX: 0
+    property int aiY: 0
+    property bool aiCloseOutside: true
+    property string aiTheme: "none"
+    property string aiThemeLevel: "medium"
+
     property int notifTimeout: 2
     property int notifMax: 4
     property bool notifCriticalSticky: false
@@ -73,6 +92,23 @@ Singleton {
         clockDate:    { t: "bool" },
         clockWeather: { t: "bool" },
         clock24h:     { t: "bool" },
+        audioStep:    { t: "num", min: 1, max: 10, int: true },
+        audioMax:     { t: "num", min: 100, max: 150, int: true },
+        audioOsd:     { t: "bool" },
+        aiStyle:      { t: "enum", v: ["default", "concise", "detailed"] },
+        aiInstructionsOn: { t: "bool" },
+        aiInstructions:   { t: "str", max: 1500 },
+        aiWidth:      { t: "num", min: 320, max: 900, int: true },
+        aiChatHeight: { t: "num", min: 200, max: 700, int: true },
+        aiBottom:     { t: "num", min: 0, max: 600, int: true },
+        aiDraggable:  { t: "bool" },
+        aiDragKey:    { t: "enum", v: ["alt", "ctrl", "shift"] },
+        aiRemember:   { t: "bool" },
+        aiX:          { t: "num", min: -20000, max: 20000, int: true },
+        aiY:          { t: "num", min: -20000, max: 20000, int: true },
+        aiCloseOutside: { t: "bool" },
+        aiTheme:      { t: "enum", v: ["none", "rain", "meteor"] },
+        aiThemeLevel: { t: "enum", v: ["low", "medium", "high"] },
         notifTimeout: { t: "num", min: 1, max: 15, int: true },
         notifMax:     { t: "num", min: 1, max: 8, int: true },
         notifCriticalSticky: { t: "bool" },
@@ -107,6 +143,7 @@ Singleton {
         if (!s) return undefined
         if (s.t === "bool") return typeof v === "boolean" ? v : undefined
         if (s.t === "enum") return s.v.indexOf(v) >= 0 ? v : undefined
+        if (s.t === "str") return typeof v === "string" ? v.slice(0, s.max) : undefined
         if (s.t === "hex") {
             if (v === "") return ""
             return (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v)) ? v.toLowerCase() : undefined
