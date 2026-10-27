@@ -38,6 +38,17 @@ Singleton {
         root.sidebarOpen = !root.sidebarOpen
     }
 
+    function openWallpaperFromSettings() {
+        root.settingsOpen = false
+        wallpaperOpenTimer.restart()
+    }
+
+    Timer {
+        id: wallpaperOpenTimer
+        interval: 150
+        onTriggered: Quickshell.execDetached(["qs", "ipc", "call", "wallpaper", "open"])
+    }
+
     IpcHandler {
         target: "settings"
         function toggle(): void { root.toggleSettings() }

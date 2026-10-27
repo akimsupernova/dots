@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Qt.labs.folderlistmodel
 import qs.common
+import qs.services
 
 ColumnLayout {
     id: page
@@ -60,8 +61,8 @@ ColumnLayout {
             }
             GlassButton {
                 icon: "image"
-                text: "Open walpaper panel"
-                onClicked: Quickshell.execDetached(["qs", "ipc", "call", "wallpaper", "toggle"])
+                text: "Open wallpaper panel"
+                onClicked: UiState.openWallpaperFromSettings()
             }
         }
 
