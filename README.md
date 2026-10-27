@@ -102,7 +102,8 @@ After you log in, a welcome card appears. Open it again with `SUPER + H`. Press 
 When you run the installer again:
 
 - Your old configs are backed up once, in `~/.local/share/akim-dotfiles-backup/<time>/`.
-- `hypr/modules/monitors.lua` is **kept**, so your monitor setup stays.
+- `hypr/modules/monitors.lua` and `hypr/custom/keybinds.lua` are **kept**, so your monitors and shortcuts stay.
+- On the first install, `hypr/custom/keybinds.lua` is only added if you do not already have one.
 
 ### What gets installed where
 
@@ -159,12 +160,17 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + W` | Browser (zen-browser) |
 | `SUPER + E` | File manager (dolphin) |
 | `SUPER + C` | Text editor (kate) |
-| `SUPER + X` | Steam |
+| `SUPER + X` | Steam (not installed by default, see below) |
 | `SUPER + O` | OBS Studio |
 | `SUPER + I` | Volume control (pavucontrol) |
 | `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
 
-More personal app shortcuts (Firefox, Kdenlive, Konsole, DaVinci Resolve) are in [`hypr/custom/keybinds.lua`](hypr/custom/keybinds.lua).
+`hypr/custom/keybinds.lua` is **yours**. It holds the author's personal shortcuts (Firefox, Konsole, DaVinci Resolve). Those apps are not installed by the installer. Edit the file by hand to change, remove or add shortcuts.
+
+**Install Steam** (optional):
+
+1. Enable the `[multilib]` section in `/etc/pacman.conf` (remove the `#` from `[multilib]` and the `Include` line below it).
+2. Run `sudo pacman -Syu steam`.
 
 ### Windows and workspaces
 
@@ -535,7 +541,7 @@ Most things are in the **Settings panel**. For the rest, edit these files:
 | --- | --- |
 | Change the look, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
 | Change default apps (terminal, browser, file manager) | `hypr/modules/programs.lua` |
-| Add or change key bindings | `hypr/custom/keybinds.lua` (yours) or `hypr/modules/keybinds.lua` |
+| Add or change key bindings | `hypr/custom/keybinds.lua` (yours, edit by hand) or `hypr/modules/keybinds.lua` |
 | Set up monitors | The Settings panel, or `hypr/modules/monitors.lua` (kept when you run the installer again) |
 | Change gaps, rounding, blur | `hypr/modules/appearance.lua` (the sliders in Settings win until you press **Use config**) |
 | Change animations | `hypr/modules/animations.lua` |

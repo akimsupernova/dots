@@ -79,6 +79,7 @@ Singleton {
     function finish() {
         const wasFocus = root.mode === "focus"
         root.advance(true)
+        Sounds.play("focus-alarm")
         Quickshell.execDetached(["notify-send", "-a", "Pomodoro", "-u", "normal",
             wasFocus ? "Focus session finished" : "Break is over",
             wasFocus ? ("Time for a " + (root.mode === "long" ? "long" : "short") + " break.")

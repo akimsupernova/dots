@@ -11,6 +11,8 @@ Singleton {
     property bool dnd: false
 
     property var times: ({})
+    property var soundedIds: ({})
+    readonly property var ownSoundApps: ["Pomodoro", "Battery"]
     property real tick: Date.now()
     readonly property int toastMs: Prefs.notifTimeout * 1000
     readonly property int maxToasts: Prefs.notifMax
@@ -53,6 +55,13 @@ Singleton {
         while (toastStore.count > root.maxToasts) toastStore.remove(toastStore.count - 1)
     }
 
+    function playSound(n) {
+        if (root.soundedIds[n.id]) return
+        root.soundedIds[n.id] = true
+        if (root.ownSoundApps.indexOf(n.appName) >= 0) return
+        Sounds.play("notifications")
+    }
+
     function hideId(id) {
         const at = root.toastIndex(id)
         if (at >= 0) toastStore.remove(at)
@@ -93,8 +102,10 @@ Singleton {
             root.times = next
 
             const critical = n.urgency === NotificationUrgency.Critical
-            if (!root.dnd || critical)
+            if (!root.dnd || critical) {
                 root.showToast(n)
+                root.playSound(n)
+            }
         }
     }
 

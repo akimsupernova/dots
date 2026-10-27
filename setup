@@ -25,10 +25,14 @@ LAST_CMD=""
 FAIL_TEXT=""
 HINTED=0
 TMP_DIRS=()
+SUDO_KEEPALIVE_PID=""
+LOG_FROM=""
+IN_PTY=0
+if [[ "${GLASSVEIL_SETUP_PTY:-}" == "1" ]]; then IN_PTY=1; fi
 
 CONFIG_DIRS=(fish gtk-3.0 gtk-4.0 hypr kitty nwg-look qt5ct qt6ct quickshell)
-
-PRESERVE=(hypr/modules/monitors.lua)
+PRESERVE=(hypr/modules/monitors.lua hypr/custom/keybinds.lua)
+KEEP_ON_FIRST=(hypr/custom/keybinds.lua)
 
 PACKAGES=(
   ark awww nwg-look qt5ct qt6ct mpvpaper kitty fish fontconfig pipewire pipewire-pulse polkit python ddcutil
@@ -156,8 +160,9 @@ on_err() {
   local rc="$1" line="$2" cmd="$3" shown
   trap - ERR
   set +e
-  if [[ -s "$LOG_FILE" ]]; then
-    FAIL_TEXT="$(sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' -e 's/\r//g' -e '/^Script \(started\|done\) on /d' "$LOG_FILE" 2>/dev/null)"
+  if [[ -n "$LOG_FROM" && -s "$LOG_FILE" ]]; then
+    if ((IN_PTY)); then sleep 0.3; fi
+    FAIL_TEXT="$(tail -c +"$((LOG_FROM + 1))" "$LOG_FILE" 2>/dev/null | sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' -e 's/\r//g' -e '/^Script \(started\|done\) on /d' 2>/dev/null)"
   fi
   printf '\n\033[1;31m[ERROR]\033[0m Setup stopped (exit code %s, script line %s).\n' "$rc" "$line" >&2
   if [[ -n "$STEP" ]]; then
@@ -184,6 +189,11 @@ on_err() {
 
 cleanup() {
   local d
+  if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    SUDO_KEEPALIVE_PID=""
+    sudo -K 2>/dev/null || true
+  fi
   for d in "${TMP_DIRS[@]:-}"; do
     if [[ -n "$d" && -d "$d" ]]; then
       rm -rf "$d"
@@ -195,6 +205,7 @@ cleanup() {
 trap cleanup EXIT
 trap 'on_err "$?" "$LINENO" "$BASH_COMMAND"' ERR
 trap 'printf "\n"; warn "Interrupted."; exit 130' INT
+trap 'exit 143' TERM HUP
 
 usage() {
   cat <<'USAGE'
@@ -214,8 +225,8 @@ Options:
                   Does not reboot by itself (add --reboot for that).
   -n, --dry-run   Show what would be done without changing anything.
   --no-deps       (install) skip package installation, dotfiles only.
-  --reboot        Reboot when finished without asking.
-  --no-reboot     Do not ask about rebooting.
+  --reboot        Reboot when finished.
+  --no-reboot     Do not reboot (default).
 
 If something fails, the script prints the failing step, the last lines of output and
 how to fix the usual causes by hand (package conflicts, mirrors, keyring, locks...).
@@ -254,18 +265,19 @@ run_logged() {
     return 0
   fi
   mkdir -p "$STATE_DIR"
-  : > "$LOG_FILE"
-  local rc=0 cmd
-  if command -v script >/dev/null 2>&1; then
-    printf -v cmd '%q ' "$@"
-    script -qefc "$cmd" "$LOG_FILE" || rc=$?
+  local rc=0
+  if ((IN_PTY)); then
+    LOG_FROM="$(stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)"
+    "$@" || rc=$?
   else
+    : > "$LOG_FILE"
+    LOG_FROM=0
     "$@" 2>&1 | tee "$LOG_FILE" || rc=$?
   fi
   if ((rc != 0)); then
     return "$rc"
   fi
-  : > "$LOG_FILE"
+  LOG_FROM=""
   LAST_CMD=""
 }
 
@@ -283,6 +295,22 @@ check_arch() {
 
 check_not_root() {
   [[ "$EUID" -ne 0 ]] || die "Do not run this script as root; run it as your normal user. sudo is used when needed."
+}
+
+setup_sudo() {
+  if ((DRY_RUN)); then return 0; fi
+  command -v sudo >/dev/null 2>&1 || die "sudo was not found."
+  if ! sudo -n true 2>/dev/null; then
+    sudo -v || die "sudo authentication failed."
+  fi
+  local parent="$$"
+  (
+    trap - ERR EXIT
+    while kill -0 "$parent" 2>/dev/null && sudo -n -v 2>/dev/null; do
+      sleep 30
+    done
+  ) &
+  SUDO_KEEPALIVE_PID=$!
 }
 
 install_yay() {
@@ -384,6 +412,7 @@ post_install() {
 install_packages() {
   check_arch
   check_not_root
+  setup_sudo
 
   step "Updating the system (pacman -Syu)"
   if confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
@@ -446,8 +475,9 @@ init_backup_root() {
 }
 
 save_preserved() {
+  local -n list="$2"
   local rel
-  for rel in "${PRESERVE[@]}"; do
+  for rel in "${list[@]}"; do
     if [[ "$rel" == "$1/"* && -e "$CONFIG_DIR/$rel" ]]; then
       if ((DRY_RUN)); then
         info "[dry-run] would keep your $rel"
@@ -461,8 +491,9 @@ save_preserved() {
 }
 
 restore_preserved() {
+  local -n list="$2"
   local rel
-  for rel in "${PRESERVE[@]}"; do
+  for rel in "${list[@]}"; do
     if [[ "$rel" == "$1/"* && -e "$PRESERVE_DIR/$rel" ]]; then
       mkdir -p "$CONFIG_DIR/$(dirname "$rel")"
       cp -a "$PRESERVE_DIR/$rel" "$CONFIG_DIR/$rel"
@@ -472,7 +503,7 @@ restore_preserved() {
 
 deploy_item() {
   local src="$1" label="$2"
-  local name dest_dir dest kept=0
+  local name dest_dir dest keep=""
   name="$(basename "$src")"
   dest_dir="$(target_dir "$label")"
   dest="$dest_dir/$name"
@@ -482,14 +513,18 @@ deploy_item() {
   if manifest_lookup "$label" "$name" >/dev/null; then
     info "Updating $label/$name"
     if [[ "$label" == ".config" ]]; then
-      save_preserved "$name"
-      kept=1
+      save_preserved "$name" PRESERVE
+      keep=PRESERVE
     fi
     run rm -rf "$dest"
   else
     local had=0
     if [[ -e "$dest" || -L "$dest" ]]; then
       had=1
+      if [[ "$label" == ".config" ]]; then
+        save_preserved "$name" KEEP_ON_FIRST
+        keep=KEEP_ON_FIRST
+      fi
       info "Moving existing $label/$name -> backup"
       run mkdir -p "$BACKUP_ROOT/$label"
       run mv "$dest" "$BACKUP_ROOT/$label/"
@@ -500,8 +535,8 @@ deploy_item() {
 
   run cp -a "$src" "$dest_dir/"
 
-  if ((kept && !DRY_RUN)); then
-    restore_preserved "$name"
+  if [[ -n "$keep" ]] && ((!DRY_RUN)); then
+    restore_preserved "$name" "$keep"
   fi
 }
 
@@ -563,25 +598,7 @@ schedule_welcome() {
 }
 
 ask_reboot() {
-  case "$REBOOT_MODE" in
-    no)
-      return 0
-      ;;
-    ask)
-      if ((DRY_RUN)); then
-        info "[dry-run] would ask whether to reboot."
-        return 0
-      fi
-      if ((ASSUME_YES)); then
-        info ""
-        return 0
-      fi
-      if ! confirm "Reboot now? (recommended)"; then
-        info "OK."
-        return 0
-      fi
-      ;;
-  esac
+  if [[ "$REBOOT_MODE" != "yes" ]]; then return 0; fi
   info "Rebooting..."
   if command -v systemctl >/dev/null 2>&1; then
     run systemctl reboot
@@ -666,17 +683,11 @@ do_install() {
 
   STEP=""
   echo
-  info "Dotfiles installed. To undo: ./setup uninstall"
-  if [[ -n "$BACKUP_ROOT" && -d "$BACKUP_ROOT" ]]; then
-    info "Your previous configs are saved in: $BACKUP_ROOT"
-  fi
-  if ((NEED_RELOGIN)); then
-    warn "You were added to the 'i2c' group: log out and back in (or reboot) for monitor brightness to work."
-  fi
+  info "Reboot your PC."
+  info "Press SUPER + / to open the cheatsheet."
   if ((first_install)); then
-    info "Enjoy!"
+    info "No display manager? Install one (sudo pacman -S sddm && sudo systemctl enable sddm) or start Hyprland from the TTY."
   fi
-  info "Press SUPER + / to open the key binding cheatsheet."
   echo
   ask_reboot
 }
@@ -738,7 +749,7 @@ do_uninstall() {
   info "Uninstall complete. Your original configs have been restored."
 }
 
-rm -f "$LOG_FILE"
+if ((!IN_PTY)); then rm -f "$LOG_FILE"; fi
 
 CMD=""
 for arg in "$@"; do
@@ -753,6 +764,22 @@ for arg in "$@"; do
     *)  CMD="$arg" ;;
   esac
 done
+
+NEED_PTY=0
+case "${CMD:-}" in
+  deps)    NEED_PTY=1 ;;
+  install) if ((!SKIP_DEPS)); then NEED_PTY=1; fi ;;
+esac
+
+if ((NEED_PTY && !IN_PTY && !DRY_RUN)) && [[ -t 0 && -t 1 ]] && command -v script >/dev/null 2>&1; then
+  mkdir -p "$STATE_DIR"
+  : > "$LOG_FILE"
+  printf -v pty_cmd '%q ' bash "$ROOT/$(basename "${BASH_SOURCE[0]}")" "$@"
+  pty_rc=0
+  GLASSVEIL_SETUP_PTY=1 script -qefc "$pty_cmd" "$LOG_FILE" || pty_rc=$?
+  if ((pty_rc == 0)); then rm -f "$LOG_FILE"; fi
+  exit "$pty_rc"
+fi
 
 case "${CMD:-help}" in
   install)   do_install ;;

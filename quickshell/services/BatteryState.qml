@@ -43,6 +43,7 @@ Singleton {
 
         root.lastWarned = hit
         const urgent = hit <= 10
+        Sounds.play("low-bat")
         Quickshell.execDetached([
             "notify-send",
             "-a", "Battery",

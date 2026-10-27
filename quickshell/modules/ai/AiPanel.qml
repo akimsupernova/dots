@@ -10,6 +10,8 @@ Scope {
     id: host
     property bool open: false
 
+    Binding { target: Ai; property: "panelOpen"; value: host.open }
+
     IpcHandler {
         target: "ai"
         function toggle(): void { host.open = !host.open }

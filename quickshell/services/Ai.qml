@@ -64,6 +64,12 @@ Singleton {
     property var messages: []
     property bool busy: false
 
+    // Set by AiPanel. The "response ready" sound only rings while the panel is closed.
+    property bool panelOpen: false
+    function _done() {
+        if (!root.panelOpen) Sounds.play("ai")
+    }
+
     property var attachments: []
     property var _attachQueue: []
     property bool attaching: false
@@ -191,6 +197,7 @@ Singleton {
     function _saveDone(raw) {
         let j = null
         try { j = JSON.parse(String(raw).trim().split("\n").pop()) } catch (e) {}
+        root._done()
         if (j && j.ok) {
             const shown = String(j.path).replace(Quickshell.env("HOME"), "~")
             _sys("Saved to `" + shown + "` · [Open folder](file://" + encodeURI(j.dir) + ")")
@@ -784,6 +791,7 @@ Singleton {
         if (isOllama) {
             _callOllama(id, hist, (ok, out, extra) => {
                 root.busy = false
+                root._done()
                 _replaceLast({ role: "assistant", text: out, error: !ok, sources: extra.sources || "", note: extra.note || "" })
             })
             return
@@ -792,6 +800,7 @@ Singleton {
         if (!root.web.on) {
             _call(id, hist, (ok, out) => {
                 root.busy = false
+                root._done()
                 _replaceLast({ role: "assistant", text: out, error: !ok })
             })
             return
@@ -814,6 +823,7 @@ Singleton {
             }
             _call(id, h, (ok, out) => {
                 root.busy = false
+                root._done()
                 _replaceLast({ role: "assistant", text: out, error: !ok, sources: ok ? sources : "", note: note })
             })
         })
@@ -1029,6 +1039,7 @@ Singleton {
         onExited: code => {
             if (code !== 0 && root.busy) {
                 root.busy = false
+                root._done()
                 root._replaceLast({ role: "assistant", text: "Picture generation failed (is python3 installed?).", error: true })
             }
         }
