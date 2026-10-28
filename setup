@@ -561,6 +561,11 @@ seed_wallpaper() {
     printf 'type=image\npath=%s\n' "$wp" > "$state"
   fi
 
+  if ((!DRY_RUN)) && command -v python3 >/dev/null 2>&1; then
+    python3 "$CONFIG_DIR/quickshell/scripts/extract_accent.py" "$wp" \
+      || warn "Could not generate theme colors from the default wallpaper."
+  fi
+
   if [[ -n "${WAYLAND_DISPLAY:-}" && -f "$apply" ]]; then
     run bash "$apply" image "$wp" || warn "Could not set the wallpaper now; it will be applied at your next login."
   fi
