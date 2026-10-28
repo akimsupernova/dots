@@ -51,7 +51,7 @@ You install it with one command. After that you can change most things from the 
 
 - **Bar, launcher, sidebar, power menu, lock screen** and more. The sidebar holds notifications, Wi-Fi, Bluetooth, a calendar and a pomodoro timer.
 - **Settings panel** (`SUPER + B`). Change the look, bar, clock, wallpaper, monitors, notifications, lock screen and night light. Changes apply right away and are remembered.
-- **AI panel** (`SUPER + I`). Chat with OpenAI, Claude, Gemini, local Ollama and more. You can attach files and, with Ollama, make pictures.
+- **AI panel** (`SUPER + A`). Chat with OpenAI, Claude, Gemini, local Ollama and more. You can attach files and, with Ollama, make pictures.
 - **Wallpaper colors.** The accent color comes from your wallpaper. It is used by the shell, kitty, fish, GTK apps, Qt apps and Kvantum. You can also choose light or dark.
 - **Image and video wallpapers.**
 - **Safe installer.** It backs up your old configs and can restore them.
@@ -255,13 +255,13 @@ Makes the screen warmer, so it is easier on the eyes at night. Pick a warmth lev
 
 ## AI panel
 
-Press `SUPER + I`. A box appears at the bottom of the screen. Type your question and press Enter.
+Press `SUPER + A`. A box appears at the bottom of the screen. Type your question and press Enter.
 
 Works with **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and **Ollama** (runs on your own computer, no key needed).
 
 ### Getting started
 
-1. Press `SUPER + I`.
+1. Press `SUPER + A`.
 2. Type `/apikey openai sk-...` (or `claude`, `gemini`, ...) and press Enter.
 3. Ask something.
 

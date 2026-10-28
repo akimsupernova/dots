@@ -1,7 +1,7 @@
 return {
     terminal    = "kitty",
     fileManager = "dolphin",
-    browser     = "zen-browser",
+    browser     = "firefox",
     game        = "steam",
     bashterminal= "konsole",
 }
