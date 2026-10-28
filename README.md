@@ -76,11 +76,9 @@ The installer asks before it does anything risky. It does these steps:
 2. Installs `yay` if you do not have it, then installs all packages.
 3. Offers to turn on the NetworkManager, Bluetooth and LACT services. It can also set up monitor brightness control for external screens.
 4. Backs up your old configs, then copies the new ones.
-5. Sets the default wallpaper (it is also copied to `~/Pictures/Wallpapers`) and, on your first install, schedules a welcome card for your next login.
+5. Sets the default wallpaper.
 
 The installer never reboots by itself. When it finishes it tells you to reboot (add `--reboot` to do it automatically). It also warns you if Hyprland is older than 0.55. If you have no display manager, install one (`sudo pacman -S sddm && sudo systemctl enable sddm`) or start Hyprland from the TTY.
-
-After you log in, a welcome card appears. Open it again with `SUPER + H`. Press `SUPER + /` to see all key bindings.
 
 ### Installer options
 
@@ -92,7 +90,6 @@ After you log in, a welcome card appears. Open it again with `SUPER + H`. Press 
 ./setup install --reboot    # reboot when done
 ./setup install --no-reboot # do not reboot (this is the default)
 ./setup deps                # install yay and packages only
-./setup welcome             # show the welcome card again at next login
 ./setup uninstall           # remove the dotfiles and restore your backup
 ./setup help
 ```
@@ -578,7 +575,7 @@ qs ipc call wallpaper toggle
 qs ipc call lock lock
 ```
 
-Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`, `welcome`. Run `qs ipc show` to see what each one can do.
+Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`. Run `qs ipc show` to see what each one can do.
 
 ## Repository layout
 
