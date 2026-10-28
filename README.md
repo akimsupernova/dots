@@ -50,7 +50,7 @@ You install it with one command. After that you can change most things from the 
 ## Features
 
 - **Bar, launcher, sidebar, power menu, lock screen** and more. The sidebar holds notifications, Wi-Fi, Bluetooth, a calendar and a pomodoro timer.
-- **Settings panel** (`SUPER + B`). Change the look, bar, clock, wallpaper, monitors, notifications, lock screen and night light. Changes apply right away and are remembered.
+- **Settings panel** (`SUPER + B`). Change the look, bar, clock, weather, wallpaper, monitors, audio, AI panel, notifications, lock screen and night light. Changes apply right away and are remembered.
 - **AI panel** (`SUPER + A`). Chat with OpenAI, Claude, Gemini, local Ollama and more. You can attach files and, with Ollama, make pictures.
 - **Wallpaper colors.** The accent color comes from your wallpaper. It is used by the shell, kitty, fish, GTK apps, Qt apps and Kvantum. You can also choose light or dark.
 - **Image and video wallpapers.**
@@ -76,7 +76,9 @@ The installer asks before it does anything risky. It does these steps:
 2. Installs `yay` if you do not have it, then installs all packages.
 3. Offers to turn on the NetworkManager, Bluetooth and LACT services. It can also set up monitor brightness control for external screens.
 4. Backs up your old configs, then copies the new ones.
-5. Sets the default wallpaper and shows a welcome card at your first login.
+5. Sets the default wallpaper (it is also copied to `~/Pictures/Wallpapers`) and, on your first install, schedules a welcome card for your next login.
+
+The installer never reboots by itself. When it finishes it tells you to reboot (add `--reboot` to do it automatically). It also warns you if Hyprland is older than 0.55. If you have no display manager, install one (`sudo pacman -S sddm && sudo systemctl enable sddm`) or start Hyprland from the TTY.
 
 After you log in, a welcome card appears. Open it again with `SUPER + H`. Press `SUPER + /` to see all key bindings.
 
@@ -87,8 +89,8 @@ After you log in, a welcome card appears. Open it again with `SUPER + H`. Press 
 ./setup install --no-deps   # dotfiles only, skip packages
 ./setup install -n          # dry run: show what would happen, change nothing
 ./setup install -y          # say yes to everything; does not reboot
-./setup install --reboot    # reboot when done, without asking
-./setup install --no-reboot # do not ask about rebooting
+./setup install --reboot    # reboot when done
+./setup install --no-reboot # do not reboot (this is the default)
 ./setup deps                # install yay and packages only
 ./setup welcome             # show the welcome card again at next login
 ./setup uninstall           # remove the dotfiles and restore your backup
@@ -121,14 +123,14 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Group | Packages |
 | --- | --- |
-| Desktop | `hyprland`, `quickshell`, `hyprsunset`, `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk`, `polkit`, `qt6-wayland`, `qt5-wayland` |
+| Desktop | `hyprland`, `quickshell`, `hyprsunset`, `xdg-desktop-portal`, `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk`, `polkit`, `qt6-wayland`, `qt5-wayland`, `qt6-svg` |
 | Wallpaper | `awww`, `mpvpaper`, `ffmpeg`, `python-pillow` |
 | Theming | `nwg-look`, `qt5ct`, `qt6ct`, `kvantum`, `kvantum-qt5`, `breeze-icons`, `adwaita-icon-theme`, `bibata-cursor-theme-bin`, `dconf`, `gsettings-desktop-schemas` |
-| Fonts | `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
+| Fonts | `fontconfig`, `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
 | Audio | `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`, `alsa-utils`, `pavucontrol`, `cava`, `playerctl`, `sof-firmware` |
 | Network and devices | `networkmanager`, `bluez`, `bluez-utils`, `upower`, `brightnessctl`, `ddcutil` |
 | Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils`, `zenity` (file chooser), `poppler` (reads PDF files) |
-| Apps | `zen-browser-bin`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
+| Apps | `firefox`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
 
 ## Key bindings
 
@@ -157,7 +159,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Keys | Action |
 | --- | --- |
 | `SUPER + Return` | Terminal (kitty) |
-| `SUPER + W` | Browser (zen-browser) |
+| `SUPER + W` | Browser (Firefox) |
 | `SUPER + E` | File manager (dolphin) |
 | `SUPER + C` | Text editor (kate) |
 | `SUPER + X` | Steam (not installed by default, see below) |
@@ -165,7 +167,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + I` | Volume control (pavucontrol) |
 | `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
 
-`hypr/custom/keybinds.lua` is **yours**. It holds the author's personal shortcuts (Firefox, Konsole, DaVinci Resolve). Those apps are not installed by the installer. Edit the file by hand to change, remove or add shortcuts.
+`hypr/custom/keybinds.lua` is **yours**. It holds the author's personal shortcuts: `SUPER + T` (Konsole) and `SUPER + D` (DaVinci Resolve), plus the volume and brightness keys (see [Media](#media)). DaVinci Resolve is not installed by the installer, so `SUPER + D` does nothing until you install it. Edit the file by hand to change, remove or add shortcuts. If you delete the file, the volume and brightness keys stop working unless you bind them again.
 
 **Install Steam** (optional):
 
@@ -198,6 +200,8 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 ### Media
 
+These keys are defined in `hypr/custom/keybinds.lua`. The mouse wheel shortcuts are in `hypr/modules/keybinds.lua`.
+
 | Keys | Action |
 | --- | --- |
 | `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Volume up / down (2% steps) |
@@ -213,10 +217,11 @@ Every change applies at once and is saved in `~/.config/glassveil/settings.json`
 
 | Tab | What you can change |
 | --- | --- |
-| Appearance | **Glassveil style** (Auto, Light or Dark), accent color, interface size, bar height, spacing, corner roundness, font size. Also the gap between windows, the gap to the screen edge and the corner roundness of windows. |
-| Bar | Which items show in the bar: window title, system use, media, workspaces, clock, tray, status icons, battery, volume, weather |
-| Clock & weather | Clock style and size, 24-hour time, date, weather |
+| Appearance | **Glassveil style** (Auto, Light or Dark), accent color, interface size, bar height, gap around the bar, shell corner radius and bar font size. Also the gap between windows, the gap to the screen edge and the corner roundness of windows. At the end, **Show in the bar** switches for: window title, system use, media, workspaces, clock, tray, status icons, battery, volume and weather |
+| Clock & weather | Desktop clock style (digital or ring), size, 24-hour time, date, what the ring shows (day or battery), weather on the ring. Weather on or off, city, units and update time |
 | Wallpaper | Random wallpaper, all your wallpapers, and the **monitor settings** |
+| Audio | Output and input device, volume, microphone volume, volume of each app, test sound, open the mixer. Scroll step, maximum volume (100%, 125% or 150%) and the volume pop-up |
+| AI | AI panel size and position, dragging, closing when you click outside, a new chat, the chat theme (rain or meteor), answer style (short, default or detailed) and your own instructions. See [AI panel](#ai-panel) |
 | Notifications | Do not disturb, how long pop-ups stay, how many show at once, keep urgent ones until you close them, clear all, test buttons |
 | Lock screen & night light | Auto-lock, lock time, screen off after lock, a **Lock now** button, and night light |
 | About | System info, links and the Reset button |
@@ -244,20 +249,18 @@ The same settings are also on `SUPER + M`.
 
 ### Night light
 
-Makes the screen warmer, so it is easier on the eyes at night. Pick a warmth level and, if you like, a schedule. It needs `hyprsunset` (the installer adds it). When you change the warmth, the screen can flicker for a moment.
+Makes the screen warmer, so it is easier on the eyes at night. Adjust a warmth level and, if you like, a schedule. It needs `hyprsunset` (the installer adds it). When you change the warmth, the screen can flicker for a moment.
 
 ### Lock screen
 
 - **Lock when idle** has three choices: *Battery only* (laptops lock, desktops do not), *Always* or *Never*.
-- Pick how many minutes of no use before the lock.
+- Chose how many minutes of no use before the lock.
 - **Keep awake** in the sidebar pauses auto-lock.
 - `SUPER + L` always locks right away.
 
 ## AI panel
 
-Press `SUPER + A`. A box appears at the bottom of the screen. Type your question and press Enter.
-
-Works with **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and **Ollama** (runs on your own computer, no key needed).
+Works with **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** and **Ollama**.
 
 ### Getting started
 
@@ -266,6 +269,8 @@ Works with **OpenAI, Claude, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI** 
 3. Ask something.
 
 For Ollama, install it first, pull a model (for example `ollama pull llama3.2`), then type `/provider ollama`.
+
+You can also change how the panel looks and behaves in **Settings → AI** (size, position, chat theme, answer style and custom instructions).
 
 ### Commands
 
@@ -285,10 +290,10 @@ For Ollama, install it first, pull a model (for example `ollama pull llama3.2`),
 | `/web backend <name>` | Choose the search service: `ddg`, `searxng` or `ollama` |
 | `/web url <url>` / `/web key <key>` | Set the SearXNG address or the Ollama search key |
 | `/ctx <tokens>` | Ollama memory size per chat (default 16384) |
-| `/clear` | Start a new chat |
+| `/clear` (or `/new`) | Start a new chat |
 | `/help` | Show the commands |
 
-Short names: `chatgpt` = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama.
+Short names: `chatgpt` (or `gpt`) = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama, `or` = openrouter. `/search` works like `/web`, `/use` like `/provider`, and `/imagine` like `/image`.
 
 The **+** button opens a menu with the same actions: new chat, copy the last reply, provider, web search, attach file, generate image (Ollama only), model, API key and help.
 
@@ -449,7 +454,7 @@ These files are rewritten at every change, so do not edit them by hand.
 
 ### Light and dark
 
-Pick **Glassveil style** in Settings → Appearance: `Auto`, `Light` or `Dark`. The shell and all apps use the same choice.
+Use **Glassveil style** in Settings → Appearance: `Auto`, `Light` or `Dark`. The shell and all apps use the same choice.
 
 `GLASSVEIL_THEME_MODE` (in `hypr/modules/env.lua`) is only a backup. It is used when `~/.config/glassveil/settings.json` does not exist yet.
 
@@ -481,16 +486,17 @@ python ~/.config/quickshell/scripts/theme_sync.py --default             # back t
 
 You can set the clock and the weather in **Settings → Clock & weather**.
 
-**Desktop clock.** Drag it with the left mouse button. **Hold the left button and scroll** to make it bigger or smaller. **Right-click it** to switch between the digital style and the round style. The choice is saved in `~/.local/state/quickshell/clock-style.json`.
+**Desktop clock.** Drag it with the left mouse button. **Hold the left button and scroll** to make it bigger or smaller. **Right-click it** to switch between the digital style and the round style. The style is saved in your settings (`~/.config/glassveil/settings.json`). The position and size are saved in `~/.local/state/quickshell/clock-position.json`.
 
 ```bash
 qs ipc call clock toggleStyle
 qs ipc call clock setStyle ring        # or: digital
 qs ipc call clock setZoom 1.4          # 0.5 .. 2.5
 qs ipc call clock resetZoom
+qs ipc call clock reset               # back to the default position and size
 ```
 
-The ring shows how much of the day has passed. To show the battery instead, set `property string ringMode: "battery"` in `quickshell/modules/clock/ClockWidget.qml`. On a PC with no battery it shows the day. The ring size is `ringSize` in the same file.
+The ring shows how much of the day has passed. To show the battery instead, set **Ring shows** to *Battery* in Settings → Clock & weather. On a PC with no battery it shows the day. The ring size is `ringSize` in `quickshell/modules/clock/ClockWidget.qml`.
 
 **Weather.** The temperature and an icon show in the bar (left of the battery) and on the round clock. Click the bar item to refresh. The data comes from [Open-Meteo](https://open-meteo.com). It needs no account or key.
 
@@ -540,7 +546,7 @@ Most things are in the **Settings panel**. For the rest, edit these files:
 | I want to... | Edit |
 | --- | --- |
 | Change the look, bar, clock, notifications, lock screen or night light | The Settings panel (saved in `~/.config/glassveil/settings.json`) |
-| Change default apps (terminal, browser, file manager) | `hypr/modules/programs.lua` |
+| Change default apps (terminal, browser, file manager, Steam) | `hypr/modules/programs.lua` (the editor, OBS and Konsole shortcuts are set directly in the key binding files) |
 | Add or change key bindings | `hypr/custom/keybinds.lua` (yours, edit by hand) or `hypr/modules/keybinds.lua` |
 | Set up monitors | The Settings panel, or `hypr/modules/monitors.lua` (kept when you run the installer again) |
 | Change gaps, rounding, blur | `hypr/modules/appearance.lua` (the sliders in Settings win until you press **Use config**) |
@@ -585,11 +591,12 @@ Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launche
 │   └── custom/keybinds.lua   your own key bindings
 ├── quickshell/
 │   ├── shell.qml             main file, loads every module
-│   ├── common/               shared parts (Theme, Panel, Icon, buttons, settings storage, ...)
+│   ├── common/               shared parts (Theme, GlassPanel, Icon, buttons, settings storage, ...)
 │   ├── services/             state and background work (Network, Notifs, Ai, Brightness, ...)
 │   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, ...)
 │   ├── scripts/              wallpaper, brightness, theme sync, AI file and image helpers
-│   └── assets/               icons, wallpaper, emoji list, previews
+│   ├── pam/                  PAM config used by the lock screen
+│   └── assets/               icons, sounds, name card images, wallpaper, emoji list, previews
 ├── kitty/  fish/  gtk-3.0/  gtk-4.0/  qt5ct/  qt6ct/  nwg-look/
 ├── icons/                    cursor theme
 └── fonts/                    Google Sans
