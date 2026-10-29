@@ -13,6 +13,7 @@ Scope {
         ctx.reset()
         UiState.sidebarOpen = false
         LockState.locked = true
+        if (Prefs.lockScreenOff) screenOff.restart()
     }
 
     IpcHandler {
@@ -21,7 +22,10 @@ Scope {
     }
 
     function dpms(on) {
-        Quickshell.execDetached(["hyprctl", "dispatch", "dpms", on ? "on" : "off"])
+        Quickshell.execDetached([
+            "hyprctl", "dispatch",
+            "hl.dsp.dpms({ action = '" + (on ? "enable" : "disable") + "' })"
+        ])
     }
 
     Timer {
@@ -48,7 +52,11 @@ Scope {
 
     LockContext {
         id: ctx
-        onUnlocked: LockState.locked = false
+        onUnlocked: {
+            LockState.locked = false
+            screenOff.stop()
+            root.dpms(true)
+        }
     }
 
     LockData { id: store }
