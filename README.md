@@ -137,7 +137,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER` (tap) | App launcher |
+| `SUPER + SPACE` | App launcher |
 | `SUPER + A` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + B` | Settings panel |
@@ -192,7 +192,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + SPACE` | Select an area and copy it to the clipboard |
+| `SUPER + ALT + SPACE` | Select an area and copy it to the clipboard |
 | `ALT + SPACE` | Full screenshot, saved to `~/Pictures/Screenshots` and copied |
 
 ### Media

@@ -2,6 +2,7 @@ local p = require("modules.programs")
 local closeWindowBind = hl.bind("SUPER + Q", hl.dsp.window.close(), { description = "Window: Close" })
 local shotDir  = "~/Pictures/Screenshots"
 local shotName = shotDir .. "/$(date +%F_%H-%M-%S).png"
+
 hl.bind("SUPER + Return", hl.dsp.exec_cmd(p.terminal), { description = "Workspace: Terminal" })
 hl.bind("SUPER + M", hl.dsp.exec_cmd("qs ipc call monitor toggle"), { description = "Shell: Monitor Settings" })
 hl.bind("SUPER + W", hl.dsp.exec_cmd(p.browser), { description = "App: Browser" })
@@ -24,10 +25,10 @@ hl.bind("SUPER + left",  hl.dsp.focus({ direction = "left" }),  { description = 
 hl.bind("SUPER + right", hl.dsp.focus({ direction = "right" }), { description = "Focus: Right" })
 hl.bind("SUPER + up",    hl.dsp.focus({ direction = "up" }),    { description = "Focus: Up" })
 hl.bind("SUPER + down",  hl.dsp.focus({ direction = "down" }),  { description = "Focus: Down" })
-hl.bind("SUPER + SPACE", hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "Screenshot: Select Area & Copy" })
+hl.bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "Screenshot: Select Area & Copy" })
 hl.bind("ALT + SPACE", hl.dsp.exec_cmd([[mkdir -p ]] .. shotDir .. [[ && f=]] .. shotName .. [[ && grim "$f" && wl-copy < "$f"]]), { description = "Screenshot: Full Snap & Save" })
 hl.bind("CTRL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -e btop"), { description = "Workspace: Task Manager" })
-hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:launcherToggleRelease"), { description = "Shell: Toggle launcher" })
+hl.bind("SUPER + SPACE", hl.dsp.global("quickshell:launcherToggleRelease"), { description = "Shell: Toggle launcher" })
 hl.bind("SUPER + I", hl.dsp.exec_cmd("pavucontrol"), { description = "Media: Volume Control" })
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call emoji toggle"), { description = "Workspace: Emoji" })
 hl.bind("SUPER + G", hl.dsp.exec_cmd("qs ipc call namecard toggle"), { description = "App: Name Card" })
