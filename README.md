@@ -137,7 +137,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + SPACE` | App launcher |
+| `SUPER` (tap) | App launcher |
 | `SUPER + A` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + B` | Settings panel |
@@ -192,7 +192,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + ALT + SPACE` | Select an area and copy it to the clipboard |
+| `SUPER + SPACE` | Select an area and copy it to the clipboard |
 | `ALT + SPACE` | Full screenshot, saved to `~/Pictures/Screenshots` and copied |
 
 ### Media
@@ -466,9 +466,9 @@ python ~/.config/quickshell/scripts/theme_sync.py --default             # back t
 
 ## Wallpaper
 
-- Press `SUPER + R` to open the wallpapers. You can also use the **Wallpaper** tab in Settings.
+- Press `SUPER + R` to open wallpaper panel. You can also use the **Wallpaper** tab in Settings.
 - Images use `awww`. Videos (`mp4`, `webm`, `mkv`, `mov`, `gif`, ...) use `mpvpaper`.
-- Put your wallpapers in `~/Pictures/Wallpapers`. The installer adds a default one.
+- Put your wallpapers in `~/Pictures/Wallpapers`.
 - The current wallpaper is remembered in `~/.config/wallpaper/current` and comes back at login.
 - Logs: `$XDG_RUNTIME_DIR/apply-wallpaper.log` and `restore-wallpaper.log`.
 

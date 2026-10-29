@@ -585,12 +585,8 @@ check_hyprland() {
 }
 
 seed_wallpaper_dir() {
-  local dir="$HOME/Pictures/Wallpapers"
-  local wp="$CONFIG_DIR/quickshell/assets/wallpaper/default-wallpaper.png"
-  run mkdir -p "$dir"
-  if [[ -f "$wp" || $DRY_RUN -eq 1 ]] && [[ -z "$(ls -A "$dir" 2>/dev/null)" ]]; then
-    run cp "$wp" "$dir/default-wallpaper.png"
-  fi
+  # Only make sure the folder exists; the default wallpaper is not copied into it.
+  run mkdir -p "$HOME/Pictures/Wallpapers"
 }
 
 schedule_welcome() {
