@@ -21,7 +21,7 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Lock when idle"
-            hint: "Battery only skips desktops. Keep awake pauses it"
+            hint: "Battery only skips desktops. Never while media plays"
 
             Choice {
                 options: [

@@ -22,6 +22,7 @@ Scope {
     }
 
     function dpms(on) {
+        if (!on && MediaActivity.active) return
         Quickshell.execDetached([
             "hyprctl", "dispatch",
             "hl.dsp.dpms({ action = '" + (on ? "enable" : "disable") + "' })"
@@ -36,11 +37,13 @@ Scope {
 
     IdleMonitor {
         enabled: !Toggles.keepAwake
+                 && !MediaActivity.active
                  && (Prefs.lockWhen === "always" || (Prefs.lockWhen === "battery" && BatteryState.hasBattery))
         timeout: Prefs.lockTimeout * 60
         respectInhibitors: true
         onIsIdleChanged: {
             if (isIdle) {
+                if (MediaActivity.active) return
                 root.lock()
                 if (Prefs.lockScreenOff) screenOff.restart()
             } else {

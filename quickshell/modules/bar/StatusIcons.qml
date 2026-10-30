@@ -57,21 +57,6 @@ Row {
     }
 
     StatusIcon {
-        name: "keyboard"
-        tone: 0.9
-        onClicked: Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"])
-    }
-
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: 5
-        height: 5
-        radius: 2.5
-        color: Theme.ink
-        opacity: 0.45
-    }
-
-    StatusIcon {
         name: root.micMuted ? "mic-mute" : "mic"
         tone: root.micMuted ? 1 : 0.6
         onClicked: if (root.source?.audio) root.source.audio.muted = !root.source.audio.muted
