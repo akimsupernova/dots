@@ -56,6 +56,7 @@ Singleton {
     property int notifTimeout: 2
     property int notifMax: 4
     property bool notifCriticalSticky: false
+    property bool notifUsb: true
 
     property string lockWhen: "battery"
     property int lockTimeout: 3
@@ -112,6 +113,7 @@ Singleton {
         notifTimeout: { t: "num", min: 1, max: 15, int: true },
         notifMax:     { t: "num", min: 1, max: 8, int: true },
         notifCriticalSticky: { t: "bool" },
+        notifUsb:     { t: "bool" },
         lockWhen:     { t: "enum", v: ["battery", "always", "never"] },
         lockTimeout:  { t: "num", min: 1, max: 60, int: true },
         lockScreenOff:{ t: "bool" },

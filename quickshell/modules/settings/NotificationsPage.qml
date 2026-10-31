@@ -57,6 +57,16 @@ ColumnLayout {
                 onToggled: v => Prefs.set("notifCriticalSticky", v)
             }
         }
+
+        SettingRow {
+            label: "USB devices"
+            hint: "Notify when a USB device is plugged in or removed"
+
+            ToggleSwitch {
+                checked: Prefs.notifUsb
+                onToggled: v => Prefs.set("notifUsb", v)
+            }
+        }
     }
 
     Card {

@@ -20,7 +20,10 @@ import qs.modules.lock
 import qs.modules.ai
 
 ShellRoot {
-    Component.onCompleted: HyprLook.init()
+    Component.onCompleted: {
+        HyprLook.init()
+        UsbMonitor.init()
+    }
 
     Variants {
         model: Quickshell.screens
