@@ -51,8 +51,14 @@ Singleton {
     function showToast(n) {
         const at = root.toastIndex(n.id)
         if (at > 0) toastStore.move(at, 0, 1)
-        else if (at < 0) toastStore.insert(0, { nid: n.id })
-        while (toastStore.count > root.maxToasts) toastStore.remove(toastStore.count - 1)
+        else if (at < 0) toastStore.insert(0, { nid: n.id, evicting: false })
+
+        let live = 0
+        for (let i = 0; i < toastStore.count; i++) {
+            if (toastStore.get(i).evicting) continue
+            live++
+            if (live > root.maxToasts) toastStore.setProperty(i, "evicting", true)
+        }
     }
 
     function playSound(n) {

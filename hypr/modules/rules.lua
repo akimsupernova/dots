@@ -58,11 +58,18 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "glassveil-sidebar",
-    match = { namespace = "^Glassveil Shell (Sidebar|Notifications)$" },
+    match = { namespace = "^Glassveil Shell Sidebar$" },
 
     blur         = true,
     ignore_alpha = 0.05,
     animation    = "slide right",
+})
+
+hl.layer_rule({
+    name  = "glassveil-notifications",
+    match = { namespace = "^Glassveil Shell Notifications$" },
+
+    no_anim = true,
 })
 
 hl.layer_rule({
