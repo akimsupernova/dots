@@ -49,7 +49,7 @@ Item {
                     lineWidth: 6 * root.u
                     gapAngle: 0
                     value: Pomodoro.progress
-                    colPrimary: Pomodoro.mode === "focus" ? Theme.accent1 : Theme.ok
+                    colPrimary: Theme.accent1
                     colTrack: Theme.inkA(0.12)
                 }
 
