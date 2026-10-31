@@ -20,7 +20,8 @@ Scope {
             ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
             anchors { top: true; right: true; bottom: true }
-            property int topGap:    Theme.gap + Theme.barHeight + Theme.gap
+            property int topGap:    Fullscreen.active ? Theme.gap
+                                                      : Theme.gap + Theme.barHeight + Theme.gap
             property int bottomGap: Theme.gap
             property int rightGap:  Theme.gap
 
