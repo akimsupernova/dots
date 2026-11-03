@@ -40,7 +40,7 @@ PACKAGES=(
   bibata-cursor-theme-bin grim slurp wl-clipboard noto-fonts noto-fonts-cjk noto-fonts-emoji dolphin obs-studio ffmpeg xdg-desktop-portal xdg-desktop-portal-hyprland
   libnotify kvantum kvantum-qt5 curl zenity poppler dconf gsettings-desktop-schemas
   cava playerctl xdg-utils python-pillow qt6-svg breeze-icons konsole ttf-jetbrains-mono-nerd
-  hyprland hyprsunset networkmanager bluez bluez-utils upower
+  hyprland hyprsunset networkmanager bluez bluez-utils upower ffmpegthumbs
   adwaita-fonts adwaita-icon-theme xdg-desktop-portal-gtk qt6-wayland qt5-wayland
 )
 
