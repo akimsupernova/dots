@@ -110,6 +110,11 @@ Singleton {
     property bool _dirty: false
     property var _proc: null
     property var _acc: ({ text: "", think: "", calls: [], reason: "", error: "", status: 0 })
+    property var archive: []
+    property bool _chatsReady: false
+    readonly property string chatsFile: dir + "/chats.json"
+    onMessagesChanged: _scheduleChatSave()
+
     property bool panelOpen: false
     function _done() {
         if (!root.panelOpen) Sounds.play("ai")
@@ -198,7 +203,66 @@ Singleton {
         _save()
     }
 
-    function clear() { root.messages = [] }
+    function clear() {
+        if (root.busy) stop()
+        _archiveCurrent()
+        root.messages = []
+    }
+
+    function _persistable() {
+        return root.messages
+            .filter(m => (m.role === "user" || m.role === "assistant") && !m.streaming && !m.pending && !m.error)
+            .map(m => {
+                const c = Object.assign({}, m)
+                if (c.files) c.files = c.files.map(f => ({ name: f.name, text: "", truncated: false, gone: true }))
+                if (c.images) c.images = []
+                return c
+            })
+    }
+
+    function _titleOf(msgs) {
+        const u = msgs.find(m => m.role === "user")
+        const t = String(u ? u.text : "Chat").replace(/\s+/g, " ").trim()
+        return t.length > 60 ? t.slice(0, 57) + "…" : (t || "Chat")
+    }
+
+    function _archiveCurrent() {
+        const cur = _persistable()
+        if (!cur.some(m => m.role === "user")) return
+        const entry = { id: Date.now(), title: _titleOf(cur), ts: Date.now(), messages: cur }
+        root.archive = [entry].concat(root.archive).slice(0, 30)
+        _saveChatsNow()
+    }
+
+    function _saveChatsNow() {
+        if (!root._chatsReady) return
+        const data = { version: 1, current: _persistable().slice(-200), archive: root.archive.slice() }
+        let s = JSON.stringify(data)
+        while (s.length > 4000000 && data.archive.length > 0) { data.archive.pop(); s = JSON.stringify(data) }
+        while (s.length > 4000000 && data.current.length > 4) { data.current.shift(); s = JSON.stringify(data) }
+        chatFile.setText(s)
+    }
+
+    function _scheduleChatSave() {
+        if (root._chatsReady) chatSaveTimer.restart()
+    }
+
+    function _loadChats(t) {
+        try {
+            const j = JSON.parse(t || "{}")
+            root.archive = Array.isArray(j.archive) ? j.archive : []
+            const cur = Array.isArray(j.current) ? j.current : []
+            if (cur.length > 0 && root.messages.filter(m => m.role !== "system").length === 0)
+                root.messages = cur
+        } catch (e) {}
+        root._chatsReady = true
+    }
+
+    Timer {
+        id: chatSaveTimer
+        interval: 800
+        onTriggered: root._saveChatsNow()
+    }
 
     function copyLast() {
         const m = root.messages.slice().reverse()
@@ -987,10 +1051,11 @@ Singleton {
     }
 
     function _msgText(m, withFiles) {
-        const fs = m.files || []
-        if (m.role !== "user" || fs.length === 0) return m.text
-        if (!withFiles)
-            return "[Files attached earlier: " + fs.map(f => f.name).join(", ") + " — content omitted]\n" + m.text
+        const all = m.files || []
+        if (m.role !== "user" || all.length === 0) return m.text
+        const fs = all.filter(f => !f.gone)
+        if (!withFiles || fs.length === 0)
+            return "[Files attached earlier: " + all.map(f => f.name).join(", ") + " — content omitted]\n" + m.text
         return fs.map(f => "Attached file `" + f.name + "`" + (f.truncated ? " (cut short)" : "") + ":\n```\n" +
                            f.text.replace(/```/g, "'''") + "\n```\n").join("\n") + "\n" + m.text
     }
@@ -1171,6 +1236,32 @@ Singleton {
 
         if (cmd === "/clear" || cmd === "/new") return clear()
 
+        if (cmd === "/history") {
+            if ((a[1] || "").toLowerCase() === "clear") {
+                root.archive = []
+                _saveChatsNow()
+                return _sys("Saved chats deleted.")
+            }
+            if (root.archive.length === 0)
+                return _sys("No saved chats yet. A chat is saved here when you start a new one with `/new` or `/clear`.")
+            return _sys("**Saved chats** — open one with `/load <number>`\n\n" +
+                root.archive.slice(0, 15).map((c, i) => (i + 1) + ". " + String(c.title).replace(/[`*_#<>\[\]]/g, "") +
+                    " · " + Qt.formatDateTime(new Date(c.ts), "d MMM HH:mm") + " · " + c.messages.length + " msgs").join("\n") +
+                "\n\n`/history clear` deletes them all.")
+        }
+
+        if (cmd === "/load") {
+            const n = parseInt(a[1])
+            if (!(n >= 1 && n <= root.archive.length)) return _sys("Usage: `/load <number>` — see `/history`.", true)
+            if (root.busy) return _sys("Wait for the current reply to finish, or press stop first.", true)
+            const entry = root.archive[n - 1]
+            root.archive = root.archive.filter((c, i) => i !== n - 1)
+            _archiveCurrent()
+            root.messages = entry.messages.slice()
+            _saveChatsNow()
+            return
+        }
+
         if (cmd === "/help" || cmd === "/?") {
             return _sys("**Commands**\n\n" +
                 "- `/apikey` — show saved keys\n" +
@@ -1181,6 +1272,8 @@ Singleton {
                 "- `/endpoint <provider> <url>` — custom OpenAI-compatible URL\n" +
                 "- `/web on|off` — let the AI search the internet (any provider, including Ollama)\n" +
                 "- `/web backend|url|key` — choose and configure the search service\n" +
+                "- `/new` — start a new chat (the old one is saved)\n" +
+                "- `/history` · `/load <n>` — saved chats\n" +
                 "- `/ctx <tokens>` — Ollama context window (default 32768)\n" +
                 "- `/maxtokens <n|auto>` — longest answer to ask for\n" +
                 "- `/think on|off|low|medium|high` — Ollama reasoning models (shown in a collapsible block)\n" +
@@ -1514,9 +1607,17 @@ Singleton {
     Process {
         running: true
         command: ["sh", "-c",
-            'umask 077; mkdir -p "$1"; [ -f "$2" ] || echo "{}" > "$2"; chmod 700 "$1"; chmod 600 "$2"',
-            "sh", root.dir, root.file]
+            'umask 077; mkdir -p "$1"; [ -f "$2" ] || echo "{}" > "$2"; [ -f "$3" ] || echo "{}" > "$3"; chmod 700 "$1"; chmod 600 "$2" "$3"',
+            "sh", root.dir, root.file, root.chatsFile]
         onExited: root._ready = true
+    }
+
+    FileView {
+        id: chatFile
+        path: root._ready ? root.chatsFile : ""
+        atomicWrites: false
+        onLoaded: root._loadChats(text())
+        onLoadFailed: root._loadChats("{}")
     }
 
     FileView {

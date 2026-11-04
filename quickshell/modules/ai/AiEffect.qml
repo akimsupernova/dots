@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import qs.common
 
 Item {
@@ -7,9 +8,34 @@ Item {
     property real u: Theme.u
     readonly property string kind: Prefs.aiTheme
     readonly property int level: Prefs.aiThemeLevel === "low" ? 0 : (Prefs.aiThemeLevel === "high" ? 2 : 1)
+    property real cornerRadius: Math.round(10 * u)
 
     visible: kind !== "none"
-    clip: true
+
+    layer.enabled: visible
+    layer.smooth: true
+    layer.samples: 4
+    layer.effect: MultiEffect {
+        maskEnabled: true
+        maskSource: effectMask
+    }
+
+    Item {
+        id: effectMask
+        visible: false
+        width: root.width
+        height: root.height
+        layer.enabled: true
+        layer.smooth: true
+        layer.samples: 4
+
+        Rectangle {
+            anchors.fill: parent
+            radius: root.cornerRadius
+            antialiasing: true
+            color: "black"
+        }
+    }
 
     Loader {
         anchors.fill: parent

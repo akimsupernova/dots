@@ -35,6 +35,17 @@ Item {
     HoverHandler { id: hov }
 
     function openLink(link) { Qt.openUrlExternally(link) }
+    function tightLists(s) {
+        const lines = String(s).split("\n")
+        let inFence = false
+        for (let i = 0; i < lines.length; i++) {
+            if (/^\s{0,3}`{3,}/.test(lines[i])) { inFence = !inFence; continue }
+            if (inFence) continue
+            const m = lines[i].match(/^(\s*)[-*+]\s+(.*)$/)
+            if (m) lines[i] = "&emsp;".repeat(Math.floor(m[1].length / 2)) + "\u2022 " + m[2] + "  "
+        }
+        return lines.join("\n")
+    }
 
     function parseInfo(info) {
         let lang = ""
@@ -134,7 +145,7 @@ Item {
             selectByMouse: true
             wrapMode: TextEdit.Wrap
             textFormat: TextEdit.MarkdownText
-            text: root.plainText
+            text: root.tightLists(root.plainText)
             color: (root.msg.error === true) ? Theme.warn : Theme.ink
             selectionColor: Qt.alpha(Theme.accent1, 0.5)
             font.family: Theme.font
@@ -321,7 +332,7 @@ Item {
                                 selectByMouse: true
                                 wrapMode: TextEdit.Wrap
                                 textFormat: TextEdit.MarkdownText
-                                text: seg.ptext
+                                text: root.tightLists(seg.ptext)
                                 color: Theme.ink
                                 selectionColor: Qt.alpha(Theme.accent1, 0.5)
                                 font.family: Theme.font

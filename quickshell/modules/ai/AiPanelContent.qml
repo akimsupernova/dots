@@ -45,7 +45,7 @@ Item {
 
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/web on|off", "/think on|off", "/maxtokens <n>", "/ctx <n>", "/attach <path>", "/image <text>", "/clear", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/think on|off", "/maxtokens <n>", "/ctx <n>", "/attach <path>", "/image <text>", "/new", "/history", "/load <n>", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -80,49 +80,79 @@ Item {
         AiEffect {
             anchors.fill: parent
             u: root.u
+            cornerRadius: list.maskRadius
         }
 
-        ListView {
-            id: list
-
-            readonly property real maskRadius: Math.round(10 * root.u)
-            readonly property real fadeLen: Math.round(26 * root.u)
-
+        Item {
+            id: clipBox
             anchors.fill: parent
-            clip: false
-            spacing: 0
-            model: Ai.messages
-            boundsBehavior: Flickable.StopAtBounds
-
-            readonly property real topScrolled: contentY - originY + topMargin
-            readonly property real bottomScrolled: (contentHeight + originY + bottomMargin) - (contentY + height)
-            readonly property real topFade: Math.max(0, Math.min(1, topScrolled / (fadeLen * 0.5)))
-            readonly property real bottomFade: Math.max(0, Math.min(1, bottomScrolled / (fadeLen * 0.5)))
-
             layer.enabled: true
             layer.smooth: true
+            layer.samples: 4
             layer.effect: MultiEffect {
                 maskEnabled: true
-                maskSource: maskItem
+                maskSource: roundMask
             }
 
-            property bool stick: true
-            onContentHeightChanged: if (stick) Qt.callLater(positionViewAtEnd)
-            onMovementStarted: stick = false
-            onMovementEnded: stick = atYEnd
-            Component.onCompleted: Qt.callLater(positionViewAtEnd)
+            ListView {
+                id: list
 
-            delegate: AiMessage {
-                required property var modelData
-                required property int index
-                width: list.width
-                msg: modelData
-                isLast: index === Ai.messages.length - 1
+                readonly property real maskRadius: Math.round(14 * root.u)
+                readonly property real fadeLen: Math.round(26 * root.u)
+
+                anchors.fill: parent
+                clip: false
+                spacing: 0
+                model: Ai.messages
+                boundsBehavior: Flickable.StopAtBounds
+
+                readonly property real topScrolled: contentY - originY + topMargin
+                readonly property real bottomScrolled: (contentHeight + originY + bottomMargin) - (contentY + height)
+                readonly property real topFade: Math.max(0, Math.min(1, topScrolled / (fadeLen * 0.5)))
+                readonly property real bottomFade: Math.max(0, Math.min(1, bottomScrolled / (fadeLen * 0.5)))
+
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: maskItem
+                }
+
+                property bool stick: true
+                onContentHeightChanged: if (stick) Qt.callLater(positionViewAtEnd)
+                onMovementStarted: stick = false
+                onMovementEnded: stick = atYEnd
+                Component.onCompleted: Qt.callLater(positionViewAtEnd)
+
+                delegate: AiMessage {
+                    required property var modelData
+                    required property int index
+                    width: list.width
+                    msg: modelData
+                    isLast: index === Ai.messages.length - 1
+                }
+
+                Connections {
+                    target: Ai
+                    function onMessagesChanged() { list.stick = true; Qt.callLater(list.positionViewAtEnd) }
+                }
             }
+        }
 
-            Connections {
-                target: Ai
-                function onMessagesChanged() { list.stick = true; Qt.callLater(list.positionViewAtEnd) }
+        Item {
+            id: roundMask
+            visible: false
+            width: clipBox.width
+            height: clipBox.height
+            layer.enabled: true
+            layer.smooth: true
+            layer.samples: 4
+
+            Rectangle {
+                anchors.fill: parent
+                radius: list.maskRadius
+                antialiasing: true
+                color: "black"
             }
         }
 
@@ -131,10 +161,10 @@ Item {
             visible: false
             layer.enabled: true
             layer.smooth: true
+            layer.samples: 4
             antialiasing: true
             width: list.width
             height: list.height
-            radius: list.maskRadius
 
             readonly property real fp: Math.min(0.5, list.fadeLen / Math.max(1, height))
 
