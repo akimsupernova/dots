@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
-MAX_TEXT_CHARS = 60000
+MAX_TEXT_CHARS = 400000
 MAX_SIDE = 2048
 
 

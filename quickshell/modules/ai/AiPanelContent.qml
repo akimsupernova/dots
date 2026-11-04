@@ -32,13 +32,20 @@ Item {
 
     function submit() {
         const t = field.text
+        if (Ai.busy && t.trim()[0] !== "/") return
         field.text = ""
         Ai.submit(t)
     }
 
+    function cancelOrClose() {
+        if (root.menuOpen) root.closeMenu()
+        else if (Ai.busy) Ai.stop()
+        else root.closeRequested()
+    }
+
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/web on|off", "/attach <path>", "/image <text>", "/clear", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/think on|off", "/maxtokens <n>", "/ctx <n>", "/attach <path>", "/image <text>", "/clear", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -107,8 +114,10 @@ Item {
 
             delegate: AiMessage {
                 required property var modelData
+                required property int index
                 width: list.width
                 msg: modelData
+                isLast: index === Ai.messages.length - 1
             }
 
             Connections {
@@ -134,6 +143,39 @@ Item {
                 GradientStop { position: maskItem.fp;        color: "white" }
                 GradientStop { position: 1.0 - maskItem.fp;  color: "white" }
                 GradientStop { position: 1.0;                color: Qt.rgba(1, 1, 1, 1 - list.bottomFade) }
+            }
+        }
+
+        Rectangle {
+            id: toBottom
+            readonly property bool show: !list.stick && list.contentHeight > list.height + Math.round(24 * root.u)
+            visible: opacity > 0.01
+            opacity: show ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 140 } }
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Math.round(6 * root.u)
+            width: Math.round(30 * root.u)
+            height: width
+            radius: width / 2
+            color: Qt.alpha(Theme.tint, 0.92)
+            border.width: 1
+            border.color: Theme.inkA(0.3)
+            scale: toBottomArea.containsMouse ? 1.08 : 1
+            Behavior on scale { NumberAnimation { duration: 120 } }
+
+            Icon {
+                anchors.centerIn: parent
+                name: "chevron-down"
+                size: Math.round(14 * root.u)
+                color: Theme.ink
+            }
+            MouseArea {
+                id: toBottomArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { list.stick = true; list.positionViewAtEnd() }
             }
         }
     }
@@ -265,8 +307,9 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: root.pillH
-        radius: height / 2
+        height: Math.max(root.pillH, inputFlick.height + Math.round(18 * root.u))
+        radius: Math.min(height / 2, root.pillH / 2)
+        Behavior on height { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
         color: Qt.alpha(Theme.tint, Math.min(0.9, Theme.panelAlpha * 0.78))
         border.width: 1
         border.color: Theme.inkA(0.30)
@@ -280,7 +323,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             anchors.margins: 1
-            radius: height / 2
+            radius: pill.radius - 1
             gradient: Gradient {
                 GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
                 GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
@@ -292,7 +335,8 @@ Item {
             id: plusBtn
             anchors.left: parent.left
             anchors.leftMargin: Math.round(5 * root.u)
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Math.round(5 * root.u)
             width: root.pillH - Math.round(10 * root.u)
             height: width
             radius: width / 2
@@ -325,7 +369,8 @@ Item {
             id: sendBtn
             anchors.right: parent.right
             anchors.rightMargin: Math.round(5 * root.u)
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Math.round(5 * root.u)
             width: Math.round(66 * root.u)
             height: plusBtn.height
             radius: height / 2
@@ -375,26 +420,20 @@ Item {
                 }
             }
 
-            Icon {
-                id: busyIcon
+            Rectangle {
+                id: stopIcon
                 anchors.centerIn: parent
                 visible: Ai.busy
-                name: "sparkle"
-                size: Math.round(17 * root.u)
+                width: Math.round(12 * root.u)
+                height: width
+                radius: Math.round(3 * root.u)
                 color: "white"
 
-                NumberAnimation on rotation {
-                    running: busyIcon.visible
-                    from: 0
-                    to: 360
-                    duration: 9000
+                SequentialAnimation on opacity {
+                    running: stopIcon.visible
                     loops: Animation.Infinite
-                }
-                SequentialAnimation on scale {
-                    running: busyIcon.visible
-                    loops: Animation.Infinite
-                    NumberAnimation { to: 1.18; duration: 1400; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 0.9;  duration: 1400; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.55; duration: 900; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 1.0; duration: 900; easing.type: Easing.InOutSine }
                 }
             }
 
@@ -411,7 +450,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.submit()
+                onClicked: { if (Ai.busy) Ai.stop(); else root.submit() }
             }
         }
 
@@ -419,7 +458,7 @@ Item {
             id: chip
             anchors.right: sendBtn.left
             anchors.rightMargin: Math.round(12 * root.u)
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: sendBtn.verticalCenter
             text: Ai.label
             color: Theme.ink
             opacity: chipArea.containsMouse ? 0.9 : 0.5
@@ -437,32 +476,77 @@ Item {
             }
         }
 
-        TextInput {
-            id: field
+        Flickable {
+            id: inputFlick
+
+            readonly property real maxH: Math.round(150 * root.u)
+
             anchors.left: plusBtn.right
             anchors.leftMargin: Math.round(14 * root.u)
             anchors.right: chip.left
             anchors.rightMargin: Math.round(10 * root.u)
             anchors.verticalCenter: parent.verticalCenter
+            height: Math.min(Math.max(field.contentHeight, Math.round(16 * root.u)) + 2, maxH)
+            contentWidth: width
+            contentHeight: field.height
             clip: true
-            color: Theme.ink
-            selectionColor: Theme.accent1
-            selectedTextColor: "#101216"
-            selectByMouse: true
-            echoMode: root.secret ? TextInput.Password : TextInput.Normal
-            font.family: Theme.font
-            font.pixelSize: Math.round(12 * root.u)
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
 
-            onAccepted: root.submit()
-            Keys.onEscapePressed: { if (root.menuOpen) root.closeMenu(); else root.closeRequested() }
+            function ensureVisible() {
+                const r = field.cursorRectangle
+                if (r.y < contentY) contentY = r.y
+                else if (r.y + r.height > contentY + height) contentY = r.y + r.height - height
+            }
 
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Ask AI"
-                color: Theme.ink
-                opacity: field.text === "" ? 0.5 : 0
-                font: field.font
-                Behavior on opacity { NumberAnimation { duration: 120 } }
+            TextEdit {
+                id: field
+                width: inputFlick.width
+                height: Math.max(contentHeight, inputFlick.height)
+                wrapMode: TextEdit.Wrap
+                color: root.secret ? "transparent" : Theme.ink
+                selectionColor: Theme.accent1
+                selectedTextColor: "#101216"
+                selectByMouse: true
+                persistentSelection: false
+                font.family: root.secret ? "monospace" : Theme.font
+                font.pixelSize: Math.round(12 * root.u)
+                cursorDelegate: Rectangle {
+                    width: Math.max(1, Math.round(1.2 * root.u))
+                    color: Theme.ink
+                    visible: field.activeFocus
+                }
+
+                onCursorRectangleChanged: inputFlick.ensureVisible()
+
+                Keys.onPressed: event => {
+                    if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !(event.modifiers & Qt.ShiftModifier)) {
+                        root.submit()
+                        event.accepted = true
+                    }
+                }
+                Keys.onEscapePressed: root.cancelOrClose()
+
+                Text {
+                    visible: root.secret
+                    width: field.width
+                    wrapMode: Text.Wrap
+                    font: field.font
+                    color: Theme.ink
+                    text: {
+                        const t = field.text
+                        const m = t.match(/^(\/(?:apikey|key)\s+\S+\s+)([\s\S]*)$/i) || t.match(/^(\/web\s+key\s+)([\s\S]*)$/i)
+                        return m ? m[1] + "\u2022".repeat(m[2].length) : t
+                    }
+                }
+
+                Text {
+                    text: "Ask AI"
+                    color: Theme.ink
+                    opacity: field.text === "" ? 0.5 : 0
+                    font: field.font
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
             }
         }
     }
