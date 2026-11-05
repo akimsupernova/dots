@@ -47,5 +47,6 @@ ShellRoot {
     NotificationPopups {}
     Lock {}
     AiPanel {}
+    AiStatus {}
 }
 

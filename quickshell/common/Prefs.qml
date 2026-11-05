@@ -52,6 +52,7 @@ Singleton {
     property bool aiCloseOutside: true
     property string aiTheme: "none"
     property string aiThemeLevel: "medium"
+    property bool aiStatus: true
 
     property int notifTimeout: 2
     property int notifMax: 4
@@ -110,6 +111,7 @@ Singleton {
         aiCloseOutside: { t: "bool" },
         aiTheme:      { t: "enum", v: ["none", "rain", "meteor"] },
         aiThemeLevel: { t: "enum", v: ["low", "medium", "high"] },
+        aiStatus:     { t: "bool" },
         notifTimeout: { t: "num", min: 1, max: 15, int: true },
         notifMax:     { t: "num", min: 1, max: 8, int: true },
         notifCriticalSticky: { t: "bool" },

@@ -208,6 +208,20 @@ ColumnLayout {
     }
 
     Card {
+        title: "Status pill"
+
+        SettingRow {
+            label: "Show while the AI is running"
+            hint: "A small pill at the top of the screen shows what the AI is doing"
+
+            ToggleSwitch {
+                checked: Prefs.aiStatus
+                onToggled: v => Prefs.set("aiStatus", v)
+            }
+        }
+    }
+
+    Card {
         title: "Prompt"
 
         SettingRow {
