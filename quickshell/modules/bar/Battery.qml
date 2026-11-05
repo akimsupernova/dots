@@ -13,15 +13,15 @@ Item {
                                     : Theme.ink
 
     visible: BatteryState.hasBattery && Prefs.barBattery
-    implicitWidth: visible ? pill.width + 8 : 0
+    implicitWidth: visible ? pill.width + 0 : 0
     implicitHeight: Theme.barHeight
 
     Rectangle {
         id: pill
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 38
-        height: 17
+        width: 35
+        height: 14
         radius: height / 2
         color: Theme.inkA(0.2)
 

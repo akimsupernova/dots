@@ -26,8 +26,8 @@ Item {
         id: pill
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 38
-        height: 17
+        width: 35
+        height: 14
         radius: height / 2
         color: Theme.inkA(0.2)
 
