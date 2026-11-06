@@ -1,7 +1,5 @@
 local p = require("modules.programs")
 local closeWindowBind = hl.bind("SUPER + Q", hl.dsp.window.close(), { description = "Window: Close" })
-local shotDir  = "~/Pictures/Screenshots"
-local shotName = shotDir .. "/$(date +%F_%H-%M-%S).png"
 
 hl.bind("SUPER + Return", hl.dsp.exec_cmd(p.terminal), { description = "Workspace: Terminal" })
 hl.bind("SUPER + M", hl.dsp.exec_cmd("qs ipc call monitor toggle"), { description = "Shell: Monitor Settings" })
@@ -25,8 +23,9 @@ hl.bind("SUPER + left",  hl.dsp.focus({ direction = "left" }),  { description = 
 hl.bind("SUPER + right", hl.dsp.focus({ direction = "right" }), { description = "Focus: Right" })
 hl.bind("SUPER + up",    hl.dsp.focus({ direction = "up" }),    { description = "Focus: Up" })
 hl.bind("SUPER + down",  hl.dsp.focus({ direction = "down" }),  { description = "Focus: Down" })
-hl.bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "Screenshot: Select Area & Copy" })
-hl.bind("ALT + SPACE", hl.dsp.exec_cmd([[mkdir -p ]] .. shotDir .. [[ && f=]] .. shotName .. [[ && grim "$f" && wl-copy < "$f"]]), { description = "Screenshot: Full Snap & Save" })
+hl.bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd([[bash "$HOME/.config/quickshell/scripts/screenshot.sh" area]]), { description = "Screenshot: Select Area & Copy" })
+hl.bind("ALT + SPACE", hl.dsp.exec_cmd([[bash "$HOME/.config/quickshell/scripts/screenshot.sh" full]]), { description = "Screenshot: Full Snap & Save" })
+hl.bind("ALT + F4", hl.dsp.exec_cmd([[notify-send -a Keybind -u normal -t 4000 -i dialog-warning -h string:x-canonical-private-synchronous:alt-f4 "Wrong shortcut" "Alt + F4 is not used here. Press Super + Q to close the app."]]), { description = "Window: Alt+F4 Hint (use Super + Q)" })
 hl.bind("CTRL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -e btop"), { description = "Workspace: Task Manager" })
 hl.bind("SUPER + SPACE", hl.dsp.global("quickshell:launcherToggleRelease"), { description = "Shell: Toggle launcher" })
 hl.bind("SUPER + I", hl.dsp.exec_cmd("pavucontrol"), { description = "Media: Volume Control" })

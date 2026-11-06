@@ -178,6 +178,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Keys | Action |
 | --- | --- |
 | `SUPER + Q` | Close window |
+| `ALT + F4` | Does not close anything: shows a notification reminding you to use `SUPER + Q` |
 | `SUPER + F` | Fullscreen on or off |
 | `SUPER + V` | Floating on or off |
 | `SUPER + P` | Pseudo-tile |
