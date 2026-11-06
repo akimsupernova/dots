@@ -241,6 +241,16 @@ ColumnLayout {
         }
 
         SettingRow {
+            label: "Share PC specs with AI"
+            hint: "Allow your AI provider to access your PC specifications with every message"
+
+            ToggleSwitch {
+                checked: Prefs.aiSpecs
+                onToggled: v => Prefs.set("aiSpecs", v)
+            }
+        }
+
+        SettingRow {
             label: "Custom instructions"
             hint: "Added to the built-in prompt"
 

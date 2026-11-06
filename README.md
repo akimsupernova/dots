@@ -77,6 +77,7 @@ The installer asks before it does anything risky. It does these steps:
 3. Offers to turn on the NetworkManager, Bluetooth and LACT services. It can also set up monitor brightness control for external screens.
 4. Backs up your old configs, then copies the new ones.
 5. Sets the default wallpaper.
+6. Saves your PC specs for the AI panel in `~/.config/glassveil/spec.txt` (first install only, see [PC specs](#pc-specs-and-desktop-knowledge)).
 
 The installer never reboots by itself. When it finishes it tells you to reboot (add `--reboot` to do it automatically). It also warns you if Hyprland is older than 0.55. If you have no display manager, install one (`sudo pacman -S sddm && sudo systemctl enable sddm`) or start Hyprland from the TTY.
 
@@ -90,6 +91,7 @@ The installer never reboots by itself. When it finishes it tells you to reboot (
 ./setup install --reboot    # reboot when done
 ./setup install --no-reboot # do not reboot (this is the default)
 ./setup deps                # install yay and packages only
+./setup specs               # write the PC specs file for the AI panel again
 ./setup uninstall           # remove the dotfiles and restore your backup
 ./setup help
 ```
@@ -126,7 +128,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Fonts | `fontconfig`, `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
 | Audio | `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`, `alsa-utils`, `pavucontrol`, `cava`, `playerctl`, `sof-firmware` |
 | Network and devices | `networkmanager`, `bluez`, `bluez-utils`, `upower`, `brightnessctl`, `ddcutil` |
-| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils`, `zenity` (file chooser), `poppler` (reads PDF files) |
+| Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils`, `zenity` (file chooser), `poppler` (reads PDF files), `pciutils` (finds your GPU for the specs file) |
 | Apps | `firefox`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
 
 ## Key bindings
@@ -137,7 +139,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER` (tap) | App launcher |
+| `SUPER + SPACE` | App launcher |
 | `SUPER + A` | AI panel |
 | `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
 | `SUPER + B` | Settings panel |
@@ -192,7 +194,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + SPACE` | Select an area and copy it to the clipboard |
+| `SUPER + ALT + SPACE` | Select an area and copy it to the clipboard |
 | `ALT + SPACE` | Full screenshot, saved to `~/Pictures/Screenshots` and copied |
 
 ### Media
@@ -218,7 +220,7 @@ Every change applies at once and is saved in `~/.config/glassveil/settings.json`
 | Clock & weather | Desktop clock style (digital or ring), size, 24-hour time, date, what the ring shows (day or battery), weather on the ring. Weather on or off, city, units and update time |
 | Wallpaper | Random wallpaper, all your wallpapers, and the **monitor settings** |
 | Audio | Output and input device, volume, microphone volume, volume of each app, test sound, open the mixer. Scroll step, maximum volume (100%, 125% or 150%) and the volume pop-up |
-| AI | AI panel size and position, dragging, closing when you click outside, a new chat, the chat theme (rain or meteor), answer style (short, default or detailed) and your own instructions. See [AI panel](#ai-panel) |
+| AI | AI panel size and position, dragging, closing when you click outside, a new chat, the chat theme (rain or meteor), answer style (short, default or detailed), sharing your PC specs with the AI and your own instructions. See [AI panel](#ai-panel) |
 | Notifications | Do not disturb, how long pop-ups stay, how many show at once, keep urgent ones until you close them, clear all, test buttons |
 | Lock screen & night light | Auto-lock, lock time, screen off after lock, a **Lock now** button, and night light |
 | About | System info, links and the Reset button |
@@ -287,7 +289,10 @@ You can also change how the panel looks and behaves in **Settings → AI** (size
 | `/web backend <name>` | Choose the search service: `ddg`, `searxng` or `ollama` |
 | `/web url <url>` / `/web key <key>` | Set the SearXNG address or the Ollama search key |
 | `/ctx <tokens>` | Ollama memory size per chat (default 16384) |
-| `/clear` (or `/new`) | Start a new chat |
+| `/clear` (or `/new`) | Start a new chat (the old one is saved) |
+| `/history` · `/load <n>` | List saved chats and open one |
+| `/maxtokens <n\|auto>` | Longest answer to ask for |
+| `/think on\|off\|low\|medium\|high` | Reasoning level for Ollama models |
 | `/help` | Show the commands |
 
 Short names: `chatgpt` (or `gpt`) = openai, `claude` = anthropic, `google` = gemini, `grok` = xai, `local` = ollama, `or` = openrouter. `/search` works like `/web`, `/use` like `/provider`, and `/imagine` like `/image`.
@@ -416,9 +421,25 @@ Notes:
 
 - Keys are saved as plain text in `~/.config/glassveil/ai.json`. Only you can read it. The file is outside this repo. **Never commit it.**
 - Lines that start with `/` (including your key) are never sent to a provider and never kept in the chat.
-- The provider gets only: your last 20 messages, any files you attach, a short system note with today's date, and web results if search is on. The AI cannot see your screen, clipboard or other files, and it cannot run commands.
-- The chat is kept in memory only. It is gone when the shell restarts.
+- The provider gets only: your recent messages, any files you attach, a system note (today's date, notes about these dotfiles, your changed Settings values, your own `hypr/custom/keybinds.lua` and, if you allow it, your PC specs), and web results if search is on. The AI cannot see your screen, clipboard or other files, and it cannot run commands.
+- Chats are saved in `~/.config/glassveil/chats.json` (only you can read it) so they survive a restart. `/history clear` deletes the saved ones.
+- Hardware info is sent only while **Settings → AI → Share PC specs with the AI** is on.
 - To keep everything on your computer, use `/provider ollama`. With web search on, your searches still go to the internet.
+
+### PC specs and desktop knowledge
+
+The AI panel knows it runs inside Glassveil Shell. It has built-in notes about these dotfiles (`quickshell/assets/ai/knowledge.md`: key bindings, settings, file locations, theming, troubleshooting) and it sees which Settings values you changed.
+
+For your hardware it never runs commands. Instead, `./setup install` writes `~/.config/glassveil/spec.txt` on the first install (and later, if the file is missing). The file holds:
+
+- OS, kernel, boot mode (UEFI or BIOS), Hyprland version, laptop or desktop
+- CPU model, cores and threads
+- RAM and swap
+- GPU model, driver and video memory (when it can be read)
+- Root filesystem type (ext4, btrfs, ...)
+- Every disk with its size, type (NVMe SSD, SATA SSD, SATA HDD, USB, ...) and its partitions with filesystem and mount point
+
+It holds no hostname, serial numbers, MAC addresses or IP addresses. Run `./setup specs` to write it again after a hardware change. You can edit the file by hand. Turn the sharing off in **Settings → AI → Share PC specs with the AI**.
 
 ### Notes
 
@@ -593,7 +614,7 @@ Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launche
 │   ├── modules/              one folder per feature (bar, launcher, sidebar, settings, ai, ...)
 │   ├── scripts/              wallpaper, brightness, theme sync, AI file and image helpers
 │   ├── pam/                  PAM config used by the lock screen
-│   └── assets/               icons, sounds, name card images, wallpaper, emoji list, previews
+│   └── assets/               icons, sounds, name card images, wallpaper, emoji list, previews, ai/knowledge.md (notes the AI reads)
 ├── kitty/  fish/  gtk-3.0/  gtk-4.0/  qt5ct/  qt6ct/  nwg-look/
 ├── icons/                    cursor theme
 └── fonts/                    Google Sans

@@ -43,8 +43,15 @@ Item {
             if (inFence) continue
             const m = lines[i].match(/^(\s*)[-*+]\s+(.*)$/)
             if (m) lines[i] = "&emsp;".repeat(Math.floor(m[1].length / 2)) + "\u2022 " + m[2] + "  "
+            // Keep single newlines as real line breaks (otherwise markdown glues them into one paragraph)
+            else if (lines[i].trim() !== "" && !/\s\s$/.test(lines[i])) lines[i] += "  "
         }
         return lines.join("\n")
+    }
+
+    // True for markdown headings and for lines that start with a bold label (used as pseudo-headings)
+    function isSection(ln) {
+        return /^\s{0,3}#{1,6}\s/.test(ln) || /^\s{0,3}\*\*[^*]/.test(ln)
     }
 
     function parseInfo(info) {
@@ -90,6 +97,9 @@ Item {
             if (!inCode) {
                 const m = ln.match(/^\s{0,3}(`{3,})\s*([^`]*)$/)
                 if (m) { flush(); inCode = true; fence = m[1].length; info = m[2].trim(); continue }
+                // Blank line = paragraph boundary, section start = new part (gets a bigger gap above it)
+                if (ln.trim() === "") { flush(); continue }
+                if (isSection(ln)) flush()
                 buf.push(ln)
             } else {
                 const c = ln.match(/^\s{0,3}(`{3,})\s*$/)
@@ -315,11 +325,16 @@ Item {
                         required property string pname
                         required property bool pclosed
 
+                        // Extra space above a section (heading or bold label + its content), except for the first part
+                        readonly property real topGap: (index > 0 && pkind === "text" && root.isSection(ptext.split("\n")[0]))
+                                                       ? Math.round(14 * root.u) : 0
+
                         width: parts.width
-                        height: ld.item ? ld.item.height : 0
+                        height: ld.item ? ld.item.height + topGap : 0
 
                         Loader {
                             id: ld
+                            y: seg.topGap
                             width: parent.width
                             sourceComponent: seg.pkind === "text" ? textC : (seg.pkind === "file" ? fileC : codeC)
                         }

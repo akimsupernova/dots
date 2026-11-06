@@ -11,6 +11,7 @@ MANIFEST="$STATE_DIR/manifest"
 BACKUP_REF="$STATE_DIR/backup_dir"
 LOG_FILE="$STATE_DIR/last-command.log"
 WELCOME_PENDING="$STATE_DIR/welcome-pending"
+SPEC_FILE="$CONFIG_DIR/glassveil/spec.txt"
 BACKUP_ROOT=""
 PRESERVE_DIR=""
 
@@ -41,7 +42,7 @@ PACKAGES=(
   libnotify kvantum kvantum-qt5 curl zenity poppler dconf gsettings-desktop-schemas
   cava playerctl xdg-utils python-pillow qt6-svg breeze-icons konsole ttf-jetbrains-mono-nerd
   hyprland hyprsunset networkmanager bluez bluez-utils upower ffmpegthumbs
-  adwaita-fonts adwaita-icon-theme xdg-desktop-portal-gtk qt6-wayland qt5-wayland
+  adwaita-fonts adwaita-icon-theme xdg-desktop-portal-gtk qt6-wayland qt5-wayland pciutils
 )
 
 info() { printf '\033[1;34m[INFO]\033[0m %s\n' "$*"; }
@@ -217,6 +218,7 @@ Commands:
   install     Install packages, then install the dotfiles.
   uninstall   Remove the installed dotfiles and restore the original configs.
   deps        Install yay + packages only.
+  specs       Write the PC specs file (~/.config/glassveil/spec.txt) for the AI panel again.
   welcome     Show the welcome card again at the next login.
   help        Show this help.
 
@@ -585,7 +587,6 @@ check_hyprland() {
 }
 
 seed_wallpaper_dir() {
-  # Only make sure the folder exists; the default wallpaper is not copied into it.
   run mkdir -p "$HOME/Pictures/Wallpapers"
 }
 
@@ -596,6 +597,191 @@ schedule_welcome() {
   fi
   mkdir -p "$STATE_DIR"
   printf 'show\n' > "$WELCOME_PENDING"
+}
+
+spec_kv() { printf '%-17s %s\n' "$1:" "$2"; }
+
+spec_size() {
+  awk -v b="${1:-0}" 'BEGIN {
+    if (b >= 1e12) printf "%.1f TB", b / 1e12
+    else if (b >= 1e9) printf "%.0f GB", b / 1e9
+    else printf "%.0f MB", b / 1e6
+  }'
+}
+
+spec_gib() {
+  awk -v b="${1:-0}" 'BEGIN {
+    if (b >= 1073741824) printf "%.0f GiB", b / 1073741824
+    else printf "%.0f MiB", b / 1048576
+  }'
+}
+
+spec_lscpu() { awk -F: -v k="$1" '$1 == k { sub(/^[ \t]+/, "", $2); print $2; exit }' <<<"$2"; }
+
+spec_disk_kind() {
+  local name="$1" rota="$2" tran="$3"
+  case "$name" in
+    nvme*)    echo "NVMe SSD"; return ;;
+    mmcblk*)  echo "eMMC / SD card"; return ;;
+    vd*|xvd*) echo "virtual disk"; return ;;
+  esac
+  case "$tran" in
+    nvme)     echo "NVMe SSD" ;;
+    usb)      echo "USB drive" ;;
+    sata|ata) if [[ "$rota" == "1" ]]; then echo "SATA HDD"; else echo "SATA SSD"; fi ;;
+    *)        if [[ "$rota" == "1" ]]; then echo "HDD"; else echo "SSD (interface unknown)"; fi ;;
+  esac
+}
+
+generate_specs() {
+  if ((DRY_RUN)); then
+    info "[dry-run] would write the PC specs to $SPEC_FILE"
+    return 0
+  fi
+
+  local tmp os_name kernel boot_mode hbin hver device
+  local lscpu_out cpu_model sockets cores_per threads cores
+  local mem_kb swap_line
+  local root_fs home_target home_fs src top rota tran rsize
+  local name size type model pname psize pfs pmnt gname gdrv f b l i
+  local -a gpus=() vram=()
+
+  mkdir -p "$(dirname "$SPEC_FILE")"
+  tmp="$(mktemp "$SPEC_FILE.XXXXXX")"
+
+  os_name="$( . /etc/os-release 2>/dev/null && printf '%s' "${PRETTY_NAME:-}" )"
+  kernel="$(uname -r 2>/dev/null || true) ($(uname -m 2>/dev/null || true))"
+  if [[ -d /sys/firmware/efi ]]; then boot_mode="UEFI"; else boot_mode="BIOS (legacy)"; fi
+
+  hver=""
+  hbin="$(command -v Hyprland 2>/dev/null || command -v hyprland 2>/dev/null || true)"
+  if [[ -n "$hbin" ]]; then
+    hver="$("$hbin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)"
+  fi
+
+  if compgen -G "/sys/class/power_supply/BAT*" >/dev/null; then
+    device="laptop (battery found)"
+  else
+    device="desktop (no battery)"
+  fi
+
+  lscpu_out="$(LC_ALL=C lscpu 2>/dev/null || true)"
+  cpu_model="$(spec_lscpu 'Model name' "$lscpu_out")"
+  sockets="$(spec_lscpu 'Socket(s)' "$lscpu_out")"
+  cores_per="$(spec_lscpu 'Core(s) per socket' "$lscpu_out")"
+  threads="$(spec_lscpu 'CPU(s)' "$lscpu_out")"
+  cores=""
+  if [[ "${sockets:-}" =~ ^[0-9]+$ && "${cores_per:-}" =~ ^[0-9]+$ ]]; then
+    cores=$((sockets * cores_per))
+  fi
+
+  mem_kb="$(awk '/^MemTotal:/ { print $2; exit }' /proc/meminfo 2>/dev/null || true)"
+  swap_line="$(swapon --noheadings --raw --bytes --show=NAME,SIZE 2>/dev/null | awk '{
+    kind = ($1 ~ /^\/dev\/zram/) ? "zram" : (($1 ~ /^\/dev\//) ? "partition" : "file")
+    printf "%s%.1f GiB %s", (n++ ? ", " : ""), $2 / 1073741824, kind
+  }' || true)"
+
+  while IFS='|' read -r gname gdrv; do
+    if [[ -n "$gname" ]]; then gpus+=("$gname|$gdrv"); fi
+  done < <(lspci -vmmk 2>/dev/null | awk -v RS= -F'\n' '{
+    cls = ""; ven = ""; dev = ""; drv = ""
+    for (i = 1; i <= NF; i++) {
+      k = $i; sub(/:.*/, "", k)
+      v = $i; sub(/^[^:]*:[ \t]*/, "", v)
+      if (k == "Class") cls = v
+      else if (k == "Vendor") ven = v
+      else if (k == "Device") dev = v
+      else if (k == "Driver") drv = v
+    }
+    if (cls ~ /VGA|3D|Display/) print ven " " dev "|" drv
+  }' || true)
+
+  for f in /sys/class/drm/card[0-9]/device/mem_info_vram_total; do
+    if [[ -r "$f" ]]; then
+      b="$(<"$f")"
+      if [[ "$b" =~ ^[0-9]+$ ]]; then vram+=("$(spec_gib "$b")"); fi
+    fi
+  done
+  if ((${#vram[@]} == 0)) && command -v nvidia-smi >/dev/null 2>&1; then
+    while IFS= read -r l; do
+      l="${l//[[:space:]]/}"
+      if [[ "$l" =~ ^[0-9]+$ ]]; then vram+=("$(spec_gib "$((l * 1048576))")"); fi
+    done < <(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null || true)
+  fi
+
+  root_fs="$(findmnt -no FSTYPE / 2>/dev/null | head -n1 || true)"
+  home_target="$(findmnt -no TARGET -T /home 2>/dev/null | head -n1 || true)"
+  home_fs="$(findmnt -no FSTYPE -T /home 2>/dev/null | head -n1 || true)"
+  src="$(findmnt -no SOURCE / 2>/dev/null | head -n1 | sed 's/\[.*\]$//' || true)"
+  top=""
+  if [[ -n "$src" ]]; then
+    top="$(lsblk -nslo NAME,TYPE "$src" 2>/dev/null | awk '$2 == "disk" { print $1; exit }' || true)"
+  fi
+
+  {
+    echo "# PC specs for the Glassveil Shell AI panel."
+    echo "# Written by ./setup on $(date +%F). Run ./setup specs again after a hardware change."
+    echo "# The AI reads this file instead of running commands."
+    echo "# It has no hostname, serial numbers, MAC addresses or IP addresses."
+    echo "# RAM is the amount Linux can use, a little below the installed size."
+    echo
+    spec_kv "OS" "${os_name:-Arch Linux}"
+    spec_kv "Kernel" "$kernel"
+    spec_kv "Boot mode" "$boot_mode"
+    spec_kv "Hyprland" "${hver:-unknown}"
+    spec_kv "Device type" "$device"
+    echo
+    spec_kv "CPU" "${cpu_model:-unknown}"
+    if [[ -n "$cores" || -n "${threads:-}" ]]; then
+      spec_kv "CPU cores" "${cores:-unknown}"
+      spec_kv "CPU threads" "${threads:-unknown}"
+    fi
+    if [[ -n "$mem_kb" ]]; then
+      spec_kv "RAM" "$(awk -v k="$mem_kb" 'BEGIN { printf "%.1f GiB usable", k / 1048576 }')"
+    else
+      spec_kv "RAM" "unknown"
+    fi
+    spec_kv "Swap" "${swap_line:-none}"
+    if ((${#gpus[@]} == 0)); then
+      spec_kv "GPU" "unknown (none detected)"
+    else
+      for i in "${!gpus[@]}"; do
+        gname="${gpus[$i]%%|*}"
+        gdrv="${gpus[$i]#*|}"
+        if ((${#gpus[@]} > 1)); then name="GPU $((i + 1))"; else name="GPU"; fi
+        spec_kv "$name" "$gname (driver: ${gdrv:-none})"
+      done
+    fi
+    for i in "${!vram[@]}"; do
+      spec_kv "VRAM" "${vram[$i]} (dedicated video memory; integrated GPUs share system RAM)"
+    done
+    echo
+    spec_kv "Root filesystem" "${root_fs:-unknown}"
+    if [[ "$home_target" == "/" || -z "$home_target" ]]; then
+      spec_kv "/home" "inside the root filesystem"
+    else
+      spec_kv "/home" "separate mount, ${home_fs:-unknown}"
+    fi
+    if [[ -n "$top" ]]; then
+      read -r rota tran < <(lsblk -dno ROTA,TRAN "/dev/$top" 2>/dev/null || true) || true
+      rsize="$(lsblk -dnbo SIZE "/dev/$top" 2>/dev/null | head -n1 || true)"
+      spec_kv "System disk" "$top ($(spec_disk_kind "$top" "${rota:-}" "${tran:-}"), $(spec_size "${rsize:-0}"))"
+    fi
+    echo "Storage:"
+    while read -r name size type rota tran; do
+      if [[ "$type" != "disk" ]]; then continue; fi
+      case "$name" in zram*|ram*|loop*) continue ;; esac
+      model="$(lsblk -dno MODEL "/dev/$name" 2>/dev/null | sed 's/[[:space:]]*$//' || true)"
+      printf '  - %s: %s, %s%s\n' "$name" "$(spec_size "$size")" "$(spec_disk_kind "$name" "$rota" "${tran:-}")" "${model:+, $model}"
+      while read -r pname psize pfs pmnt; do
+        printf '      %-16s %-9s %-10s %s\n' "$pname" "$(spec_size "$psize")" "${pfs:--}" "${pmnt:--}"
+      done < <(lsblk -lnb -o NAME,SIZE,FSTYPE,MOUNTPOINT "/dev/$name" 2>/dev/null | tail -n +2 || true)
+    done < <(lsblk -dnb -o NAME,SIZE,TYPE,ROTA,TRAN 2>/dev/null || true)
+  } > "$tmp"
+
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$SPEC_FILE"
+  info "Saved PC specs for the AI panel: $SPEC_FILE"
 }
 
 ask_reboot() {
@@ -678,6 +864,11 @@ do_install() {
   seed_wallpaper
   seed_wallpaper_dir
 
+  if [[ ! -f "$SPEC_FILE" ]]; then
+    step "Saving PC specs for the AI panel"
+    generate_specs || warn "Could not write $SPEC_FILE. You can try again later with: ./setup specs"
+  fi
+
   if ((first_install)); then
     schedule_welcome
   fi
@@ -737,7 +928,7 @@ do_uninstall() {
   fi
 
   rm -f "$MANIFEST" "$BACKUP_REF" "$LOG_FILE" "$WELCOME_PENDING"
-  rm -f "$CONFIG_DIR/wallpaper/current"
+  rm -f "$CONFIG_DIR/wallpaper/current" "$SPEC_FILE"
   rmdir "$CONFIG_DIR/wallpaper" 2>/dev/null || true
   refresh_font_cache
   rmdir "$STATE_DIR" 2>/dev/null || true
@@ -786,6 +977,7 @@ case "${CMD:-help}" in
   install)   do_install ;;
   uninstall) do_uninstall ;;
   deps)      check_not_root; build_flags; install_packages ;;
+  specs)     check_not_root; step "Saving PC specs for the AI panel"; generate_specs || die "Could not write $SPEC_FILE." ;;
   welcome)   check_not_root; schedule_welcome; info "Goodbye" ;;
   help)      usage ;;
   *)         usage; die "Unknown command: $CMD" ;;
