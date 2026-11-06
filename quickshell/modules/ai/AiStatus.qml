@@ -119,7 +119,7 @@ Scope {
                 }
 
                 ShapePath {
-                    fillColor: "#000000"
+                    fillColor: Theme.tint
                     strokeWidth: -1
 
                     startX: 0; startY: 0
