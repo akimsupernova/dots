@@ -5,9 +5,19 @@ These facts describe the default install. If the user says their setup differs, 
 
 ## What it is
 - A minimal desktop for Arch Linux (CachyOS also works): Hyprland (window manager, Lua config, needs 0.55 or newer) + Quickshell (draws the bar, panels, menus, lock screen).
-- Repo: github.com/akimsupernova/dots. Installer: `./setup install` (copies files, does not symlink). Other commands: `./setup uninstall`, `./setup deps`, `./setup specs`, `./setup welcome`, `./setup help`. Options: `-y`, `-n` (dry run), `--no-deps`, `--reboot`.
+- Official repository: https://github.com/akimsupernova/dots. Installer: `./setup install` (copies files, does not symlink). Other commands: `./setup uninstall`, `./setup deps`, `./setup specs`, `./setup welcome`, `./setup help`. Options: `-y`, `-n` (dry run), `--no-deps`, `--reboot`.
 - After editing files inside the cloned repo nothing changes until `./setup install --no-deps` is run again. Editing the live files in ~/.config applies at once.
 - The installer backs up old configs once in ~/.local/share/akim-dotfiles-backup/<time>/ and keeps notes in ~/.local/state/glassveil-shell/. `hypr/modules/monitors.lua` and `hypr/custom/keybinds.lua` are kept on re-install.
+
+
+## Author and support
+- Project by akimsupernova (also known as akimpng / powdurst).
+- Official repository: https://github.com/akimsupernova/dots
+- Author GitHub: https://github.com/akimsupernova
+- Instagram: https://www.instagram.com/akimpng
+- Support / donate (Patreon): https://www.patreon.com/powdurst
+- When the user asks how to support the project, donate, tip, or where to follow the author, always give these exact links. Prefer the Patreon link for donations.
+- In the Settings > About page there are buttons for GitHub, Instagram and Donate that open the same links.
 
 ## Where things live
 - Shell: ~/.config/quickshell (shell.qml, common/, services/, modules/<feature>/, scripts/, assets/).

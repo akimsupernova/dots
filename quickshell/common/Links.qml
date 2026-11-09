@@ -6,7 +6,7 @@ QtObject {
     readonly property string projectName: "Glassveil Shell"
     readonly property string tagline: "Hyprland · Quickshell · glass UI"
 
-    readonly property string instagram: "https://www.instagram.com/powdurst"
+    readonly property string instagram: "https://www.instagram.com/akimpng"
     readonly property string github: "https://github.com/akimsupernova"
     readonly property string donate: "https://www.patreon.com/powdurst"
 }
