@@ -34,7 +34,16 @@ Item {
 
     HoverHandler { id: hov }
 
-    function openLink(link) { Qt.openUrlExternally(link) }
+    function openLink(link) {
+        const u = String(link)
+        if (/^https?:\/\//i.test(u)) Qt.openUrlExternally(u)
+    }
+
+    function sanitize(s) {
+        return String(s)
+            .replace(/!(?=\[)/g, "\\!")
+            .replace(/<img/gi, "&lt;img")
+    }
     function tightLists(s) {
         const lines = String(s).split("\n")
         let inFence = false
@@ -43,13 +52,11 @@ Item {
             if (inFence) continue
             const m = lines[i].match(/^(\s*)[-*+]\s+(.*)$/)
             if (m) lines[i] = "&emsp;".repeat(Math.floor(m[1].length / 2)) + "\u2022 " + m[2] + "  "
-            // Keep single newlines as real line breaks (otherwise markdown glues them into one paragraph)
             else if (lines[i].trim() !== "" && !/\s\s$/.test(lines[i])) lines[i] += "  "
         }
         return lines.join("\n")
     }
 
-    // True for markdown headings and for lines that start with a bold label (used as pseudo-headings)
     function isSection(ln) {
         return /^\s{0,3}#{1,6}\s/.test(ln) || /^\s{0,3}\*\*[^*]/.test(ln)
     }
@@ -97,7 +104,6 @@ Item {
             if (!inCode) {
                 const m = ln.match(/^\s{0,3}(`{3,})\s*([^`]*)$/)
                 if (m) { flush(); inCode = true; fence = m[1].length; info = m[2].trim(); continue }
-                // Blank line = paragraph boundary, section start = new part (gets a bigger gap above it)
                 if (ln.trim() === "") { flush(); continue }
                 if (isSection(ln)) flush()
                 buf.push(ln)
@@ -155,7 +161,7 @@ Item {
             selectByMouse: true
             wrapMode: TextEdit.Wrap
             textFormat: TextEdit.MarkdownText
-            text: root.tightLists(root.plainText)
+            text: root.sanitize(root.tightLists(root.plainText))
             color: (root.msg.error === true) ? Theme.warn : Theme.ink
             selectionColor: Qt.alpha(Theme.accent1, 0.5)
             font.family: Theme.font
@@ -324,8 +330,6 @@ Item {
                         required property string plang
                         required property string pname
                         required property bool pclosed
-
-                        // Extra space above a section (heading or bold label + its content), except for the first part
                         readonly property real topGap: (index > 0 && pkind === "text" && root.isSection(ptext.split("\n")[0]))
                                                        ? Math.round(14 * root.u) : 0
 
@@ -347,7 +351,7 @@ Item {
                                 selectByMouse: true
                                 wrapMode: TextEdit.Wrap
                                 textFormat: TextEdit.MarkdownText
-                                text: root.tightLists(seg.ptext)
+                                text: root.sanitize(root.tightLists(seg.ptext))
                                 color: Theme.ink
                                 selectionColor: Qt.alpha(Theme.accent1, 0.5)
                                 font.family: Theme.font
