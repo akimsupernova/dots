@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.common
 import qs.services
 
@@ -35,8 +36,9 @@ Item {
     HoverHandler { id: hov }
 
     function openLink(link) {
-        const u = String(link)
-        if (/^https?:\/\//i.test(u)) Qt.openUrlExternally(u)
+        let u = String(link).trim()
+        if (/^www\./i.test(u)) u = "https://" + u
+        if (/^https?:\/\//i.test(u)) Quickshell.execDetached(["xdg-open", u])
     }
 
     function sanitize(s) {
@@ -167,6 +169,7 @@ Item {
             font.family: Theme.font
             font.pixelSize: Math.round(11.5 * root.u)
             onLinkActivated: link => root.openLink(link)
+            HoverHandler { cursorShape: txt.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.IBeamCursor }
         }
 
         Row {
@@ -357,6 +360,7 @@ Item {
                                 font.family: Theme.font
                                 font.pixelSize: Math.round(11.5 * root.u)
                                 onLinkActivated: link => root.openLink(link)
+                                HoverHandler { cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.IBeamCursor }
                             }
                         }
 
@@ -624,7 +628,7 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: Qt.openUrlExternally(modelData.url)
+                            onClicked: root.openLink(modelData.url)
                         }
                     }
                 }
