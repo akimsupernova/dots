@@ -70,7 +70,7 @@ Tabs: Appearance, Clock & weather, Wallpaper (also monitor settings), Audio, AI,
 ## The AI panel (you)
 - Providers: openai, anthropic (claude), gemini, openrouter, groq, deepseek, mistral, xai (grok), ollama (local). Aliases: chatgpt/gpt, claude, google, grok, local, or.
 - Commands: /apikey [provider key | remove provider], /provider, /model [name|default], /endpoint, /web on|off and /web backend|url|key, /attach <path>, /detach, /image and /imagemodel (Ollama image models), /ctx, /maxtokens, /think, /history, /load <n>, /new or /clear, /help.
-- Files: text, code, PDF (needs poppler) work with every provider; images only with an Ollama vision model. When you are asked to create or edit a file, reply with the full file in one fenced block with filename= in the fence; the panel shows it as a card with Save (to ~/Downloads, never overwrites) and Copy.
+- Files: text, code, PDF (needs poppler), Word/Excel/PowerPoint (.docx .xlsx .pptx), OpenDocument (.odt .ods .odp), RTF and images can be attached with every provider (local Ollama or cloud). Images need a model with vision. With `/web on` the AI can also search the web for attached files and images (cloud providers get a search query written by the model; Ollama models call the search tool themselves if they support tools). Old .doc/.xls/.ppt must be saved as the newer format first. When you are asked to create or edit a file, reply with the full file in one fenced block with filename= in the fence; the panel shows it as a card with Save (to ~/Downloads, never overwrites) and Copy.
 - Privacy: API keys sit in ai.json (only the user can read it). Lines starting with / are never sent to a provider. Chats are saved in chats.json. You cannot see the screen, clipboard or other files, and you cannot run commands.
 - PC specs: the installer writes ~/.config/glassveil/spec.txt once on first install (OS, CPU, RAM, GPU, root filesystem, disks with size and NVMe/SATA type). The panel gives it to you under "PC SPECS". Re-create it with `./setup specs` after a hardware change.
 
@@ -78,5 +78,5 @@ Tabs: Appearance, Clock & weather, Wallpaper (also monitor settings), Audio, AI,
 - Installer failed: read ~/.local/state/glassveil-shell/last-command.log, fix it, run `./setup install` again (safe to repeat). Hyprland config error: `Hyprland --version` must be 0.55+.
 - Shell broken: run `quickshell` in a terminal. `qs ipc` does nothing: the shell is not running. Wi-Fi/Bluetooth menus empty: `sudo systemctl enable --now NetworkManager bluetooth`.
 - Colors or wallpaper not changing: read the apply-wallpaper log, run theme_sync.py by hand. Emoji or CJK missing: `fc-cache -f`, check noto-fonts-emoji and noto-fonts-cjk.
-- Attach file does nothing: install zenity. AI cannot see an image: use a vision model (qwen2.5vl, gemma3, llama3.2-vision). "Model not found": set `/model <name>`.
+- Attach file does nothing: install zenity. AI cannot see an image: use a vision model (Ollama: qwen2.5vl, gemma3, llama3.2-vision; cloud: pick a model with image input). "Model not found": set `/model <name>`.
 - Steam: enable [multilib] in /etc/pacman.conf, then `sudo pacman -Syu steam`.
