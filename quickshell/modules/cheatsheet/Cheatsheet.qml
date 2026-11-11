@@ -342,15 +342,6 @@ Scope {
                                             opacity: rowStage
                                             transform: Translate { x: (1 - bindRow.rowStage) * -14 * root.u }
 
-                                            HoverHandler { id: rowHover }
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                radius: height / 2
-                                                color: Theme.inkA(rowHover.hovered ? 0.09 : 0)
-                                                Behavior on color { ColorAnimation { duration: 120 } }
-                                            }
-
                                             Row {
                                                 id: rowInner
                                                 x: 6 * root.u
@@ -389,8 +380,7 @@ Scope {
                                                     anchors.verticalCenter: parent.verticalCenter
                                                     text: bindRow.bindData.action
                                                     color: Theme.ink
-                                                    opacity: rowHover.hovered ? 1 : 0.8
-                                                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                                                    opacity: 0.8
                                                     font.family: Theme.font
                                                     font.pixelSize: Math.round(10 * root.u)
                                                 }
