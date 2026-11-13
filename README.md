@@ -16,6 +16,16 @@
   <code>Arch Linux</code> · <code>Hyprland</code> · <code>Quickshell</code>
 </p>
 
+<p align="center">
+  <a href="https://github.com/akimsupernova"><img src="https://img.shields.io/badge/GitHub-akimsupernova-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://instagram.com/akimpng"><img src="https://img.shields.io/badge/Instagram-Follow-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"></a>
+</p>
+
+<p align="center">
+  <a href="https://patreon.com/powdurst"><img src="https://img.shields.io/badge/Patreon-Support-F96854?style=for-the-badge&logo=patreon&logoColor=white" alt="Support on Patreon"></a>
+  <a href="https://ko-fi.com/akimpng"><img src="https://img.shields.io/badge/Ko--fi-Support_me-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi"></a>
+</p>
+
 ---
 
 ## Contents
