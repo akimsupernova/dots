@@ -73,7 +73,7 @@ Scope {
         screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
                 ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
-        visible: host.show || pill.y > -pill.height - 1
+        visible: host.show || pill.reveal > 0.001
         anchors { top: true }
         margins { top: Fullscreen.active ? 0 : Theme.gap + Theme.barHeight - 1 }
         implicitWidth: Math.round(560 * Theme.u)
@@ -96,18 +96,40 @@ Scope {
             readonly property real padTop: Math.round(9 * u)
             readonly property real padBottom: Math.round(12 * u)
             property real bodyW: Math.max(content.implicitWidth + 2 * padX, Math.round(150 * u))
+            readonly property real fullW: bodyW + 2 * flare
+            readonly property real fullH: content.implicitHeight + padTop + padBottom
+            property real reveal: host.show ? 1 : 0
 
-            width: bodyW + 2 * flare
-            height: content.implicitHeight + padTop + padBottom
+            width: fullW
+            height: fullH
             x: Math.round((win.width - width) / 2)
-            y: host.show ? 0 : -(height + Math.round(20 * u))
+            y: 0
 
-            Behavior on y { NumberAnimation { duration: 340; easing.type: Easing.OutCubic } }
+            Behavior on reveal {
+                NumberAnimation {
+                    duration: host.show ? 520 : 320
+                    easing.type: host.show ? Easing.OutBack : Easing.InOutCubic
+                    easing.overshoot: 1.3
+                }
+            }
             Behavior on bodyW { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
             Shape {
                 id: body
-                anchors.fill: parent
+
+                readonly property real prog: Math.max(0, pill.reveal)
+                readonly property real w: pill.fullW * (0.5 + 0.5 * Math.min(1, body.prog * 1.7))
+                readonly property real h: pill.fullH * body.prog
+                readonly property real k: Math.min(1, body.h / (pill.flare + pill.corner))
+                readonly property real fl: pill.flare * body.k
+                readonly property real cr: pill.corner * body.k
+                readonly property real bw: body.w - 2 * body.fl
+
+                x: (pill.width - body.w) / 2
+                y: 0
+                width: body.w
+                height: body.h
+                visible: body.h > 0.5
                 layer.enabled: true
                 layer.samples: 4
                 layer.effect: MultiEffect {
@@ -124,137 +146,145 @@ Scope {
 
                     startX: 0; startY: 0
                     PathArc {
-                        x: pill.flare; y: pill.flare
-                        radiusX: pill.flare; radiusY: pill.flare
+                        x: body.fl; y: body.fl
+                        radiusX: body.fl; radiusY: body.fl
                         direction: PathArc.Clockwise
                     }
-                    PathLine { x: pill.flare; y: pill.height - pill.corner }
+                    PathLine { x: body.fl; y: body.h - body.cr }
                     PathArc {
-                        x: pill.flare + pill.corner; y: pill.height
-                        radiusX: pill.corner; radiusY: pill.corner
+                        x: body.fl + body.cr; y: body.h
+                        radiusX: body.cr; radiusY: body.cr
                         direction: PathArc.Counterclockwise
                     }
-                    PathLine { x: pill.flare + pill.bodyW - pill.corner; y: pill.height }
+                    PathLine { x: body.fl + body.bw - body.cr; y: body.h }
                     PathArc {
-                        x: pill.flare + pill.bodyW; y: pill.height - pill.corner
-                        radiusX: pill.corner; radiusY: pill.corner
+                        x: body.fl + body.bw; y: body.h - body.cr
+                        radiusX: body.cr; radiusY: body.cr
                         direction: PathArc.Counterclockwise
                     }
-                    PathLine { x: pill.flare + pill.bodyW; y: pill.flare }
+                    PathLine { x: body.fl + body.bw; y: body.fl }
                     PathArc {
-                        x: pill.width; y: 0
-                        radiusX: pill.flare; radiusY: pill.flare
+                        x: body.w; y: 0
+                        radiusX: body.fl; radiusY: body.fl
                         direction: PathArc.Clockwise
                     }
                     PathLine { x: 0; y: 0 }
                 }
             }
 
-            ColumnLayout {
-                id: content
-                x: Math.round((pill.width - width) / 2)
-                y: pill.padTop
-                spacing: Math.round(3 * pill.u)
+            Item {
+                id: clipBox
+                width: pill.width
+                height: body.h
+                clip: true
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: Math.round(8 * pill.u)
-                    visible: detailText.text !== "" || host.counter !== ""
+                ColumnLayout {
+                    id: content
+                    x: Math.round((pill.width - width) / 2)
+                    y: pill.padTop - (1 - Math.min(1, pill.reveal)) * Math.round(8 * pill.u)
+                    opacity: Math.max(0, Math.min(1, (pill.reveal - 0.55) / 0.4))
+                    spacing: Math.round(3 * pill.u)
 
-                    Text {
-                        id: detailText
-                        Layout.preferredWidth: Math.min(implicitWidth, Math.round(240 * pill.u))
-                        visible: text !== ""
-                        text: host.detail
-                        elide: Text.ElideRight
-                        color: "#99ffffff"
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(11 * pill.u)
-                    }
-                    Text {
-                        text: host.counter
-                        color: "#d9ffffff"
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(11 * pill.u)
-                    }
-                }
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: Math.round(8 * pill.u)
+                        visible: detailText.text !== "" || host.counter !== ""
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: Math.round(8 * pill.u)
-
-                    Item {
-                        id: glyph
-
-                        readonly property real cell: Math.round(5 * pill.u)
-                        readonly property real gap: Math.round(1.5 * pill.u)
-                        readonly property color tone: host.tones[host.shownKind] ?? "#ffffff"
-
-                        Layout.preferredWidth: cell * 3 + gap * 2
-                        Layout.preferredHeight: cell * 3 + gap * 2
-
-                        function lit(kind, f, i) {
-                            const r = Math.floor(i / 3), c = i % 3
-                            switch (kind) {
-                            case "think": {
-                                const ring = [0, 1, 2, 5, 8, 7, 6, 3]
-                                const p = ring.indexOf(i)
-                                if (p < 0) return 0
-                                const d = (f - p + 80) % 8
-                                return d === 0 ? 1 : d === 1 ? 0.55 : d === 2 ? 0.25 : 0
-                            }
-                            case "search":
-                                return c === f % 3 ? 1 : (c === (f + 2) % 3 ? 0.35 : 0)
-                            case "read":
-                                return r === f % 3 ? 1 : (r === (f + 2) % 3 ? 0.35 : 0)
-                            case "respond": {
-                                const set = (f % 2 === 0) ? [1, 3, 4, 5, 7] : [0, 2, 4, 6, 8]
-                                return set.indexOf(i) >= 0 ? 1 : 0.12
-                            }
-                            case "image":
-                                return ((i + f) % 2 === 0) ? 1 : 0.15
-                            }
-                            return 0
+                        Text {
+                            id: detailText
+                            Layout.preferredWidth: Math.min(implicitWidth, Math.round(240 * pill.u))
+                            visible: text !== ""
+                            text: host.detail
+                            elide: Text.ElideRight
+                            color: "#99ffffff"
+                            font.family: Theme.font
+                            font.pixelSize: Math.round(11 * pill.u)
                         }
+                        Text {
+                            text: host.counter
+                            color: "#d9ffffff"
+                            font.family: Theme.font
+                            font.pixelSize: Math.round(11 * pill.u)
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: Math.round(8 * pill.u)
 
                         Item {
-                            anchors.fill: parent
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                shadowEnabled: true
-                                shadowColor: glyph.tone
-                                shadowOpacity: 0.9
-                                shadowBlur: 1.0
-                                shadowHorizontalOffset: 0
-                                shadowVerticalOffset: 0
+                            id: glyph
+
+                            readonly property real cell: Math.round(5 * pill.u)
+                            readonly property real gap: Math.round(1.5 * pill.u)
+                            readonly property color tone: host.tones[host.shownKind] ?? "#ffffff"
+
+                            Layout.preferredWidth: cell * 3 + gap * 2
+                            Layout.preferredHeight: cell * 3 + gap * 2
+
+                            function lit(kind, f, i) {
+                                const r = Math.floor(i / 3), c = i % 3
+                                switch (kind) {
+                                case "think": {
+                                    const ring = [0, 1, 2, 5, 8, 7, 6, 3]
+                                    const p = ring.indexOf(i)
+                                    if (p < 0) return 0
+                                    const d = (f - p + 80) % 8
+                                    return d === 0 ? 1 : d === 1 ? 0.55 : d === 2 ? 0.25 : 0
+                                }
+                                case "search":
+                                    return c === f % 3 ? 1 : (c === (f + 2) % 3 ? 0.35 : 0)
+                                case "read":
+                                    return r === f % 3 ? 1 : (r === (f + 2) % 3 ? 0.35 : 0)
+                                case "respond": {
+                                    const set = (f % 2 === 0) ? [1, 3, 4, 5, 7] : [0, 2, 4, 6, 8]
+                                    return set.indexOf(i) >= 0 ? 1 : 0.12
+                                }
+                                case "image":
+                                    return ((i + f) % 2 === 0) ? 1 : 0.15
+                                }
+                                return 0
                             }
 
-                            Repeater {
-                                model: 9
+                            Item {
+                                anchors.fill: parent
+                                layer.enabled: true
+                                layer.effect: MultiEffect {
+                                    shadowEnabled: true
+                                    shadowColor: glyph.tone
+                                    shadowOpacity: 0.9
+                                    shadowBlur: 1.0
+                                    shadowHorizontalOffset: 0
+                                    shadowVerticalOffset: 0
+                                }
 
-                                Rectangle {
-                                    required property int index
-                                    x: (index % 3) * (glyph.cell + glyph.gap)
-                                    y: Math.floor(index / 3) * (glyph.cell + glyph.gap)
-                                    width: glyph.cell
-                                    height: glyph.cell
-                                    radius: Math.max(1, Math.round(glyph.cell * 0.2))
-                                    color: glyph.tone
-                                    opacity: glyph.lit(host.shownKind, host.frame, index)
+                                Repeater {
+                                    model: 9
 
-                                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                                    Behavior on color { ColorAnimation { duration: 250 } }
+                                    Rectangle {
+                                        required property int index
+                                        x: (index % 3) * (glyph.cell + glyph.gap)
+                                        y: Math.floor(index / 3) * (glyph.cell + glyph.gap)
+                                        width: glyph.cell
+                                        height: glyph.cell
+                                        radius: Math.max(1, Math.round(glyph.cell * 0.2))
+                                        color: glyph.tone
+                                        opacity: glyph.lit(host.shownKind, host.frame, index)
+
+                                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                                        Behavior on color { ColorAnimation { duration: 250 } }
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Text {
-                        text: host.labels[host.shownKind] ?? "Working"
-                        color: "#ffffff"
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(13 * pill.u)
-                        font.weight: Font.DemiBold
+                        Text {
+                            text: host.labels[host.shownKind] ?? "Working"
+                            color: "#ffffff"
+                            font.family: Theme.font
+                            font.pixelSize: Math.round(13 * pill.u)
+                            font.weight: Font.DemiBold
+                        }
                     }
                 }
             }

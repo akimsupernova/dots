@@ -187,11 +187,13 @@ Scope {
                             id: pill
 
                             width: slot.slotW
-                            height: slot.fullH
-                            y: (slot.reveal - 1) * slot.slotFull * (0.3 + 0.7 * slot.solid)
+                            height: slot.attached ? slot.fullH * Math.max(0, slot.reveal) : slot.fullH
+                            clip: slot.attached
+                            y: slot.attached ? 0 : (slot.reveal - 1) * slot.slotFull * (0.3 + 0.7 * slot.solid)
                             opacity: slot.solid + (1 - slot.solid) * Math.max(0, Math.min(1, slot.reveal * 1.6))
 
                             Rectangle {
+                                visible: !slot.attached || slot.solid < 1
                                 x: win.shoulder
                                 width: slot.pillW
                                 height: slot.fullH
@@ -202,12 +204,18 @@ Scope {
                             Shape {
                                 id: joined
 
-                                readonly property real w: slot.slotW
-                                readonly property real h: slot.fullH
-                                readonly property real s: win.shoulder
-                                readonly property real r: slot.radiusBottom
+                                readonly property real prog: Math.max(0, slot.reveal)
+                                readonly property real w: slot.slotW * (0.5 + 0.5 * Math.min(1, joined.prog * 1.7))
+                                readonly property real h: slot.fullH * joined.prog
+                                readonly property real k: Math.min(1, joined.h / (win.shoulder + slot.radiusBottom))
+                                readonly property real s: win.shoulder * joined.k
+                                readonly property real r: slot.radiusBottom * joined.k
 
-                                anchors.fill: parent
+                                x: (slot.slotW - joined.w) / 2
+                                y: 0
+                                width: joined.w
+                                height: joined.h
+                                visible: joined.h > 0.5
                                 preferredRendererType: Shape.CurveRenderer
                                 opacity: slot.docked ? 1 : 0
                                 Behavior on opacity { NumberAnimation { duration: 200 } }
@@ -258,7 +266,8 @@ Scope {
                                 id: content
 
                                 x: win.shoulder + slot.padX
-                                y: slot.padTop
+                                y: slot.padTop - (slot.attached ? (1 - Math.min(1, slot.reveal)) * Math.round(8 * slot.u) : 0)
+                                opacity: slot.attached ? Math.max(0, Math.min(1, (slot.reveal - 0.55) / 0.4)) : 1
                                 width: slot.pillW - slot.padX * 2
                                 spacing: slot.gapX
 
@@ -347,8 +356,9 @@ Scope {
                             target: slot
                             property: "reveal"
                             to: 1
-                            duration: 420
-                            easing.type: Easing.OutCubic
+                            duration: 520
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.3
                         }
 
                         SequentialAnimation {
