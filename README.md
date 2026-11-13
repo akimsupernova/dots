@@ -90,9 +90,8 @@ If you have no display manager, install one (`sudo pacman -S sddm && sudo system
 ./setup install             # packages + dotfiles
 ./setup install --no-deps   # dotfiles only, skip packages
 ./setup install -n          # dry run: show what would happen, change nothing
-./setup install -y          # say yes to everything; does not reboot
+./setup install -y          # say yes to everything
 ./setup install --reboot    # reboot when done
-./setup install --no-reboot # do not reboot (this is the default)
 ./setup deps                # install yay and packages only
 ./setup specs               # write the PC specs file for the AI panel again
 ./setup uninstall           # remove the dotfiles and restore your backup

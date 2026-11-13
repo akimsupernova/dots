@@ -193,7 +193,6 @@ cleanup() {
   if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
     kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
     SUDO_KEEPALIVE_PID=""
-    sudo -K 2>/dev/null || true
   fi
   for d in "${TMP_DIRS[@]:-}"; do
     if [[ -n "$d" && -d "$d" ]]; then
@@ -308,7 +307,8 @@ setup_sudo() {
   local parent="$$"
   (
     trap - ERR EXIT
-    while kill -0 "$parent" 2>/dev/null && sudo -n -v 2>/dev/null; do
+    while kill -0 "$parent" 2>/dev/null; do
+      sudo -n -v 2>/dev/null || true
       sleep 30
     done
   ) &
@@ -547,7 +547,9 @@ seed_wallpaper() {
   local state="$CONFIG_DIR/wallpaper/current"
   local apply="$CONFIG_DIR/quickshell/scripts/apply-wallpaper.sh"
 
-  run mkdir -p "$HOME/.cache/awww"
+  if ((DRY_RUN)); then return 0; fi
+
+  mkdir -p "$HOME/.cache/awww"
   if [[ ! -f "$wp" ]]; then
     warn "Default wallpaper not found ($wp); skipping."
     return 0
@@ -556,20 +558,17 @@ seed_wallpaper() {
     return 0
   fi
 
-  run mkdir -p "$(dirname "$state")"
-  if ((DRY_RUN)); then
-    info "[dry-run] would remember the default wallpaper in $state"
-  else
-    printf 'type=image\npath=%s\n' "$wp" > "$state"
-  fi
+  mkdir -p "$(dirname "$state")"
+  printf 'type=image\npath=%s\n' "$wp" > "$state"
 
-  if ((!DRY_RUN)) && command -v python3 >/dev/null 2>&1; then
-    python3 "$CONFIG_DIR/quickshell/scripts/extract_accent.py" "$wp" \
+  if command -v python3 >/dev/null 2>&1; then
+    python3 "$CONFIG_DIR/quickshell/scripts/extract_accent.py" "$wp" >/dev/null 2>&1 \
       || warn "Could not generate theme colors from the default wallpaper."
   fi
 
   if [[ -n "${WAYLAND_DISPLAY:-}" && -f "$apply" ]]; then
-    run bash "$apply" image "$wp" || warn "Could not set the wallpaper now; it will be applied at your next login."
+    bash "$apply" image "$wp" >/dev/null 2>&1 \
+      || warn "Could not set the wallpaper now; it will be applied at your next login."
   fi
 }
 
@@ -587,12 +586,12 @@ check_hyprland() {
 }
 
 seed_wallpaper_dir() {
-  run mkdir -p "$HOME/Pictures/Wallpapers"
+  if ((DRY_RUN)); then return 0; fi
+  mkdir -p "$HOME/Pictures/Wallpapers"
 }
 
 schedule_welcome() {
   if ((DRY_RUN)); then
-    info "[dry-run] would show the welcome card at the next login."
     return 0
   fi
   mkdir -p "$STATE_DIR"
@@ -860,7 +859,7 @@ do_install() {
     warn "No fonts folder found; skipping."
   fi
 
-  step "Setting the default wallpaper"
+  STEP="Setting the default wallpaper"
   seed_wallpaper
   seed_wallpaper_dir
 
