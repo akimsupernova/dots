@@ -31,6 +31,7 @@ hl.bind("SUPER + SPACE", hl.dsp.global("quickshell:launcherToggleRelease"), { de
 hl.bind("SUPER + I", hl.dsp.exec_cmd("pavucontrol"), { description = "Media: Volume Control" })
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call emoji toggle"), { description = "Workspace: Emoji" })
 hl.bind("SUPER + G", hl.dsp.exec_cmd("qs ipc call namecard toggle"), { description = "App: Name Card" })
+hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd("qs ipc call notepad toggle"), { description = "Shell: Notepad" })
 hl.bind("SUPER + N", hl.dsp.exec_cmd("qs ipc call sidebar toggle"), { description = "Shell: Sidebar" })
 hl.bind("SUPER + A", hl.dsp.exec_cmd("qs ipc call ai toggle"), { description = "Shell: AI Panel" })
 hl.bind("SUPER + SHIFT + mouse_down", hl.dsp.exec_cmd([[sh -c '"$HOME/.config/quickshell/scripts/brightness.sh" down']]), { description = "Media: Brightness Up" })

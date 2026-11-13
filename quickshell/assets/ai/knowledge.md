@@ -29,7 +29,7 @@ These facts describe the default install. If the user says their setup differs, 
 
 ## Key bindings (defaults, SUPER = Windows key)
 SUPER + / shows the live list of every binding.
-- Shell: SUPER+SPACE launcher, SUPER+A AI panel, SUPER+N sidebar, SUPER+B settings, SUPER+R wallpapers, SUPER+SHIFT+R random wallpaper, SUPER+M monitor settings, SUPER+. emoji picker, SUPER+G name card, SUPER+H welcome card, SUPER+/ key list, SUPER+L lock, SUPER+SHIFT+P power menu.
+- Shell: SUPER+SPACE launcher, SUPER+A AI panel, SUPER+N sidebar, SUPER+B settings, SUPER+R wallpapers, SUPER+SHIFT+R random wallpaper, SUPER+M monitor settings, SUPER+. emoji picker, SUPER+G name card, SUPER+SHIFT+N notepad (typing and simple drawing, saved in ~/.local/share/glassveil/notepad/), SUPER+H welcome card, SUPER+/ key list, SUPER+L lock, SUPER+SHIFT+P power menu.
 - Apps: SUPER+Return kitty, SUPER+W firefox, SUPER+E dolphin, SUPER+C kate, SUPER+X steam, SUPER+O OBS, SUPER+I pavucontrol, CTRL+SHIFT+ESC btop in kitty. The user's own binds in hypr/custom/keybinds.lua: SUPER+T konsole, SUPER+D DaVinci Resolve (not installed by the installer).
 - Windows: SUPER+Q close, SUPER+F fullscreen, SUPER+V float, SUPER+P pseudo-tile, SUPER+J toggle split, SUPER+arrows focus, SUPER+1..0 workspace 1-10, SUPER+ALT+1..0 move window to workspace, SUPER+S scratchpad, SUPER+SHIFT+S send window to scratchpad, SUPER+left-drag move, SUPER+right-drag resize. Three-finger horizontal swipe changes workspace.
 - Screenshots: SUPER+ALT+SPACE select an area and copy, ALT+SPACE full screenshot (saved and copied).
@@ -37,7 +37,7 @@ SUPER + / shows the live list of every binding.
 
 ## Shell parts
 - Bar: window title, system use (CPU/RAM), media, workspaces, clock, tray, status icons, weather, battery, volume. Each can be switched off in Settings.
-- Launcher, sidebar (notifications, Wi-Fi and Bluetooth menus, quick toggles for Wi-Fi, Bluetooth, Do not disturb, Microphone, Keep awake, Night light, plus calendar and pomodoro timer), power menu, lock screen (PAM), notification pop-ups, volume and brightness pop-ups, desktop clock, emoji picker (click copies), wallpaper picker, monitor settings, polkit agent, cheatsheet, name card, welcome card, USB plug notifications.
+- Launcher, sidebar (notifications, Wi-Fi and Bluetooth menus, quick toggles for Wi-Fi, Bluetooth, Do not disturb, Microphone, Keep awake, Night light, plus calendar and pomodoro timer), power menu, lock screen (PAM), notification pop-ups, volume and brightness pop-ups, desktop clock, emoji picker (click copies), wallpaper picker, monitor settings, polkit agent, cheatsheet, name card, notepad, welcome card, USB plug notifications.
 - Desktop clock: drag with left mouse, hold left button and scroll to resize, right-click switches digital/ring.
 
 ## Settings panel (SUPER+B), saved at once in settings.json
@@ -65,7 +65,7 @@ Tabs: Appearance, Clock & weather, Wallpaper (also monitor settings), Audio, AI,
 - Weather comes from Open-Meteo (no key). Settings in weather.json: enabled, city, latitude, longitude, units (metric/imperial), refreshMinutes (5-1440). Empty city means the place is found from the IP address.
 
 ## Terminal control of the shell
-`qs ipc show` lists everything. Targets: ai, battery, brightness, cheatsheet, clock, emoji, launcher, lock, monitor, namecard, notifications, pomodoro, power, settings, sidebar, wallpaper, weather, welcome. Example: `qs ipc call settings toggle`. Restart the shell with `pkill quickshell; quickshell &` (run `quickshell` in a terminal to see errors).
+`qs ipc show` lists everything. Targets: ai, battery, brightness, cheatsheet, clock, emoji, launcher, lock, monitor, namecard, notepad, notifications, pomodoro, power, settings, sidebar, wallpaper, weather, welcome. Example: `qs ipc call settings toggle`. Restart the shell with `pkill quickshell; quickshell &` (run `quickshell` in a terminal to see errors).
 
 ## The AI panel (you)
 - Providers: openai, anthropic (claude), gemini, openrouter, groq, deepseek, mistral, xai (grok), ollama (local). Aliases: chatgpt/gpt, claude, google, grok, local, or.

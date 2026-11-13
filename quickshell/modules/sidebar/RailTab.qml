@@ -10,7 +10,7 @@ Item {
     property bool selected: false
     signal clicked()
 
-    implicitWidth: Math.round(58 * u)
+    implicitWidth: Math.max(pill.width, Math.ceil(lbl.implicitWidth)) + Math.round(4 * u)
     implicitHeight: pill.height + labelGap + lbl.implicitHeight + 2 * u
 
     property real labelGap: 3 * u

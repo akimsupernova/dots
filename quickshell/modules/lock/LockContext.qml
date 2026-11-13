@@ -77,7 +77,7 @@ Scope {
     }
 
     Timer {
-        interval: 100
+        interval: 1000
         running: root.checking
         onTriggered: {
             console.log("[lock] pam timed out, aborting")

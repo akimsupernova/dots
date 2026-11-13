@@ -18,11 +18,13 @@ import qs.modules.settings
 import qs.modules.notifications
 import qs.modules.lock
 import qs.modules.ai
+import qs.modules.notepad
 
 ShellRoot {
     Component.onCompleted: {
         HyprLook.init()
         UsbMonitor.init()
+        NoteStore.init()
     }
 
     Variants {
@@ -48,5 +50,6 @@ ShellRoot {
     Lock {}
     AiPanel {}
     AiStatus {}
+    Notepad {}
 }
 

@@ -395,20 +395,28 @@ FocusScope {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 10 * root.u
-                    spacing: 8 * root.u
+                    anchors.topMargin: 10 * root.u
+                    anchors.bottomMargin: 10 * root.u
+                    anchors.rightMargin: 10 * root.u
+                    anchors.leftMargin: 10 * root.u
+                    spacing: 6 * root.u
 
                     ColumnLayout {
-                        Layout.alignment: Qt.AlignTop
+                        Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                        Layout.preferredWidth: Math.max(calTab.implicitWidth, timerTab.implicitWidth)
                         spacing: 4 * root.u
 
                         RailTab {
+                            id: calTab
+                            Layout.alignment: Qt.AlignHCenter
                             icon: "calendar"
                             label: "Calendar"
                             selected: root.tab === "calendar"
                             onClicked: root.tab = "calendar"
                         }
                         RailTab {
+                            id: timerTab
+                            Layout.alignment: Qt.AlignHCenter
                             icon: "timer"
                             label: "Timer"
                             selected: root.tab === "timer"

@@ -58,28 +58,31 @@ You install it with one command. After that you can change most things from the 
 
 ## Requirements
 
+### Software
+
 - Arch Linux or a similar system (CachyOS works)
-- Hyprland **0.55 or newer** (the config is written in Lua)
 - A normal user account with `sudo`. Do not run the installer as root.
+
+You can run the installer from a TTY on a fresh Arch install. When it finishes, reboot and start Hyprland from the TTY or from a display manager (see [Install](#install)).
+
+### Hardware
+
+| | Minimum | Recommended |
+| --- | --- | --- |
+| RAM | 4 GB | 8 GB or more |
+| Graphics | Intel UHD (integrated) | A dedicated GPU (AMD or NVIDIA) |
+
+The shell runs on the minimum, but heavy effects such as blur and video wallpapers can feel slow there. Running local AI models with Ollama needs more RAM and a good GPU.
 
 ## Install
 
 ```bash
-git clone https://github.com/akimsupernova/dots
+git clone --depth 1 https://github.com/akimsupernova/dots
 cd dots
 ./setup install
 ```
 
-The installer asks before it does anything risky. It does these steps:
-
-1. Offers a full system upgrade (`pacman -Syu`).
-2. Installs `yay` if you do not have it, then installs all packages.
-3. Offers to turn on the NetworkManager, Bluetooth and LACT services. It can also set up monitor brightness control for external screens.
-4. Backs up your old configs, then copies the new ones.
-5. Sets the default wallpaper.
-6. Saves your PC specs for the AI panel in `~/.config/glassveil/spec.txt` (first install only, see [PC specs](#pc-specs-and-desktop-knowledge)).
-
-The installer never reboots by itself. When it finishes it tells you to reboot (add `--reboot` to do it automatically). It also warns you if Hyprland is older than 0.55. If you have no display manager, install one (`sudo pacman -S sddm && sudo systemctl enable sddm`) or start Hyprland from the TTY.
+If you have no display manager, install one (`sudo pacman -S sddm && sudo systemctl enable sddm`) or start Hyprland from the TTY.
 
 ### Installer options
 
@@ -148,6 +151,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + M` | Monitor settings |
 | `SUPER + .` | Emojis (click one to copy it) |
 | `SUPER + G` | Name card |
+| `SUPER + SHIFT + N` | Notepad (see [Notepad](#notepad)) |
 | `SUPER + H` | Welcome card |
 | `SUPER + /` | Key binding list |
 | `SUPER + L` | Lock the screen |
@@ -375,13 +379,31 @@ Good to know:
 <details>
 <summary><b>Set up SearXNG (optional, for advanced users)</b></summary>
 
-[SearXNG](https://docs.searxng.org/) is a search service you run yourself. It needs Docker (`sudo pacman -S docker && sudo systemctl enable --now docker`) or Podman (use `podman` instead of `docker` below).
+Install the build tools first:
+
+```bash
+sudo pacman -S --needed git base-devel python libxslt libxml2 zlib
+```
+
+Then get the source and set up a Python virtual environment:
+
+```bash
+git clone --depth 1 https://github.com/searxng/searxng ~/.local/share/searxng
+cd ~/.local/share/searxng
+python -m venv venv
+./venv/bin/pip install -U pip setuptools wheel pyyaml msgspec typing_extensions
+./venv/bin/pip install --use-pep517 --no-build-isolation -e .
+```
+
+Create the settings file:
 
 ```bash
 mkdir -p ~/.config/searxng
 cat > ~/.config/searxng/settings.yml <<EOF
 use_default_settings: true
 server:
+  bind_address: "127.0.0.1"
+  port: 8888
   secret_key: "$(openssl rand -hex 32)"
   limiter: false
 search:
@@ -389,17 +411,42 @@ search:
     - html
     - json
 EOF
-
-docker run -d --name searxng --restart unless-stopped \
-  -p 127.0.0.1:8888:8080 \
-  -v ~/.config/searxng:/etc/searxng \
-  docker.io/searxng/searxng:latest
 ```
 
-Check that it works. A `403` means `json` is missing from `formats`.
+Start it to test:
+
+```bash
+SEARXNG_SETTINGS_PATH=~/.config/searxng/settings.yml \
+  ~/.local/share/searxng/venv/bin/python -m searx.webapp
+```
+
+Check that it works from another terminal. A `403` means `json` is missing from `formats`.
 
 ```bash
 curl "http://127.0.0.1:8888/search?q=test&format=json" | head -c 300
+```
+
+To start it automatically at login, add a user service. Stop the test run with `Ctrl + C` first.
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/searxng.service <<'EOF'
+[Unit]
+Description=SearXNG
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/.local/share/searxng
+Environment=SEARXNG_SETTINGS_PATH=%h/.config/searxng/settings.yml
+ExecStart=%h/.local/share/searxng/venv/bin/python -m searx.webapp
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now searxng
 ```
 
 Then, in the AI panel:
@@ -412,9 +459,17 @@ Then, in the AI panel:
 
 Notes:
 
-- `-p 127.0.0.1:8888:8080` keeps it private to your computer. Do not open it to the network.
+- `bind_address: "127.0.0.1"` keeps it private to your computer. Do not open it to the network.
 - Some engines (Google in particular) are sometimes blocked for a while. Results still come from the others.
-- To update: `docker pull docker.io/searxng/searxng:latest`, then remove and run the container again.
+- To see errors: `journalctl --user -u searxng -f`.
+- To update:
+
+  ```bash
+  cd ~/.local/share/searxng
+  git pull
+  ./venv/bin/pip install --use-pep517 --no-build-isolation -e .
+  systemctl --user restart searxng
+  ```
 
 </details>
 
@@ -512,7 +567,7 @@ qs ipc call clock toggleStyle
 qs ipc call clock setStyle ring        # or: digital
 qs ipc call clock setZoom 1.4          # 0.5 .. 2.5
 qs ipc call clock resetZoom
-qs ipc call clock reset               # back to the default position and size
+qs ipc call clock reset                # back to the default position and size
 ```
 
 The ring shows how much of the day has passed. To show the battery instead, set **Ring shows** to *Battery* in Settings → Clock & weather. On a PC with no battery it shows the day. The ring size is `ringSize` in `quickshell/modules/clock/ClockWidget.qml`.
@@ -597,7 +652,23 @@ qs ipc call wallpaper toggle
 qs ipc call lock lock
 ```
 
-Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`. Run `qs ipc show` to see what each one can do.
+Targets: `ai`, `battery`, `brightness`, `cheatsheet`, `clock`, `emoji`, `launcher`, `lock`, `monitor`, `namecard`, `notepad`, `notifications`, `pomodoro`, `power`, `settings`, `sidebar`, `wallpaper`, `weather`. Run `qs ipc show` to see what each one can do.
+
+## Notepad
+
+`SUPER + SHIFT + N` shows the notepad. The text and drawing are saved automatically in `~/.local/share/glassveil/notepad/` (`note.txt` is the plain text).
+
+| Keys / mouse | Action |
+| --- | --- |
+| `Ctrl + S` | Save now |
+| `Ctrl + D` | Switch between typing and drawing |
+| `Alt + F` | Toggle fullscreen |
+| `Esc` | Hide the notepad |
+| `Alt` + LMB | Move |
+| `Alt` + RMB | Resize |
+| `Alt + arrows` / `Alt + Shift + arrows` | Move / resize with the keyboard |
+
+Drawing mode: LMB draws, RMB erases whole strokes, mouse wheel or `[` `]` changes the brush size, `C` / `Shift + C` changes the color, `Ctrl + Z` / `Ctrl + Shift + Z` undo and redo, `Delete` clears the drawing.
 
 ## Repository layout
 
