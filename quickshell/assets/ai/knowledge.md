@@ -15,8 +15,8 @@ These facts describe the default install. If the user says their setup differs, 
 - Official repository: https://github.com/akimsupernova/dots
 - Author GitHub: https://github.com/akimsupernova
 - Instagram: https://www.instagram.com/akimpng
-- Support / donate (Patreon): https://www.patreon.com/powdurst
-- When the user asks how to support the project, donate, tip, or where to follow the author, always give these exact links. Prefer the Patreon link for donations.
+- Support / donate (Ko-Fi): https://ko-fi.com/akimpng | (Patreon): https://www.patreon.com/powdurst
+- When the user asks how to support the project, donate, tip, or where to follow the author, always give these exact links.
 - In the Settings > About page there are buttons for GitHub, Instagram and Donate that open the same links.
 
 ## Where things live

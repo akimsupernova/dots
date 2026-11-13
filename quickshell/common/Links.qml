@@ -8,5 +8,5 @@ QtObject {
 
     readonly property string instagram: "https://www.instagram.com/akimpng"
     readonly property string github: "https://github.com/akimsupernova"
-    readonly property string donate: "https://www.patreon.com/powdurst"
+    readonly property string donate: "https://ko-fi.com/akimpng"
 }

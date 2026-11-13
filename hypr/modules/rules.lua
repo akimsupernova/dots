@@ -80,3 +80,12 @@ hl.layer_rule({
     ignore_alpha = 0.05,
     animation    = "slide left",
 })
+
+hl.layer_rule({
+    name  = "glassveil-notepad",
+    match = { namespace = "^Glassveil Shell Notepad$" },
+
+    blur         = true,
+    ignore_alpha = 0.05,
+    animation    = "fade",
+})
