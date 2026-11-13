@@ -41,9 +41,9 @@ PanelWindow {
             spacing: 2.5
 
             BarGroup {
-                visible: Prefs.barResources || Prefs.barMedia
-                Resources { visible: Prefs.barResources; Layout.alignment: Qt.AlignVCenter }
-                Media     { Layout.alignment: Qt.AlignVCenter }
+                visible: Prefs.barResources || media.active
+                Resources { visible: Prefs.barResources; trimEnd: !media.active; Layout.alignment: Qt.AlignVCenter }
+                Media     { id: media; Layout.alignment: Qt.AlignVCenter }
             }
             BarGroup {
                 visible: Prefs.barWorkspaces

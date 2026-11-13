@@ -11,8 +11,9 @@ Item {
         return list.find(p => p.playbackState === MprisPlaybackState.Playing) ?? list[0] ?? null
     }
     readonly property real progress: (player && player.length > 0) ? player.position / player.length : 0
+    readonly property bool active: player !== null && Prefs.barMedia
 
-    visible: player !== null && Prefs.barMedia
+    visible: active
     implicitWidth: visible ? row.implicitWidth : 0
     implicitHeight: Theme.barHeight
 

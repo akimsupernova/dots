@@ -7,6 +7,7 @@ Item {
     required property string label
     required property real value
     property real warnAt: 0.9
+    property bool reserveMax: true
     readonly property bool warning: value >= warnAt
 
     implicitWidth: row.implicitWidth
@@ -14,7 +15,7 @@ Item {
 
     TextMetrics {
         id: widest
-        text: root.label + " 100%"
+        text: root.label + (root.reserveMax ? " 100%" : " 99%")
         font.family: Theme.font
         font.pixelSize: Theme.fontSize
     }
@@ -34,7 +35,7 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            width: widest.width
+            width: Math.max(implicitWidth, widest.width)
             text: root.label + " " + Math.round(root.value * 100) + "%"
             color: root.warning ? Theme.warn : Theme.ink
             font.family: Theme.font
