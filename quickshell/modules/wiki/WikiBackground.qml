@@ -1,0 +1,22 @@
+import QtQuick
+import qs.common
+
+Rectangle {
+    id: root
+
+    radius: Theme.radius
+    color: Qt.alpha(Theme.tint, Math.min(0.94, Theme.panelAlpha + 0.2))
+    border.width: 1
+    border.color: Qt.alpha(Theme.accent1, 0.5)
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: Math.max(0, root.radius - 1)
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.alpha(Theme.accent1, 0.26) }
+            GradientStop { position: 0.45; color: Qt.alpha(Theme.accent1, 0.06) }
+            GradientStop { position: 1.0; color: Qt.alpha(Theme.accent1, 0.12) }
+        }
+    }
+}

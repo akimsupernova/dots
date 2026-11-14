@@ -89,3 +89,12 @@ hl.layer_rule({
     ignore_alpha = 0.05,
     animation    = "fade",
 })
+
+hl.layer_rule({
+    name  = "glassveil-wiki",
+    match = { namespace = "^Glassveil Shell Wiki$" },
+
+    blur         = true,
+    ignore_alpha = 0.05,
+    animation    = "fade",
+})

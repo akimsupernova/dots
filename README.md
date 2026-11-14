@@ -176,7 +176,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | `SUPER + C` | Text editor (kate) |
 | `SUPER + X` | Steam (not installed by default, see below) |
 | `SUPER + O` | OBS Studio |
-| `SUPER + I` | Volume control (pavucontrol) |
+| `SUPER + I` | Wiki Panel |
 | `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
 
 `hypr/custom/keybinds.lua` is **yours**. It holds the author's personal shortcuts: `SUPER + T` (Konsole) and `SUPER + D` (DaVinci Resolve), plus the volume and brightness keys (see [Media](#media)). DaVinci Resolve is not installed by the installer, so `SUPER + D` does nothing until you install it. Edit the file by hand to change, remove or add shortcuts. If you delete the file, the volume and brightness keys stop working unless you bind them again.

@@ -19,6 +19,7 @@ import qs.modules.notifications
 import qs.modules.lock
 import qs.modules.ai
 import qs.modules.notepad
+import qs.modules.wiki
 
 ShellRoot {
     Component.onCompleted: {
@@ -51,5 +52,6 @@ ShellRoot {
     AiPanel {}
     AiStatus {}
     Notepad {}
+    Wiki {}
 }
 
