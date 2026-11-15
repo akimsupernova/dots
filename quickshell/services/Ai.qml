@@ -260,10 +260,19 @@ Singleton {
         root.messages = a
     }
 
+    property bool _vaultWarned: false
+    function _vaultWarn(what, reason) {
+        if (root._vaultWarned) return
+        root._vaultWarned = true
+        _sys("Could not unlock the encrypted " + what + ": " + reason + ". Nothing on disk was changed, " +
+             "and new settings or chats are not saved until this is fixed. " +
+             "Check with `python3 ~/.config/quickshell/scripts/ai_vault.py status`.", true)
+    }
+
     function _save() {
-        cfg.setText(JSON.stringify({ active: root.active, keys: root.keys, models: root.models, urls: root.urls,
-                                     web: root.web, ctx: root.ctx, maxTokens: root.maxTokens, think: root.think,
-                                     imageModel: root.imageModel }, null, 2))
+        cfgVault.save(JSON.stringify({ active: root.active, keys: root.keys, models: root.models, urls: root.urls,
+                                       web: root.web, ctx: root.ctx, maxTokens: root.maxTokens, think: root.think,
+                                       imageModel: root.imageModel }))
     }
 
     function _parse(t) {
@@ -335,7 +344,7 @@ Singleton {
         let s = JSON.stringify(data)
         while (s.length > 4000000 && data.archive.length > 0) { data.archive.pop(); s = JSON.stringify(data) }
         while (s.length > 4000000 && data.current.length > 4) { data.current.shift(); s = JSON.stringify(data) }
-        chatFile.setText(s)
+        chatVault.save(s)
     }
 
     function _scheduleChatSave() {
@@ -828,7 +837,6 @@ Singleton {
              : t.startsWith("UklGR") ? "image/webp" : "image/png"
     }
 
-    // Keep the newest images (max 4); older ones are replaced by a short note so requests stay small.
     function _limitImages(hist) {
         let left = 4
         const out = hist.slice()
@@ -1841,25 +1849,29 @@ Singleton {
     Process {
         running: true
         command: ["sh", "-c",
-            'umask 077; mkdir -p "$1"; [ -f "$2" ] || echo "{}" > "$2"; [ -f "$3" ] || echo "{}" > "$3"; chmod 700 "$1"; chmod 600 "$2" "$3"',
+            'umask 077; mkdir -p "$1"; chmod 700 "$1"; for f in "$2" "$3"; do [ -f "$f" ] && chmod 600 "$f"; done; exit 0',
             "sh", root.dir, root.file, root.chatsFile]
-        onExited: root._ready = true
+        onExited: {
+            root._ready = true
+            cfgVault.load()
+            chatVault.load()
+        }
     }
 
-    FileView {
-        id: chatFile
-        path: root._ready ? root.chatsFile : ""
-        atomicWrites: false
-        onLoaded: root._loadChats(text())
-        onLoadFailed: root._loadChats("{}")
+    VaultFile {
+        id: chatVault
+        path: root.chatsFile
+        onLoaded: text => root._loadChats(text)
+        onLoadFailed: reason => root._vaultWarn("chat history", reason)
+        onSaveFailed: reason => root._vaultWarn("chat history", reason)
     }
 
-    FileView {
-        id: cfg
-        path: root._ready ? root.file : ""
-        atomicWrites: false
-        onLoaded: root._parse(text())
-        onLoadFailed: root._parse("{}")
+    VaultFile {
+        id: cfgVault
+        path: root.file
+        onLoaded: text => root._parse(text)
+        onLoadFailed: reason => root._vaultWarn("AI settings", reason)
+        onSaveFailed: reason => root._vaultWarn("AI settings", reason)
     }
 
     FileView {
