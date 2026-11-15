@@ -108,16 +108,6 @@ If you have no display manager, install one (`sudo pacman -S sddm && sudo system
 ./setup help
 ```
 
-### Important: files are copied, not linked
-
-`./setup install` **copies** the folders into `~/.config`. If you edit files inside the cloned repo, nothing changes until you run `./setup install` again. To try a change on your running system, edit the files in `~/.config` and copy them back to the repo later.
-
-When you run the installer again:
-
-- Your old configs are backed up once, in `~/.local/share/akim-dotfiles-backup/<time>/`.
-- `hypr/modules/monitors.lua` and `hypr/custom/keybinds.lua` are **kept**, so your monitors and shortcuts stay.
-- On the first install, `hypr/custom/keybinds.lua` is only added if you do not already have one.
-
 ### What gets installed where
 
 | Repo folder | Installed to |
@@ -136,6 +126,7 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | --- | --- |
 | Desktop | `hyprland`, `quickshell`, `hyprsunset`, `xdg-desktop-portal`, `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk`, `polkit`, `qt6-wayland`, `qt5-wayland`, `qt6-svg` |
 | Wallpaper | `awww`, `mpvpaper`, `ffmpeg`, `python-pillow` |
+| AI panel | `python-cryptography` (encrypted keys and chats), `libsecret` (key in the system keyring) |
 | Theming | `nwg-look`, `qt5ct`, `qt6ct`, `kvantum`, `kvantum-qt5`, `breeze-icons`, `adwaita-icon-theme`, `bibata-cursor-theme-bin`, `dconf`, `gsettings-desktop-schemas` |
 | Fonts | `fontconfig`, `ttf-jetbrains-mono-nerd`, `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji`, `noto-fonts-extra`, `adwaita-fonts` |
 | Audio | `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`, `alsa-utils`, `pavucontrol`, `cava`, `playerctl`, `sof-firmware` |
@@ -147,80 +138,10 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 
 `SUPER` is the Windows key. Press `SUPER + /` to see a live list of every key binding.
 
-### Shell
-
-| Keys | Action |
-| --- | --- |
-| `SUPER + SPACE` | App launcher |
-| `SUPER + A` | AI panel |
-| `SUPER + N` | Sidebar (notifications, quick toggles, pomodoro) |
-| `SUPER + B` | Settings panel |
-| `SUPER + R` | Wallpapers |
-| `SUPER + SHIFT + R` | Random wallpaper |
-| `SUPER + M` | Monitor settings |
-| `SUPER + .` | Emojis (click one to copy it) |
-| `SUPER + G` | Name card |
-| `SUPER + SHIFT + N` | Notepad (see [Notepad](#notepad)) |
-| `SUPER + H` | Welcome card |
-| `SUPER + /` | Key binding list |
-| `SUPER + L` | Lock the screen |
-| `SUPER + SHIFT + P` | Power menu |
-
-### Apps
-
-| Keys | Action |
-| --- | --- |
-| `SUPER + Return` | Terminal (kitty) |
-| `SUPER + W` | Browser (Firefox) |
-| `SUPER + E` | File manager (dolphin) |
-| `SUPER + C` | Text editor (kate) |
-| `SUPER + X` | Steam (not installed by default, see below) |
-| `SUPER + O` | OBS Studio |
-| `SUPER + I` | Wiki Panel |
-| `CTRL + SHIFT + ESC` | Task manager (btop in kitty) |
-
-`hypr/custom/keybinds.lua` is **yours**. It holds the author's personal shortcuts: `SUPER + T` (Konsole) and `SUPER + D` (DaVinci Resolve), plus the volume and brightness keys (see [Media](#media)). DaVinci Resolve is not installed by the installer, so `SUPER + D` does nothing until you install it. Edit the file by hand to change, remove or add shortcuts. If you delete the file, the volume and brightness keys stop working unless you bind them again.
-
 **Install Steam** (optional):
 
 1. Enable the `[multilib]` section in `/etc/pacman.conf` (remove the `#` from `[multilib]` and the `Include` line below it).
 2. Run `sudo pacman -Syu steam`.
-
-### Windows and workspaces
-
-| Keys | Action |
-| --- | --- |
-| `SUPER + Q` | Close window |
-| `ALT + F4` | Does not close anything: shows a notification reminding you to use `SUPER + Q` |
-| `SUPER + F` | Fullscreen on or off |
-| `SUPER + V` | Floating on or off |
-| `SUPER + P` | Pseudo-tile |
-| `SUPER + J` | Change split direction |
-| `SUPER + arrows` | Move focus |
-| `SUPER + 1…0` | Go to workspace 1 to 10 |
-| `SUPER + ALT + 1…0` | Move window to workspace 1 to 10 |
-| `SUPER + S` | Show or hide the scratchpad |
-| `SUPER + SHIFT + S` | Move window to the scratchpad |
-| `SUPER + left mouse drag` | Move window |
-| `SUPER + right mouse drag` | Resize window |
-
-### Screenshots
-
-| Keys | Action |
-| --- | --- |
-| `SUPER + ALT + SPACE` | Select an area and copy it to the clipboard |
-| `ALT + SPACE` | Full screenshot, saved to `~/Pictures/Screenshots` and copied |
-
-### Media
-
-These keys are defined in `hypr/custom/keybinds.lua`. The mouse wheel shortcuts are in `hypr/modules/keybinds.lua`.
-
-| Keys | Action |
-| --- | --- |
-| `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Volume up / down (2% steps) |
-| `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up / down |
-| `SUPER + mouse wheel` | Volume (scroll up = louder) |
-| `SUPER + SHIFT + mouse wheel` | Brightness (scroll up = brighter) |
 
 ## Settings panel
 
@@ -254,7 +175,7 @@ The three sliders under **App windows** change Hyprland itself. Until you move o
 
 ### Monitor settings
 
-At the end of the Wallpaper tab. Click a monitor on the map to select it. Drag it to move it. You can set the resolution, refresh rate, rotation, scale and position.
+At the end of the Wallpaper tab. Click a monitor on the map to select it. Drag to move it. You can set the resolution, refresh rate, rotation, scale and position.
 
 After you press **Apply**, you have 10 seconds to press **Keep**. If you do nothing, the old settings come back. This protects you from a black screen. Saved settings go to `~/.config/hypr/modules/monitors.lua`.
 
@@ -266,10 +187,10 @@ Makes the screen warmer, so it is easier on the eyes at night. Adjust a warmth l
 
 ### Lock screen
 
-- **Lock when idle** has three choices: *Battery only* (laptops lock, desktops do not), *Always* or *Never*.
+- **Lock when idle** has three choices: *Battery only*, *Always* or *Never*.
 - Chose how many minutes of no use before the lock.
 - **Keep awake** in the sidebar pauses auto-lock.
-- `SUPER + L` always locks right away.
+- `SUPER + L` locks right away.
 
 ## AI panel
 
@@ -351,17 +272,6 @@ ollama pull x/z-image-turbo
 - The first picture can take a while, because the model has to load.
 - Models that only read images, like Qwen 3.5, cannot draw. Use a separate image model for `/image`.
 
-### Copy and save code
-
-When the AI answers with code or a file (for example an edited SVG), it shows the code in a box with two buttons:
-
-- **Copy** puts the code in your clipboard.
-- **Save** writes it to your Downloads folder and shows the path in the chat. Click **Open folder** to see it.
-
-If you attached a file, the saved copy keeps its name and adds `-edited` (for example `arch-edited.svg`). Nothing is ever overwritten. Long code is folded to a few lines in the chat. Click **Show all** to open it. **Copy** and **Save** always use the whole code.
-
-The AI cannot make real files or download links. If it shows a path like `/path/to/file.svg`, that path is made up. Use **Save** instead.
-
 ### Web search
 
 Turn it on with **Web search** in the **+** menu, or type `/web on`.
@@ -422,7 +332,7 @@ search:
 EOF
 ```
 
-Start it to test:
+Test it:
 
 ```bash
 SEARXNG_SETTINGS_PATH=~/.config/searxng/settings.yml \
@@ -484,10 +394,12 @@ Notes:
 
 ### Privacy
 
-- Keys are saved as plain text in `~/.config/glassveil/ai.json`. Only you can read it. The file is outside this repo. **Never commit it.**
+- API keys and AI settings are saved **encrypted** (AES-256-GCM) in `~/.config/glassveil/ai.json`. The encryption key is kept in your system keyring (Secret Service, e.g. GNOME Keyring or KeePassXC) when one is running. Otherwise it is kept in `~/.local/share/glassveil/vault.key` (mode 600), a different folder from the config, so syncing or committing `~/.config` does not leak it. This protects against leaked backups, synced dotfiles and accidental commits. It does not protect against a program that runs as your user and can read the keyring or `vault.key`. **Never commit `vault.key`.** Needs `python-cryptography` and, for the keyring, `libsecret`.
+- If you update from an older version, your old plain-text `ai.json` and `chats.json` are encrypted automatically the first time the AI panel starts. The old file is replaced, but the disk may still hold old copies of it, so if you want to be safe, **create new API keys** and delete the old ones at the provider.
+- If the key is lost (for example the keyring was reset), the encrypted files cannot be read. The panel then shows a warning and does not overwrite them. Put the key back, or delete `ai.json` / `chats.json` and add your keys again. Check the state with `python3 ~/.config/quickshell/scripts/ai_vault.py status`.
 - Lines that start with `/` (including your key) are never sent to a provider and never kept in the chat.
 - The provider gets only: your recent messages, any files you attach, a system note (today's date, notes about these dotfiles, your changed Settings values, your own `hypr/custom/keybinds.lua` and, if you allow it, your PC specs), and web results if search is on. The AI cannot see your screen, clipboard or other files, and it cannot run commands.
-- Chats are saved in `~/.config/glassveil/chats.json` (only you can read it) so they survive a restart. `/history clear` deletes the saved ones.
+- Chats are saved encrypted in `~/.config/glassveil/chats.json` (same key as above) so they survive a restart. `/history clear` deletes the saved ones.
 - Hardware info is sent only while **Settings → AI → Share PC specs with the AI** is on.
 - To keep everything on your computer, use `/provider ollama`. With web search on, your searches still go to the internet.
 
