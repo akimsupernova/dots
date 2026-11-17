@@ -34,6 +34,7 @@
 - [Features](#features)
 - [Requirements](#requirements)
 - [Install](#install)
+- [Optional: hardware driver installer](#optional-hardware-driver-installer)
 - [Key bindings](#key-bindings)
 - [Settings panel](#settings-panel)
 - [AI panel](#ai-panel)
@@ -133,6 +134,48 @@ The full list is the `PACKAGES` array at the top of [`setup`](setup). In short:
 | Network and devices | `networkmanager`, `bluez`, `bluez-utils`, `upower`, `brightnessctl`, `ddcutil` |
 | Tools | `kitty`, `fish`, `btop`, `nvtop`, `lact`, `grim`, `slurp`, `wl-clipboard`, `libnotify`, `curl`, `python`, `xdg-utils`, `zenity` (file chooser), `poppler` (reads PDF files), `pciutils` (finds your GPU for the specs file) |
 | Apps | `firefox`, `dolphin`, `kate`, `konsole`, `ark`, `obs-studio` |
+
+## Optional: hardware driver installer
+
+Glassveil Shell ships with an optional utility, [`driver`](driver), that identifies the hardware of your PC or laptop and provisions the corresponding drivers and system services. Running it is entirely at your discretion. The desktop installer (`./setup install`) does not call it, and the shell does not depend on it.
+
+We recommend it in the following situations:
+
+- A fresh installation where the graphics, Wi-Fi, Bluetooth or audio devices are not yet functioning correctly.
+- A laptop with hybrid graphics (integrated GPU plus NVIDIA GPU).
+- A system with a proprietary-driver requirement, for example an NVIDIA GPU or a Broadcom Wi-Fi adapter.
+
+```bash
+./driver detect             # report detected hardware and the planned packages; changes nothing
+./driver install -n         # dry run: preview every step without changing the system
+./driver install            # install and configure the drivers
+./driver install -y         # confirm all prompts automatically
+./driver install --no-aur   # restrict installation to the official repositories
+./driver help
+```
+
+### Scope
+
+| Area | Action |
+| --- | --- |
+| NVIDIA GPU | Selects the driver branch by GPU generation: `nvidia-open-dkms` for Turing (GTX 16xx / RTX 20xx) and newer, the `nvidia-580xx-dkms` legacy branch from the AUR for Maxwell, Pascal and Volta, and the open-source nouveau driver for older cards. Configures kernel mode setting and suspend/resume support. |
+| AMD / Intel GPU | Installs Mesa, Vulkan and VA-API (hardware video acceleration) packages that match the GPU generation. |
+| Hybrid graphics | Adds PRIME tooling. Run an application on the NVIDIA GPU with `prime-run <application>`. |
+| CPU | Installs `intel-ucode` or `amd-ucode` and regenerates the GRUB configuration when GRUB is in use. |
+| Firmware and audio | Installs `linux-firmware`, the PipeWire stack and, where applicable, `sof-firmware`. |
+| Wi-Fi and Bluetooth | Installs the regulatory database, the Broadcom `wl` driver for chips that require it, and the Bluetooth stack with its service. |
+| Laptops | Installs `power-profiles-daemon` and, on Intel systems, `thermald`. |
+| Other devices | Fingerprint readers (`fprintd`), USB printers (CUPS), Thunderbolt (`bolt`) and guest tools for virtual machines (QEMU/KVM, VirtualBox, VMware, Hyper-V). |
+
+### Operating notes
+
+- Run the utility as your normal user, not as root. `sudo` is requested when required. It is safe to run repeatedly; installed packages are skipped.
+- A reboot is required for new kernel modules to take effect.
+- 32-bit graphics libraries (`lib32-*`, relevant for Steam) are installed only when the `[multilib]` repository is enabled in `/etc/pacman.conf`. The utility does not modify that file.
+- On a system with a single NVIDIA GPU, the utility creates `~/.config/hypr/custom/gpu.lua` with the recommended environment variables and loads it from `hyprland.lua`. Running `./setup install` again replaces `~/.config/hypr`; run `./driver install` once more afterwards to restore this file.
+- Fingerprint login through PAM is not configured automatically. Enroll a finger with `fprintd-enroll`.
+- Out-of-tree drivers for some USB Wi-Fi adapters (for example certain Realtek models) are not installed automatically. The utility reports when such a device is detected.
+- `./setup uninstall` removes the dotfiles only. Drivers installed by `./driver` remain on the system and can be removed with `pacman -Rns`.
 
 ## Key bindings
 
@@ -596,6 +639,7 @@ Drawing mode: LMB draws, RMB erases whole strokes, mouse wheel or `[` `]` change
 ```text
 .
 ├── setup                     installer / uninstaller
+├── driver                    optional hardware driver installer
 ├── hypr/
 │   ├── hyprland.lua          starting point, loads the modules below
 │   ├── modules/              appearance, animations, input, keybinds, rules, ...
@@ -616,6 +660,8 @@ Drawing mode: LMB draws, RMB erases whole strokes, mouse wheel or `[` `]` change
 ## Troubleshooting
 
 **The installer fails.** It shows the failing step, the last lines of output and common fixes. The full log of the last command is in `~/.local/state/glassveil-shell/last-command.log`. Fix the problem and run `./setup install` again. It is safe to repeat. If you installed the packages yourself, use `./setup install --no-deps`.
+
+**Graphics, Wi-Fi or Bluetooth do not work after the installation.** Run `./driver detect` to review the detected hardware, then `./driver install`. This step is optional; see [Optional: hardware driver installer](#optional-hardware-driver-installer). If the driver build fails, confirm that the headers for your kernel are installed (for example `linux-headers`).
 
 **Hyprland shows a config error.** Check the version with `Hyprland --version`. It must be 0.55 or newer.
 

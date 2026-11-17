@@ -1,0 +1,954 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
+HYPR_DIR="$CONFIG_DIR/hypr"
+TAG="Written by ./driver (Glassveil Shell)"
+
+ASSUME_YES=0
+DRY_RUN=0
+NO_AUR=0
+NO_UPGRADE=0
+REBOOT_MODE="ask"
+PM_FLAGS=()
+STEP=""
+LAST_CMD=""
+SUDO_KEEPALIVE_PID=""
+AUR_HELPER=""
+TMP_DIRS=()
+PCI_LINES=()
+USB_DEVS=()
+GPUS=()
+VIRT="none"
+IS_LAPTOP=0
+IS_CONVERTIBLE=0
+CPU_VENDOR="other"
+CPU_MODEL=""
+MACHINE=""
+HAS_NV=0
+HAS_INTEL=0
+HAS_AMD=0
+NV_BRANCH=""
+HYBRID=0
+MULTILIB=0
+HAS_WIFI=0
+HAS_BT=0
+HAS_FINGERPRINT=0
+HAS_PRINTER=0
+HAS_THUNDERBOLT=0
+BCM_WIFI=0
+PRINTER_VENDORS=()
+NV_PREBUILT=""
+PKGS=()
+OPT=()
+UNITS=()
+NEED_HEADERS=0
+NEED_UCODE=0
+NEED_INITRAMFS=0
+NEED_REBOOT=0
+NOTES=()
+NOTES_SHOWN=0
+
+info() { printf '\033[1;34m[INFO]\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m %s\n' "$*" >&2; }
+die()  { printf '\033[1;31m[ERROR]\033[0m %s\n' "$*" >&2; exit 1; }
+step() { STEP="$1"; printf '\n\033[1;32m==>\033[0m %s\n' "$1"; }
+note() { NOTES+=("$*"); }
+
+on_err() {
+  local rc="$1" line="$2" cmd="$3" shown
+  trap - ERR
+  printf '\n\033[1;31m[ERROR]\033[0m Driver setup stopped (exit code %s, script line %s).\n' "$rc" "$line" >&2
+  if [[ -n "$STEP" ]]; then printf '  Step    : %s\n' "$STEP" >&2; fi
+  shown="${LAST_CMD:-$cmd}"
+  if ((${#shown} > 150)); then shown="${shown:0:150} ..."; fi
+  printf '  Command : %s\n' "$shown" >&2
+  printf '\n  Read the output above. Usual causes: package database locked (sudo rm /var/lib/pacman/db.lck),\n' >&2
+  printf '  out-of-date mirrors (sudo pacman -Syu), keyring problems (sudo pacman -Sy archlinux-keyring),\n' >&2
+  printf '  a package conflict (run again without --yes and answer the question), or no network.\n' >&2
+  printf '  It is safe to run ./driver install again: installed packages are skipped.\n' >&2
+  exit "$rc"
+}
+
+cleanup() {
+  local d
+  if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    SUDO_KEEPALIVE_PID=""
+  fi
+  for d in "${TMP_DIRS[@]:-}"; do
+    if [[ -n "$d" && -d "$d" ]]; then rm -rf "$d"; fi
+  done
+  return 0
+}
+
+trap cleanup EXIT
+trap 'on_err "$?" "$LINENO" "$BASH_COMMAND"' ERR
+trap 'printf "\n"; warn "Interrupted."; exit 130' INT
+trap 'exit 143' TERM HUP
+
+usage() {
+  cat <<'USAGE'
+Driver installer (Arch Linux / CachyOS)
+
+Usage: ./driver [options] <command>
+
+Commands:
+  install     Detect the hardware, then install and configure the drivers.
+  detect      Only show the detected hardware and the packages that would be installed.
+  help        Show this help.
+
+Options:
+  -y, --yes        Answer yes to every question and pass --noconfirm to pacman/yay.
+  -n, --dry-run    Show what would be done without changing anything.
+  --no-aur         Never use the AUR (packages that only exist there are skipped).
+  --no-upgrade     Do not run a full system upgrade (pacman -Syu) first.
+  --reboot         Reboot when finished.
+  --no-reboot      Do not reboot (default is to ask).
+
+What it handles:
+  GPU          NVIDIA (open modules for Turing and newer, 580xx legacy branch for Maxwell/Pascal/Volta,
+               nouveau for older cards), AMD, Intel, hybrid laptops (PRIME), virtual machine GPUs
+  CPU          intel-ucode / amd-ucode (+ GRUB config regeneration)
+  Firmware     linux-firmware, sof-firmware (Intel/AMD audio)
+  Wi-Fi        regulatory database, Broadcom wl driver where the chip needs it
+  Bluetooth    bluez + service
+  Audio        PipeWire stack and ALSA UCM profiles
+  Laptop       power-profiles-daemon, thermald (Intel), sensors for 2-in-1 devices
+  Other        fingerprint readers (fprintd), USB printers (CUPS), Thunderbolt (bolt),
+               VM guest tools (QEMU/KVM, VirtualBox, VMware, Hyper-V)
+
+It is safe to run ./driver install again after fixing a problem.
+USAGE
+}
+
+confirm() {
+  local def="${2:-n}" prompt ans
+  if ((ASSUME_YES || DRY_RUN)); then return 0; fi
+  if [[ "$def" == "y" ]]; then prompt="[Y/n]"; else prompt="[y/N]"; fi
+  if ! read -r -p "$1 $prompt " ans; then ans=""; fi
+  if [[ -z "$ans" ]]; then ans="$def"; fi
+  [[ "$ans" =~ ^[Yy]$ ]]
+}
+
+run() {
+  if ((DRY_RUN)); then
+    printf '\033[1;35m[DRY]\033[0m %s\n' "$*"
+    return 0
+  fi
+  LAST_CMD="$*"
+  "$@"
+  LAST_CMD=""
+}
+
+have_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+have_pkg() {
+  have_cmd pacman || return 1
+  pacman -Qq "$1" >/dev/null 2>&1
+}
+
+add_pkg() {
+  local p
+  for p in "$@"; do
+    if [[ " ${PKGS[*]:-} " != *" $p "* ]]; then PKGS+=("$p"); fi
+  done
+}
+
+add_opt() {
+  local p
+  for p in "$@"; do
+    if [[ " ${OPT[*]:-} " != *" $p "* ]]; then OPT+=("$p"); fi
+  done
+}
+
+add_unit() {
+  local u="$1" mode="${2:-later}"
+  if [[ " ${UNITS[*]:-} " != *" $u|"* ]]; then UNITS+=("$u|$mode"); fi
+}
+
+check_arch() {
+  [[ -r /etc/arch-release ]] || die "This script targets Arch Linux / CachyOS and derivatives."
+  have_cmd pacman || die "pacman was not found."
+}
+
+check_not_root() {
+  [[ "$EUID" -ne 0 ]] || die "Do not run this script as root; run it as your normal user. sudo is used when needed."
+}
+
+setup_sudo() {
+  if ((DRY_RUN)); then return 0; fi
+  have_cmd sudo || die "sudo was not found."
+  if ! sudo -n true 2>/dev/null; then
+    sudo -v || die "sudo authentication failed."
+  fi
+  local parent="$$"
+  (
+    trap - ERR EXIT
+    while kill -0 "$parent" 2>/dev/null; do
+      sudo -n -v 2>/dev/null || true
+      sleep 30
+    done
+  ) &
+  SUDO_KEEPALIVE_PID=$!
+}
+
+build_flags() {
+  PM_FLAGS=()
+  if ((ASSUME_YES)); then PM_FLAGS+=(--noconfirm); fi
+}
+
+pci_find() {
+  local l
+  for l in "${PCI_LINES[@]:-}"; do
+    if [[ -n "$l" && "$l" =~ $1 ]]; then printf '%s\n' "$l"; fi
+  done
+}
+
+pci_vendor() { if [[ "$1" =~ \[([0-9a-f]{4}):([0-9a-f]{4})\] ]]; then printf '%s' "${BASH_REMATCH[1]}"; fi; }
+pci_device() { if [[ "$1" =~ \[([0-9a-f]{4}):([0-9a-f]{4})\] ]]; then printf '%s' "${BASH_REMATCH[2]}"; fi; }
+pci_desc() {
+  local l="${1#*]: }"
+  printf '%s' "$l" | sed -E 's/ \[[0-9a-f]{4}:[0-9a-f]{4}\].*$//'
+}
+
+sysfs_read() {
+  if [[ -r "$1" ]]; then tr -d '\n' < "$1"; fi
+}
+
+usb_has_vendor() {
+  local e v
+  for e in "${USB_DEVS[@]:-}"; do
+    [[ -n "$e" ]] || continue
+    for v in "$@"; do
+      if [[ "${e%%:*}" == "$v" ]]; then return 0; fi
+    done
+  done
+  return 1
+}
+
+usb_has_class() {
+  local e
+  for e in "${USB_DEVS[@]:-}"; do
+    [[ -n "$e" ]] || continue
+    if [[ ",${e#*|}," == *",$1,"* ]]; then return 0; fi
+  done
+  return 1
+}
+
+detect_usb() {
+  USB_DEVS=()
+  local d v p i cls
+  for d in /sys/bus/usb/devices/*; do
+    [[ -r "$d/idVendor" && -r "$d/idProduct" ]] || continue
+    v="$(sysfs_read "$d/idVendor")"
+    p="$(sysfs_read "$d/idProduct")"
+    cls=""
+    for i in "$d"/*:*; do
+      [[ -r "$i/bInterfaceClass" ]] || continue
+      cls+="$(sysfs_read "$i/bInterfaceClass"),"
+    done
+    USB_DEVS+=("$v:$p|${cls%,}")
+  done
+}
+
+detect_machine() {
+  local vendor product chassis
+  vendor="$(sysfs_read /sys/class/dmi/id/sys_vendor)"
+  product="$(sysfs_read /sys/class/dmi/id/product_name)"
+  MACHINE="${vendor:-unknown} ${product:-}"
+
+  chassis="$(sysfs_read /sys/class/dmi/id/chassis_type)"
+  case "$chassis" in
+    8|9|10|11|14|30) IS_LAPTOP=1 ;;
+    31|32) IS_LAPTOP=1; IS_CONVERTIBLE=1 ;;
+  esac
+  if compgen -G "/sys/class/power_supply/BAT*" >/dev/null; then IS_LAPTOP=1; fi
+
+  if have_cmd systemd-detect-virt; then
+    VIRT="$(systemd-detect-virt --vm 2>/dev/null || true)"
+  fi
+  if [[ -z "$VIRT" ]]; then VIRT="none"; fi
+  if [[ "$VIRT" != "none" ]]; then IS_LAPTOP=0; fi
+
+  case "$(awk -F: '/^vendor_id/ { gsub(/[ \t]/, "", $2); print $2; exit }' /proc/cpuinfo 2>/dev/null)" in
+    GenuineIntel) CPU_VENDOR="intel" ;;
+    AuthenticAMD) CPU_VENDOR="amd" ;;
+  esac
+  CPU_MODEL="$(awk -F: '/^model name/ { sub(/^[ \t]+/, "", $2); print $2; exit }' /proc/cpuinfo 2>/dev/null)"
+
+  if [[ -r /etc/pacman.conf ]] && grep -qE '^\[multilib\]' /etc/pacman.conf; then MULTILIB=1; fi
+}
+
+nvidia_branch() {
+  local dev=0
+  if [[ "${1:-}" =~ ^[0-9a-f]{4}$ ]]; then dev=$((16#$1)); fi
+  if ((dev == 0 || dev >= 0x1e00)); then
+    printf 'modern'
+  elif ((dev >= 0x1340)); then
+    printf 'legacy'
+  else
+    printf 'old'
+  fi
+}
+
+detect_gpus() {
+  GPUS=()
+  local l g v d b
+  while IFS= read -r l; do
+    [[ -n "$l" ]] || continue
+    GPUS+=("$(pci_vendor "$l")|$(pci_device "$l")|$(pci_desc "$l")")
+  done < <(pci_find '\[(0300|0302|0380)\]')
+
+  for g in "${GPUS[@]:-}"; do
+    [[ -n "$g" ]] || continue
+    IFS='|' read -r v d _ <<<"$g"
+    case "$v" in
+      10de)
+        HAS_NV=1
+        b="$(nvidia_branch "$d")"
+        if [[ "$NV_BRANCH" == "" || "$b" == "old" || ( "$b" == "legacy" && "$NV_BRANCH" == "modern" ) ]]; then
+          NV_BRANCH="$b"
+        fi
+        ;;
+      8086) HAS_INTEL=1 ;;
+      1002) HAS_AMD=1 ;;
+    esac
+  done
+  if ((HAS_NV && (HAS_INTEL || HAS_AMD))); then HYBRID=1; fi
+}
+
+detect_peripherals() {
+  local l v d id e
+  local -a bcm_ids=(4311 4312 4313 4315 4321 4322 4328 4329 432a 432b 432c 432d 4331 4353 4357 4359 4365 4727 43a0 43b1)
+
+  while IFS= read -r l; do
+    [[ -n "$l" ]] || continue
+    HAS_WIFI=1
+    v="$(pci_vendor "$l")"
+    d="$(pci_device "$l")"
+    if [[ "$v" == "14e4" ]]; then
+      for id in "${bcm_ids[@]}"; do
+        if [[ "$d" == "$id" ]]; then BCM_WIFI=1; fi
+      done
+    fi
+  done < <(pci_find '\[0280\]')
+  if compgen -G "/sys/class/net/*/wireless" >/dev/null; then HAS_WIFI=1; fi
+
+  if compgen -G "/sys/class/bluetooth/hci*" >/dev/null || usb_has_class e0; then HAS_BT=1; fi
+
+  if usb_has_vendor 27c6 138a 147e 1c7a 08ff; then
+    HAS_FINGERPRINT=1
+  else
+    for e in "${USB_DEVS[@]:-}"; do
+      [[ -n "$e" ]] || continue
+      case "${e%%:*}" in
+        06cb|04f3)
+          if [[ ",${e#*|}," != *",03,"* ]]; then HAS_FINGERPRINT=1; fi
+          ;;
+      esac
+    done
+  fi
+
+  for e in "${USB_DEVS[@]:-}"; do
+    [[ -n "$e" ]] || continue
+    if [[ ",${e#*|}," == *",07,"* ]]; then
+      HAS_PRINTER=1
+      PRINTER_VENDORS+=("${e%%:*}")
+    fi
+  done
+
+  if [[ -n "$(pci_find 'Thunderbolt|USB4')" ]]; then HAS_THUNDERBOLT=1; fi
+}
+
+detect_all() {
+  PCI_LINES=()
+  if have_cmd lspci; then
+    mapfile -t PCI_LINES < <(LC_ALL=C lspci -nn 2>/dev/null)
+  else
+    warn "lspci was not found (package: pciutils); PCI hardware cannot be detected."
+  fi
+  detect_usb
+  detect_machine
+  detect_gpus
+  detect_peripherals
+  if have_cmd pacman; then
+    NV_PREBUILT="$(pacman -Qq 2>/dev/null | grep -E '^linux-cachyos.*-nvidia(-open)?$' | head -n1 || true)"
+  fi
+}
+
+plan_base() {
+  add_pkg linux-firmware pciutils usbutils
+}
+
+plan_cpu() {
+  if [[ "$VIRT" != "none" ]]; then return 0; fi
+  case "$CPU_VENDOR" in
+    intel) add_pkg intel-ucode; NEED_UCODE=1 ;;
+    amd)   add_pkg amd-ucode; NEED_UCODE=1 ;;
+  esac
+}
+
+plan_gpu() {
+  local g v d desc intel_old='(2nd|3rd|4th) Gen|Sandy Bridge|Ivy Bridge|Haswell|Bay Trail|Pineview|Cedar Trail|GM45|4 Series|Mobile 9[0-9]{2}'
+  local intel_new='Iris Xe|Arc |Alder Lake|Raptor Lake|Tiger Lake|Meteor Lake|Lunar Lake|Battlemage'
+
+  add_pkg mesa vulkan-icd-loader
+  add_opt mesa-utils vulkan-tools libva-utils
+  if ((MULTILIB)); then add_opt lib32-mesa lib32-vulkan-icd-loader; fi
+
+  if [[ "$VIRT" != "none" ]]; then
+    add_opt vulkan-virtio vulkan-swrast
+    return 0
+  fi
+
+  for g in "${GPUS[@]:-}"; do
+    [[ -n "$g" ]] || continue
+    IFS='|' read -r v d desc <<<"$g"
+    case "$v" in
+      1002)
+        add_pkg vulkan-radeon
+        add_opt libva-mesa-driver mesa-vdpau
+        if ((MULTILIB)); then add_opt lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau; fi
+        ;;
+      8086)
+        add_pkg vulkan-intel
+        if ((MULTILIB)); then add_opt lib32-vulkan-intel; fi
+        if [[ "$desc" =~ $intel_old ]]; then
+          add_opt libva-intel-driver
+        else
+          add_pkg intel-media-driver
+          if [[ "$desc" =~ $intel_new ]]; then add_opt vpl-gpu-rt; fi
+        fi
+        ;;
+    esac
+  done
+
+  if ((HAS_NV)); then plan_nvidia; fi
+}
+
+plan_nvidia() {
+  if ((HYBRID)); then
+    add_unit switcheroo-control.service later
+    add_opt switcheroo-control
+    if [[ "$NV_BRANCH" != "old" ]]; then add_pkg nvidia-prime; fi
+  fi
+
+  case "$NV_BRANCH" in
+    modern)
+      if [[ -n "$NV_PREBUILT" ]]; then
+        add_pkg nvidia-utils nvidia-settings
+      else
+        NEED_HEADERS=1
+        add_pkg nvidia-open-dkms nvidia-utils nvidia-settings
+      fi
+      add_pkg libva-nvidia-driver
+      if ((MULTILIB)); then add_pkg lib32-nvidia-utils; fi
+      ;;
+    legacy)
+      NEED_HEADERS=1
+      add_pkg nvidia-580xx-dkms nvidia-580xx-utils nvidia-580xx-settings libva-nvidia-driver
+      if ((MULTILIB)); then add_pkg lib32-nvidia-580xx-utils; fi
+      note "Your NVIDIA GPU (Maxwell/Pascal/Volta) is no longer supported by the current NVIDIA driver; the 580xx legacy branch from the AUR is used."
+      ;;
+    old)
+      add_opt vulkan-nouveau
+      note "Your NVIDIA GPU is too old for any driver that works on a current kernel; the open-source nouveau driver (part of the kernel + mesa) is used."
+      ;;
+  esac
+
+  if [[ "$NV_BRANCH" == "modern" || "$NV_BRANCH" == "legacy" ]]; then
+    add_unit nvidia-suspend.service later
+    add_unit nvidia-resume.service later
+    add_unit nvidia-hibernate.service later
+    NEED_INITRAMFS=1
+  fi
+}
+
+plan_network() {
+  if ((HAS_WIFI)); then
+    add_pkg iw wireless-regdb
+    if ((BCM_WIFI)); then
+      NEED_HEADERS=1
+      add_pkg broadcom-wl-dkms
+      note "Broadcom Wi-Fi chip that needs the proprietary wl driver was found; it is active after a reboot."
+    fi
+  fi
+  if usb_has_vendor 0bda && ! compgen -G "/sys/class/net/wl*" >/dev/null; then
+    note "A Realtek USB device is present but no Wi-Fi interface exists. If it is a Wi-Fi dongle, it may need an out-of-tree AUR driver (search: yay -Ss rtl88). Pick it by the chip name printed by: lsusb"
+  fi
+}
+
+plan_bluetooth() {
+  if ((HAS_BT)); then
+    add_pkg bluez bluez-utils
+    add_unit bluetooth.service now
+  fi
+}
+
+plan_audio() {
+  local intel_amd_audio
+  intel_amd_audio="$(pci_find '\[(0401|0403|0480)\].*(Intel|AMD|Advanced Micro)')"
+  add_pkg pipewire wireplumber pipewire-alsa alsa-utils
+  if have_pkg pulseaudio; then
+    note "pulseaudio is installed; pipewire-pulse was not added because it conflicts with it."
+  else
+    add_pkg pipewire-pulse
+  fi
+  if [[ -n "$intel_amd_audio" ]]; then add_pkg sof-firmware alsa-ucm-conf; fi
+}
+
+plan_laptop() {
+  if ((!IS_LAPTOP)); then return 0; fi
+  add_pkg upower
+  if have_pkg tlp || have_pkg auto-cpufreq || have_pkg tuned-ppd; then
+    note "Another power manager (tlp / auto-cpufreq / tuned-ppd) is installed; power-profiles-daemon was not added."
+  else
+    add_pkg power-profiles-daemon
+    add_unit power-profiles-daemon.service now
+  fi
+  if [[ "$CPU_VENDOR" == "intel" ]]; then
+    add_pkg thermald
+    add_unit thermald.service now
+  fi
+  if ((IS_CONVERTIBLE)); then
+    add_pkg iio-sensor-proxy
+    add_unit iio-sensor-proxy.service later
+  fi
+}
+
+plan_fingerprint() {
+  if ((HAS_FINGERPRINT)); then
+    add_pkg fprintd
+    note "Fingerprint reader found. Enroll a finger with: fprintd-enroll   (login/sudo via PAM is not changed automatically)."
+  fi
+}
+
+plan_printer() {
+  if ((!HAS_PRINTER)); then return 0; fi
+  local v
+  add_pkg cups
+  add_opt cups-filters ghostscript gutenprint foomatic-db foomatic-db-engine foomatic-db-ppds system-config-printer
+  add_unit cups.socket now
+  for v in "${PRINTER_VENDORS[@]:-}"; do
+    case "$v" in
+      03f0) add_pkg hplip ;;
+      04f9) add_opt brlaser ;;
+    esac
+  done
+}
+
+plan_misc() {
+  if ((HAS_THUNDERBOLT)); then
+    add_pkg bolt
+    add_unit bolt.service later
+  fi
+}
+
+plan_vm() {
+  case "$VIRT" in
+    kvm|qemu)
+      add_pkg qemu-guest-agent spice-vdagent
+      add_unit qemu-guest-agent.service later
+      add_unit spice-vdagentd.socket now
+      ;;
+    oracle)
+      add_pkg virtualbox-guest-utils
+      add_unit vboxservice.service now
+      ;;
+    vmware)
+      add_pkg open-vm-tools
+      add_unit vmtoolsd.service now
+      add_unit vmware-vmblock-fuse.service now
+      ;;
+    microsoft)
+      add_pkg hyperv
+      add_unit hv_kvp_daemon.service now
+      add_unit hv_vss_daemon.service now
+      ;;
+  esac
+}
+
+plan_all() {
+  PKGS=(); OPT=(); UNITS=(); NOTES=()
+  NEED_HEADERS=0; NEED_UCODE=0; NEED_INITRAMFS=0; NEED_REBOOT=1
+  plan_base
+  plan_cpu
+  plan_gpu
+  plan_network
+  plan_bluetooth
+  plan_audio
+  plan_laptop
+  plan_fingerprint
+  plan_printer
+  plan_misc
+  plan_vm
+}
+
+yn() { if (($1)); then printf 'yes'; else printf 'no'; fi; }
+
+print_report() {
+  local g v d desc what l
+  printf '\n\033[1mDetected hardware\033[0m\n'
+  printf '  %-14s %s\n' "Machine:" "$MACHINE"
+  printf '  %-14s %s\n' "CPU:" "${CPU_MODEL:-unknown} ($CPU_VENDOR)"
+  if [[ "$VIRT" != "none" ]]; then
+    printf '  %-14s %s\n' "Type:" "virtual machine ($VIRT)"
+  elif ((IS_LAPTOP)); then
+    printf '  %-14s %s\n' "Type:" "laptop$( ((IS_CONVERTIBLE)) && printf ' (2-in-1)')"
+  else
+    printf '  %-14s %s\n' "Type:" "desktop"
+  fi
+
+  if ((${#GPUS[@]})); then
+    for g in "${GPUS[@]}"; do
+      IFS='|' read -r v d desc <<<"$g"
+      case "$v" in
+        10de)
+          case "$(nvidia_branch "$d")" in
+            modern) what="nvidia-open-dkms (current driver)" ;;
+            legacy) what="nvidia-580xx-dkms (legacy branch, AUR)" ;;
+            *)      what="nouveau (kernel + mesa)" ;;
+          esac ;;
+        1002) what="amdgpu + mesa (vulkan-radeon)" ;;
+        8086) what="i915/xe + mesa (vulkan-intel, VA-API)" ;;
+        *)    what="mesa" ;;
+      esac
+      printf '  %-14s %s [%s:%s]\n' "GPU:" "$desc" "$v" "$d"
+      printf '  %-14s -> %s\n' "" "$what"
+    done
+    if ((HYBRID)); then
+      if [[ "$NV_BRANCH" == "old" ]]; then
+        printf '  %-14s %s\n' "" "hybrid graphics: run an app on the NVIDIA GPU with: DRI_PRIME=1 <app>"
+      else
+        printf '  %-14s %s\n' "" "hybrid graphics: PRIME tools added (run an app on the NVIDIA GPU with: prime-run <app>)"
+      fi
+    fi
+  else
+    printf '  %-14s %s\n' "GPU:" "none found"
+  fi
+
+  printf '  %-14s %s\n' "Wi-Fi:" "$(yn $HAS_WIFI)$( ((BCM_WIFI)) && printf ' (Broadcom, needs wl driver)')"
+  printf '  %-14s %s\n' "Bluetooth:" "$(yn $HAS_BT)"
+  printf '  %-14s %s\n' "Fingerprint:" "$(yn $HAS_FINGERPRINT)"
+  printf '  %-14s %s\n' "USB printer:" "$(yn $HAS_PRINTER)"
+  printf '  %-14s %s\n' "Thunderbolt:" "$(yn $HAS_THUNDERBOLT)"
+  printf '  %-14s %s\n' "32-bit libs:" "$( ((MULTILIB)) && printf 'multilib enabled' || printf 'multilib not enabled in /etc/pacman.conf (lib32-* skipped)')"
+
+  printf '\n\033[1mPlanned packages\033[0m\n  %s\n' "${PKGS[*]:-none}"
+  if ((${#OPT[@]})); then printf '\033[1mOptional (only if available)\033[0m\n  %s\n' "${OPT[*]}"; fi
+  if ((${#UNITS[@]})); then
+    printf '\033[1mServices to enable\033[0m\n  '
+    for l in "${UNITS[@]}"; do printf '%s ' "${l%%|*}"; done
+    printf '\n'
+  fi
+  if ((${#NOTES[@]})); then
+    printf '\n\033[1mNotes\033[0m\n'
+    for l in "${NOTES[@]}"; do printf '  - %s\n' "$l"; done
+  fi
+  NOTES_SHOWN=${#NOTES[@]}
+  printf '\n'
+}
+
+ensure_aur_helper() {
+  if have_cmd yay; then AUR_HELPER="yay"; return 0; fi
+  if have_cmd paru; then AUR_HELPER="paru"; return 0; fi
+  step "Installing yay (needed for AUR packages)"
+  AUR_HELPER="yay"
+  if ((DRY_RUN)); then
+    info "[dry-run] would build yay-bin from the AUR"
+    return 0
+  fi
+  run sudo pacman -S --needed "${PM_FLAGS[@]}" base-devel git
+  local dir
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/yay-build.XXXXXX")"
+  TMP_DIRS+=("$dir")
+  run git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$dir/yay-bin"
+  pushd "$dir/yay-bin" >/dev/null
+  run makepkg -si --needed "${PM_FLAGS[@]}"
+  popd >/dev/null
+  have_cmd yay || die "yay was built but is not in PATH. Install it by hand: https://github.com/Jguer/yay#installation"
+}
+
+kernel_headers() {
+  HEADER_PKGS=()
+  local f base h
+  for f in /usr/lib/modules/*/pkgbase; do
+    [[ -r "$f" ]] || continue
+    base="$(<"$f")"
+    h="${base}-headers"
+    if [[ " ${HEADER_PKGS[*]:-} " != *" $h "* ]]; then HEADER_PKGS+=("$h"); fi
+  done
+  if ((${#HEADER_PKGS[@]} == 0)); then HEADER_PKGS=(linux-headers); fi
+}
+
+nvidia_swap_branch() {
+  local p
+  local -a remove=()
+  local -a official=(nvidia nvidia-open nvidia-dkms nvidia-open-dkms nvidia-lts nvidia-open-lts nvidia-utils nvidia-settings lib32-nvidia-utils opencl-nvidia lib32-opencl-nvidia)
+  local -a proprietary=(nvidia nvidia-dkms nvidia-lts)
+  local -a legacy=(nvidia-580xx-dkms nvidia-580xx-utils nvidia-580xx-settings lib32-nvidia-580xx-utils opencl-nvidia-580xx lib32-opencl-nvidia-580xx)
+
+  case "$NV_BRANCH" in
+    legacy) for p in "${official[@]}"; do if have_pkg "$p"; then remove+=("$p"); fi; done ;;
+    modern) for p in "${proprietary[@]}" "${legacy[@]}"; do if have_pkg "$p"; then remove+=("$p"); fi; done ;;
+    *) return 0 ;;
+  esac
+  if ((${#remove[@]} == 0)); then return 0; fi
+
+  step "Replacing conflicting NVIDIA packages"
+  info "These installed packages conflict with the driver branch your GPU needs: ${remove[*]}"
+  if confirm "Remove them now (pacman -Rdd) so the right branch can be installed?" y; then
+    run sudo pacman -Rdd --noconfirm "${remove[@]}"
+  else
+    die "Cannot continue with conflicting NVIDIA packages installed."
+  fi
+}
+
+install_packages() {
+  local p
+  local -a repo=() aur=() headers=()
+  HEADER_PKGS=()
+
+  if ((NEED_HEADERS)); then
+    kernel_headers
+    for p in "${HEADER_PKGS[@]}"; do
+      if pacman -Si "$p" >/dev/null 2>&1; then
+        headers+=("$p")
+      else
+        warn "Kernel headers package $p was not found in the repositories; DKMS modules may fail to build for that kernel."
+      fi
+    done
+  fi
+
+  for p in "${PKGS[@]:-}"; do
+    [[ -n "$p" ]] || continue
+    if pacman -Si "$p" >/dev/null 2>&1; then
+      repo+=("$p")
+    elif ((NO_AUR)); then
+      warn "$p is not in the official repositories and --no-aur was given; skipped."
+    else
+      aur+=("$p")
+    fi
+  done
+  for p in "${OPT[@]:-}"; do
+    [[ -n "$p" ]] || continue
+    if pacman -Si "$p" >/dev/null 2>&1; then repo+=("$p"); fi
+  done
+
+  if ((${#headers[@]})); then
+    step "Installing kernel headers (needed to build DKMS drivers)"
+    run sudo pacman -S --needed "${PM_FLAGS[@]}" "${headers[@]}"
+  fi
+  if ((${#aur[@]})); then
+    ensure_aur_helper
+    step "Installing AUR packages: ${aur[*]}"
+    run "$AUR_HELPER" -S --needed "${PM_FLAGS[@]}" "${aur[@]}"
+  fi
+  if ((${#repo[@]})); then
+    step "Installing ${#repo[@]} packages from the official repositories"
+    run sudo pacman -S --needed "${PM_FLAGS[@]}" "${repo[@]}"
+  fi
+}
+
+write_root_file() {
+  local path="$1" content="$2"
+  if [[ -f "$path" && "$(<"$path")" == "$content" ]]; then
+    info "$path is already up to date."
+    return 0
+  fi
+  if ((DRY_RUN)); then
+    printf '\033[1;35m[DRY]\033[0m write %s\n' "$path"
+    return 0
+  fi
+  printf '%s\n' "$content" | sudo tee "$path" >/dev/null
+}
+
+enable_unit() {
+  local unit="$1" mode="${2:-later}"
+  have_cmd systemctl || return 0
+  if ((DRY_RUN)); then
+    printf '\033[1;35m[DRY]\033[0m systemctl enable%s %s\n' "$( [[ "$mode" == "now" ]] && printf ' --now')" "$unit"
+    return 0
+  fi
+  if ! systemctl list-unit-files "$unit" 2>/dev/null | grep -q "^$unit"; then
+    warn "Unit $unit does not exist on this system; skipped."
+    return 0
+  fi
+  if [[ "$mode" == "now" ]]; then
+    sudo systemctl enable --now "$unit" || warn "Could not enable $unit. Run later: sudo systemctl enable --now $unit"
+  else
+    sudo systemctl enable "$unit" || warn "Could not enable $unit. Run later: sudo systemctl enable $unit"
+  fi
+}
+
+configure_nvidia() {
+  if [[ "$NV_BRANCH" != "modern" && "$NV_BRANCH" != "legacy" ]]; then return 0; fi
+  step "Configuring the NVIDIA driver"
+  write_root_file /etc/modprobe.d/nvidia-driver.conf "# $TAG
+# Kernel mode setting is required for Wayland (Hyprland).
+options nvidia_drm modeset=1 fbdev=1
+# Keep video memory across suspend/resume (works with the nvidia-suspend/resume services).
+options nvidia NVreg_PreserveVideoMemoryAllocations=1"
+
+  if ((HYBRID)); then
+    info "Hybrid graphics: the integrated GPU stays the main one; run an app on the NVIDIA GPU with: prime-run <app>"
+    return 0
+  fi
+
+  local lua="$HYPR_DIR/custom/gpu.lua" main="$HYPR_DIR/hyprland.lua"
+  if [[ ! -f "$main" ]]; then
+    note "Hyprland config not found in $HYPR_DIR. After ./setup install, run ./driver install again to add the NVIDIA environment variables."
+    return 0
+  fi
+  if ((DRY_RUN)); then
+    printf '\033[1;35m[DRY]\033[0m write %s and load it from %s\n' "$lua" "$main"
+    return 0
+  fi
+  mkdir -p "$HYPR_DIR/custom"
+  cat > "$lua" <<LUA
+-- $TAG
+-- NVIDIA environment for Hyprland (single NVIDIA GPU).
+hl.env("LIBVA_DRIVER_NAME", "nvidia")
+hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+hl.env("NVD_BACKEND", "direct")
+LUA
+  if ! grep -q 'custom.gpu' "$main"; then
+    cp -n "$main" "$main.driver-bak" 2>/dev/null || true
+    if grep -q '^require("modules.env")' "$main"; then
+      sed -i '/^require("modules.env")/a pcall(require, "custom.gpu")' "$main"
+    else
+      printf '\npcall(require, "custom.gpu")\n' >> "$main"
+    fi
+    info "Added the NVIDIA environment to $main (backup: hyprland.lua.driver-bak)."
+  fi
+  note "If you re-run ./setup install it replaces ~/.config/hypr; run ./driver install again afterwards to restore the NVIDIA environment file."
+}
+
+configure_microcode() {
+  if ((!NEED_UCODE)); then return 0; fi
+  step "Applying CPU microcode"
+  if [[ -f /boot/grub/grub.cfg ]] && have_cmd grub-mkconfig; then
+    run sudo grub-mkconfig -o /boot/grub/grub.cfg
+  else
+    info "GRUB was not found. With mkinitcpio's 'microcode' hook (default) or limine/systemd-boot tooling nothing else is needed."
+    note "Make sure your bootloader loads the microcode image (initrd /intel-ucode.img or /amd-ucode.img) unless your initramfs already includes it."
+  fi
+}
+
+configure_services() {
+  local e unit mode
+  if ((${#UNITS[@]} == 0)); then return 0; fi
+  step "Enabling services"
+  for e in "${UNITS[@]}"; do
+    unit="${e%%|*}"
+    mode="${e#*|}"
+    enable_unit "$unit" "$mode"
+  done
+}
+
+rebuild_initramfs() {
+  if ((!NEED_INITRAMFS)); then return 0; fi
+  if have_cmd mkinitcpio; then
+    step "Rebuilding the initramfs"
+    run sudo mkinitcpio -P
+  fi
+}
+
+finish() {
+  local i
+  STEP=""
+  printf '\n\033[1;32m==>\033[0m Done.\n'
+  if ((${#NOTES[@]} > NOTES_SHOWN)); then
+    printf '\n\033[1mNew notes\033[0m\n'
+    for ((i = NOTES_SHOWN; i < ${#NOTES[@]}; i++)); do printf '  - %s\n' "${NOTES[i]}"; done
+  fi
+  printf '\nAfter the reboot you can check the result with:\n'
+  if ((HAS_NV)) && [[ "$NV_BRANCH" != "old" ]]; then printf '  nvidia-smi\n'; fi
+  printf '  vulkaninfo --summary     (vulkan-tools)\n'
+  printf '  vainfo                   (libva-utils, video acceleration)\n'
+  printf '  glxinfo -B               (mesa-utils)\n\n'
+
+  if ((DRY_RUN)); then info "[dry-run] nothing was changed."; return 0; fi
+  if ((NEED_REBOOT)); then
+    case "$REBOOT_MODE" in
+      yes) info "Rebooting now."; sudo systemctl reboot ;;
+      no)  info "Reboot soon so the new drivers and kernel modules are loaded." ;;
+      *)
+        if confirm "Reboot now so the new drivers are loaded?" n; then
+          sudo systemctl reboot
+        else
+          info "Reboot soon so the new drivers and kernel modules are loaded."
+        fi
+        ;;
+    esac
+  fi
+}
+
+cmd_detect() {
+  detect_all
+  plan_all
+  print_report
+}
+
+cmd_install() {
+  check_arch
+  check_not_root
+  build_flags
+
+  if ! have_cmd lspci; then
+    step "Installing pciutils (needed to detect hardware)"
+    setup_sudo
+    run sudo pacman -S --needed "${PM_FLAGS[@]}" pciutils
+  fi
+
+  step "Detecting hardware"
+  detect_all
+  plan_all
+  print_report
+
+  if ((DRY_RUN)); then
+    info "Dry run: showing the steps without changing anything."
+  elif ! confirm "Install and configure these drivers now?" y; then
+    info "Cancelled."
+    return 0
+  fi
+
+  setup_sudo
+  if ((!NO_UPGRADE)); then
+    step "Updating the system (pacman -Syu)"
+    run sudo pacman -Syu "${PM_FLAGS[@]}"
+  else
+    warn "Skipping the upgrade. If a package fails with '404' or 'target not found', run: sudo pacman -Syu"
+  fi
+
+  if ((HAS_NV)); then nvidia_swap_branch; fi
+  install_packages
+  configure_nvidia
+  configure_microcode
+  configure_services
+  rebuild_initramfs
+  finish
+}
+
+CMD=""
+for arg in "$@"; do
+  case "$arg" in
+    -y|--yes)      ASSUME_YES=1 ;;
+    -n|--dry-run)  DRY_RUN=1 ;;
+    --no-aur)      NO_AUR=1 ;;
+    --no-upgrade)  NO_UPGRADE=1 ;;
+    --reboot)      REBOOT_MODE="yes" ;;
+    --no-reboot)   REBOOT_MODE="no" ;;
+    -h|--help)     CMD="help" ;;
+    -*) usage; die "Unknown option: $arg" ;;
+    *)  CMD="$arg" ;;
+  esac
+done
+
+case "${CMD:-help}" in
+  install) cmd_install ;;
+  detect)  cmd_detect ;;
+  help)    usage ;;
+  *)       usage; die "Unknown command: $CMD" ;;
+esac

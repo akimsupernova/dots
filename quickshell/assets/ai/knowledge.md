@@ -6,6 +6,7 @@ These facts describe the default install. If the user says their setup differs, 
 ## What it is
 - A minimal desktop for Arch Linux (CachyOS also works): Hyprland (window manager, Lua config) + Quickshell (draws the bar, panels, menus, lock screen).
 - Official repository: https://github.com/akimsupernova/dots. Installer: `./setup install`. Other commands: `./setup uninstall`, `./setup deps`, `./setup specs`, `./setup welcome`, `./setup help`. Options: `-y`, `-n` (dry run), `--no-deps`, `--reboot`.
+- Optional hardware driver utility: `./driver` in the repo root (not run by `./setup`; the user decides whether to use it). `./driver detect` only reports the detected hardware and planned packages. `./driver install` installs and configures drivers: NVIDIA (nvidia-open-dkms for Turing/RTX 20xx and newer, nvidia-580xx-dkms from the AUR for Maxwell/Pascal/Volta, nouveau for older), AMD/Intel Mesa/Vulkan/VA-API, PRIME for hybrid laptops (`prime-run <app>`), CPU microcode, firmware, Broadcom Wi-Fi, Bluetooth, PipeWire/SOF audio, laptop power tools, fingerprint, printers, Thunderbolt and VM guest tools. Options: `-y`, `-n` (dry run), `--no-aur`, `--no-upgrade`, `--reboot`. Run it as a normal user, reboot afterwards. lib32 packages are added only if [multilib] is enabled in /etc/pacman.conf. On a single-NVIDIA-GPU system it writes ~/.config/hypr/custom/gpu.lua; re-run `./driver install` after `./setup install` replaces ~/.config/hypr. `./setup uninstall` does not remove drivers.
 - The installer backs up old configs once in ~/.local/share/akim-dotfiles-backup/<time>/ and keeps notes in ~/.local/state/glassveil-shell/. `hypr/modules/monitors.lua` and `hypr/custom/keybinds.lua` are kept on re-install.
 
 
@@ -80,3 +81,4 @@ Tabs: Appearance, Clock & weather, Wallpaper (also monitor settings), Audio, AI,
 - Colors or wallpaper not changing: read the apply-wallpaper log, run theme_sync.py by hand. Emoji or CJK missing: `fc-cache -f`, check noto-fonts-emoji and noto-fonts-cjk.
 - Attach file does nothing: install zenity. AI cannot see an image: use a vision model (Ollama: qwen2.5vl, gemma3, llama3.2-vision; cloud: pick a model with image input). "Model not found": set `/model <name>`.
 - Steam: enable [multilib] in /etc/pacman.conf, then `sudo pacman -Syu steam`.
+- Graphics, Wi-Fi, Bluetooth or audio not working, or an NVIDIA/hybrid laptop problem: suggest to run `./driver detect` and then `./driver install`.
