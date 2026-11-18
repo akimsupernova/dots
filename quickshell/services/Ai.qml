@@ -215,6 +215,9 @@ Singleton {
         if (!root.panelOpen) Sounds.play("ai")
     }
 
+    property bool pickerOpen: false
+    signal clipboardTextPaste()
+    property bool _clipPaste: false
     property var attachments: []
     property var _attachQueue: []
     property bool attaching: false
@@ -1457,7 +1460,8 @@ Singleton {
 
         if (cmd === "/attach") {
             const path = text.slice(a[0].length).trim().replace(/^["']|["']$/g, "")
-            if (!path) return _sys("Usage: `/attach <path>` — text, PDF and image files. Or pick one from the **+** menu, or drop a file on the panel.", true)
+            if (!path) return _sys("Usage: `/attach <path>` — text, PDF and image files. Or `/attach clipboard` for a file you copied, press Ctrl+V in the input bar, pick one from the **+** menu (file picker), or drop a file on the panel.", true)
+            if (path.toLowerCase() === "clipboard") return attachClipboard(false)
             return attach(path)
         }
 
@@ -1525,7 +1529,7 @@ Singleton {
                 "- `/ctx <tokens>` — Ollama context window (default 32768)\n" +
                 "- `/maxtokens <n|auto>` — longest answer to ask for\n" +
                 "- `/think on|off|low|medium|high` — Ollama reasoning models (shown in a collapsible block)\n" +
-                "- `/attach <path>` — attach a text, code, PDF, Office/OpenDocument or image file (works with every provider; images need a vision model); `/detach` clears\n" +
+                "- `/attach <path>` — attach a text, code, PDF, Office/OpenDocument or image file (works with every provider; images need a vision model); `/attach clipboard` (or Ctrl+V) attaches a file or image you copied; `/detach` clears\n" +
                 "- `/image <description>` — make a picture with a local Ollama image model; `/imagemodel <name>` picks it\n" +
                 "- `/clear` — new chat\n\n" +
                 "Providers: " + providerIds.map(i => "`" + i + "`").join(" ") + "\n" +
@@ -1650,6 +1654,31 @@ Singleton {
         }
     }
 
+    function attachClipboard(textFallback) {
+        if (clipProc.running) return
+        root._clipPaste = !!textFallback
+        clipProc.mode = textFallback ? "paste" : "attach"
+        clipProc.running = true
+    }
+
+    function _clipboardDone(code, raw) {
+        const fallback = root._clipPaste
+        root._clipPaste = false
+        if (code === 127) {
+            if (fallback) return root.clipboardTextPaste()
+            return _sys("Clipboard access needs `wl-clipboard` (sudo pacman -S wl-clipboard).", true)
+        }
+        const lines = String(raw).split("\n").map(x => x.trim()).filter(x => x.length > 0)
+        if (code !== 0 || lines.length === 0) {
+            if (fallback) return root.clipboardTextPaste()
+            return _sys("The clipboard holds no file or image. Copy a file in your file manager first (Ctrl+C), then try again.", true)
+        }
+        for (const l of lines) {
+            if (/^file:\/\//.test(l)) attachUrls([l])
+            else attach(l)
+        }
+    }
+
     function removeAttachment(i) {
         const a = root.attachments.slice()
         a.splice(i, 1)
@@ -1693,8 +1722,7 @@ Singleton {
     }
 
     function pickFile() {
-        if (pickProc.running) return
-        pickProc.running = true
+        root.pickerOpen = true
     }
 
     function _capsKey(model) { return urlOf("ollama") + "|" + model }
@@ -1781,6 +1809,32 @@ Singleton {
     }
 
     Process {
+        id: clipProc
+        property string mode: "attach"
+        command: ["sh", "-c",
+            'command -v wl-paste >/dev/null 2>&1 || exit 127\n' +
+            'types=$(wl-paste --list-types 2>/dev/null) || exit 1\n' +
+            'has() { printf "%s\\n" "$types" | grep -qx "$1"; }\n' +
+            'out=""\n' +
+            'if has text/uri-list; then out=$(wl-paste --no-newline --type text/uri-list 2>/dev/null | tr -d "\\r" | grep "^file://"); fi\n' +
+            'if [ -z "$out" ] && has x-special/gnome-copied-files; then out=$(wl-paste --no-newline --type x-special/gnome-copied-files 2>/dev/null | tr -d "\\r" | grep "^file://"); fi\n' +
+            'if [ -z "$out" ] && [ "$1" != paste ]; then\n' +
+            '  t=$(wl-paste --no-newline --type text 2>/dev/null | head -n 1 | tr -d "\\r")\n' +
+            '  case "$t" in "~/"*) t="$HOME/${t#"~/"}";; esac\n' +
+            '  case "$t" in file://*) out="$t";; /*) [ -f "$t" ] && out="$t";; esac\n' +
+            'fi\n' +
+            'if [ -z "$out" ] && has image/png && { [ "$1" != paste ] || ! printf "%s\\n" "$types" | grep -qiE "^(text/|UTF8_STRING|STRING)"; }; then\n' +
+            '  f="${XDG_RUNTIME_DIR:-/tmp}/glassveil-clipboard-$(date +%s).png"\n' +
+            '  if wl-paste --type image/png > "$f" 2>/dev/null && [ -s "$f" ]; then out="$f"; else rm -f "$f"; fi\n' +
+            'fi\n' +
+            '[ -n "$out" ] || exit 1\n' +
+            'printf "%s\\n" "$out"',
+            "sh", clipProc.mode]
+        stdout: StdioCollector { id: clipOut }
+        onExited: code => root._clipboardDone(code, clipOut.text)
+    }
+
+    Process {
         id: imageProc
         property string model: ""
         stdout: StdioCollector {
@@ -1792,25 +1846,6 @@ Singleton {
                 root._done()
                 root._replaceLast({ role: "assistant", text: "Picture generation failed (is python3 installed?).", error: true })
             }
-        }
-    }
-
-    Process {
-        id: pickProc
-        command: ["sh", "-c",
-            'if command -v zenity >/dev/null 2>&1; then exec zenity --file-selection --title="Attach file"; ' +
-            'elif command -v kdialog >/dev/null 2>&1; then exec kdialog --getopenfilename "$HOME"; ' +
-            'elif command -v yad >/dev/null 2>&1; then exec yad --file --title="Attach file"; ' +
-            'else exit 127; fi']
-        stdout: StdioCollector { id: pickOut }
-        onExited: code => {
-            Quickshell.execDetached(["qs", "ipc", "call", "ai", "open"])
-            if (code === 127) {
-                root._sys("No file chooser found. Install `zenity` (sudo pacman -S zenity), or use `/attach <path>`, or drop a file on this panel.", true)
-                return
-            }
-            const path = String(pickOut.text).trim().split("\n")[0]
-            if (code === 0 && path) root.attach(path)
         }
     }
 

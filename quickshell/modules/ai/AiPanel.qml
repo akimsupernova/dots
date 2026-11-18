@@ -11,6 +11,7 @@ Scope {
     property bool open: false
 
     Binding { target: Ai; property: "panelOpen"; value: host.open }
+    onOpenChanged: if (!open) Ai.pickerOpen = false
 
     IpcHandler {
         target: "ai"
@@ -111,6 +112,24 @@ Scope {
                         win.offX = startX + (centroid.scenePosition.x - centroid.scenePressPosition.x)
                         win.offY = startY - (centroid.scenePosition.y - centroid.scenePressPosition.y)
                     }
+                }
+            }
+
+            AiFilePicker {
+                id: filePicker
+                anchors.fill: parent
+                u: Theme.u
+                open: Ai.pickerOpen
+                onPicked: (path, keepOpen) => {
+                    Ai.attach(path)
+                    if (!keepOpen) {
+                        Ai.pickerOpen = false
+                        Qt.callLater(() => content.focusInput())
+                    }
+                }
+                onCloseRequested: {
+                    Ai.pickerOpen = false
+                    Qt.callLater(() => content.focusInput())
                 }
             }
 

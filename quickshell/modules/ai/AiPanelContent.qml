@@ -45,7 +45,7 @@ Item {
 
     readonly property var cmds: [
         "/apikey <provider> <key>", "/provider <name>", "/model <name>",
-        "/endpoint <provider> <url>", "/web on|off", "/think on|off", "/maxtokens <n>", "/ctx <n>", "/attach <path>", "/image <text>", "/new", "/history", "/load <n>", "/help"
+        "/endpoint <provider> <url>", "/web on|off", "/think on|off", "/maxtokens <n>", "/ctx <n>", "/attach <path>", "/attach clipboard", "/image <text>", "/new", "/history", "/load <n>", "/help"
     ]
     readonly property string hint: {
         const t = field.text
@@ -550,12 +550,22 @@ Item {
                 onCursorRectangleChanged: inputFlick.ensureVisible()
 
                 Keys.onPressed: event => {
+                    if (event.matches(StandardKey.Paste) && !root.secret) {
+                        Ai.attachClipboard(true)
+                        event.accepted = true
+                        return
+                    }
                     if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !(event.modifiers & Qt.ShiftModifier)) {
                         root.submit()
                         event.accepted = true
                     }
                 }
                 Keys.onEscapePressed: root.cancelOrClose()
+
+                Connections {
+                    target: Ai
+                    function onClipboardTextPaste() { if (field.activeFocus) field.paste() }
+                }
 
                 Text {
                     visible: root.secret
@@ -687,7 +697,13 @@ Item {
                 width: col.width
                 icon: "folder"
                 text: "Attach file…"
-                onClicked: { Ai.draft = field.text; Ai.pickFile(); root.closeRequested() }
+                onClicked: { root.closeMenu(); Ai.pickFile() }
+            }
+            AiMenuItem {
+                width: col.width
+                icon: "copy"
+                text: "Attach from clipboard"
+                onClicked: { Ai.attachClipboard(false); root.closeMenu() }
             }
             AiMenuItem {
                 width: col.width
