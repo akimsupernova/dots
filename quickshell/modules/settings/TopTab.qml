@@ -13,9 +13,10 @@ Item {
 
     Rectangle {
         anchors.centerIn: parent
-        width: Math.min(Math.round(46 * root.u), root.width - 2)
-        height: Math.round(30 * root.u)
-        radius: height / 2
+        readonly property real d: Math.min(Math.round(30 * root.u), root.width - 2)
+        width: d
+        height: d
+        radius: d / 2
         color: root.selected ? Qt.alpha(Theme.accent1, 0.9) : Theme.inkA(ma.containsMouse ? 0.16 : 0.07)
         Behavior on color { ColorAnimation { duration: 140 } }
 

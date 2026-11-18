@@ -16,6 +16,7 @@ FocusScope {
         { id: "clock",      icon: "clock",    title: "Clock & weather" },
         { id: "wallpaper",  icon: "image",    title: "Wallpaper" },
         { id: "audio",      icon: "speaker",  title: "Audio" },
+        { id: "apps",       icon: "folder",   title: "Default apps" },
         { id: "ai",         icon: "sparkle",  title: "AI" },
         { id: "notifications", icon: "bell",  title: "Notifications" },
         { id: "screen",     icon: "shield-lock", title: "Lock screen & night light" },
@@ -27,6 +28,7 @@ FocusScope {
     Component { id: clockC;      ClockPage {} }
     Component { id: wallpaperC;  WallpaperPage {} }
     Component { id: audioC;      AudioPage {} }
+    Component { id: appsC;       DefaultAppsPage {} }
     Component { id: aiC;         AiPage {} }
     Component { id: notificationsC; NotificationsPage {} }
     Component { id: screenC;     ScreenPage {} }
@@ -109,6 +111,7 @@ FocusScope {
                         clock: clockC,
                         wallpaper: wallpaperC,
                         audio: audioC,
+                        apps: appsC,
                         ai: aiC,
                         notifications: notificationsC,
                         screen: screenC,

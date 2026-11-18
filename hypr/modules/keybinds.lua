@@ -1,16 +1,21 @@
 local p = require("modules.programs")
+
+local function default_app(kind, fallback)
+    return [[bash "$HOME/.config/quickshell/scripts/open-default.sh" ]] .. kind .. " '" .. fallback .. "'"
+end
+
 local closeWindowBind = hl.bind("SUPER + Q", hl.dsp.window.close(), { description = "Window: Close" })
 
 hl.bind("SUPER + Return", hl.dsp.exec_cmd(p.terminal), { description = "Workspace: Terminal" })
 hl.bind("SUPER + M", hl.dsp.exec_cmd("qs ipc call monitor toggle"), { description = "Shell: Monitor Settings" })
-hl.bind("SUPER + W", hl.dsp.exec_cmd(p.browser), { description = "App: Browser" })
-hl.bind("SUPER + E", hl.dsp.exec_cmd(p.fileManager), { description = "App: File manager" })
+hl.bind("SUPER + W", hl.dsp.exec_cmd(default_app("browser", p.browser)), { description = "App: Browser" })
+hl.bind("SUPER + E", hl.dsp.exec_cmd(default_app("files", p.fileManager)), { description = "App: File manager" })
 hl.bind("SUPER + V", hl.dsp.window.float({ action = "toggle" }), { description = "Window: Float" })
 hl.bind("SUPER + O", hl.dsp.exec_cmd("obs"), { description = "App: OBS Studio" })
 hl.bind("SUPER + P", hl.dsp.window.pseudo(), { description = "Window: Pseudo" })
 hl.bind("SUPER + J", hl.dsp.layout("togglesplit"), { description = "Window: Toggle Split" })
 hl.bind("SUPER + X", hl.dsp.exec_cmd(p.game), { description = "App: Steam" })
-hl.bind("SUPER + C", hl.dsp.exec_cmd("kate"), { description = "App: Editor" })
+hl.bind("SUPER + C", hl.dsp.exec_cmd(default_app("editor", p.editor)), { description = "App: Editor" })
 hl.bind("SUPER + L", hl.dsp.exec_cmd("qs ipc call lock lock"), { description = "Shell: Lock Screen" })
 hl.bind("SUPER + F", hl.dsp.window.fullscreen(), { description = "Window: Toggle Fullscreen" })
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("qs ipc call power toggle"), { description = "Shell: Power Menu" })
