@@ -1,40 +1,14 @@
-[Added Associations]
-application/x-extension-htm=zen.desktop;
-application/x-extension-html=zen.desktop;
-application/x-extension-shtml=zen.desktop;
-application/x-extension-xht=zen.desktop;
-application/x-extension-xhtml=zen.desktop;
-application/xhtml+xml=zen.desktop;
-text/html=zen.desktop;
-video/mp4=zen-browser.desktop;
-x-scheme-handler/chrome=zen.desktop;
-x-scheme-handler/http=zen.desktop;
-x-scheme-handler/https=zen.desktop;
 
 [Default Applications]
-application/x-extension-htm=zen.desktop
-application/x-extension-html=zen.desktop
-application/x-extension-shtml=zen.desktop
-application/x-extension-xht=zen.desktop
-application/x-extension-xhtml=zen.desktop
-application/xhtml+xml=zen.desktop
-text/html=zen.desktop
-video/mp4=vlc.desktop
-x-scheme-handler/chrome=zen.desktop
-x-scheme-handler/http=zen.desktop
-x-scheme-handler/https=zen.desktop
 inode/directory=org.kde.dolphin.desktop
 text/plain=org.kde.kate.desktop
 text/markdown=org.kde.kate.desktop
+video/mp4=vlc.desktop
 video/x-matroska=vlc.desktop
 video/webm=vlc.desktop
 audio/mpeg=vlc.desktop
 audio/flac=vlc.desktop
 audio/ogg=vlc.desktop
 audio/x-wav=vlc.desktop
-image/png=org.gnome.Loupe.desktop
-image/jpeg=org.gnome.Loupe.desktop
-image/webp=org.gnome.Loupe.desktop
-image/gif=org.gnome.Loupe.desktop
 application/pdf=org.gnome.Papers.desktop
 x-scheme-handler/mailto=org.gnome.Papers.desktop
