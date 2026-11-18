@@ -27,6 +27,9 @@ FAIL_TEXT=""
 HINTED=0
 TMP_DIRS=()
 SUDO_KEEPALIVE_PID=""
+SUDO_REAL=""
+SUDO_SHIM_DIR=""
+TAKE_DEFAULTS=0
 LOG_FROM=""
 IN_PTY=0
 if [[ "${GLASSVEIL_SETUP_PTY:-}" == "1" ]]; then IN_PTY=1; fi
@@ -229,6 +232,9 @@ Options:
   --reboot        Reboot when finished.
   --no-reboot     Do not reboot (default).
 
+Package installation asks for your sudo password ONCE, then runs unattended
+(pacman/yay/makepkg reuse it; questions are answered with their default).
+
 If something fails, the script prints the failing step, the last lines of output and
 how to fix the usual causes by hand (package conflicts, mirrors, keyring, locks...).
 It is safe to run ./setup install again afterwards.
@@ -239,6 +245,14 @@ confirm() {
   local def="${2:-n}" prompt ans
   if ((ASSUME_YES)); then
     return 0
+  fi
+  if ((TAKE_DEFAULTS)); then
+    if [[ "$def" == "y" ]]; then
+      info "$1 -> yes (automatic)"
+      return 0
+    fi
+    info "$1 -> no (automatic)"
+    return 1
   fi
   if [[ "$def" == "y" ]]; then prompt="[Y/n]"; else prompt="[y/N]"; fi
   if ! read -r -p "$1 $prompt " ans; then
@@ -283,10 +297,7 @@ run_logged() {
 }
 
 build_flags() {
-  PM_FLAGS=()
-  if ((ASSUME_YES)); then
-    PM_FLAGS+=(--noconfirm)
-  fi
+  PM_FLAGS=(--noconfirm)
 }
 
 check_arch() {
@@ -301,14 +312,62 @@ check_not_root() {
 setup_sudo() {
   if ((DRY_RUN)); then return 0; fi
   command -v sudo >/dev/null 2>&1 || die "sudo was not found."
-  if ! sudo -n true 2>/dev/null; then
-    sudo -v || die "sudo authentication failed."
+  SUDO_REAL="$(command -v sudo)"
+
+  "$SUDO_REAL" -k 2>/dev/null || true
+  if "$SUDO_REAL" -n true 2>/dev/null; then
+    return 0
   fi
+
+  if ! ( : </dev/tty ) 2>/dev/null; then
+    die "sudo needs a password but there is no terminal. Run ./setup from a normal terminal."
+  fi
+
+  local pw="" try
+  for try in 1 2 3; do
+    if ! IFS= read -rsp "[sudo] password for ${USER:-$(id -un)}: " pw </dev/tty; then
+      printf '\n'
+      die "Could not read the password."
+    fi
+    printf '\n'
+    if printf '%s\n' "$pw" | "$SUDO_REAL" -S -p '' -v 2>/dev/null; then
+      break
+    fi
+    pw=""
+    warn "Sorry, try again."
+  done
+  [[ -n "$pw" ]] || die "sudo authentication failed."
+
+  local d
+  for d in "${XDG_RUNTIME_DIR:-}" "${TMPDIR:-/tmp}" /tmp; do
+    [[ -n "$d" && -d "$d" && -w "$d" ]] || continue
+    SUDO_SHIM_DIR="$(mktemp -d "$d/glassveil-sudo.XXXXXX" 2>/dev/null)" || { SUDO_SHIM_DIR=""; continue; }
+    TMP_DIRS+=("$SUDO_SHIM_DIR")
+    (
+      umask 077
+      printf '%s\n' "$pw" > "$SUDO_SHIM_DIR/pw"
+      printf '#!/bin/sh\nexec cat %q\n' "$SUDO_SHIM_DIR/pw" > "$SUDO_SHIM_DIR/askpass"
+      printf '#!/bin/sh\n# Temporary sudo shim created by ./setup (removed when it exits).\ncase "${1:-}" in\n  -n|-S|-A|--non-interactive|--stdin|--askpass) exec %q "$@" ;;\nesac\nSUDO_ASKPASS=%q\nexport SUDO_ASKPASS\nexec %q -A "$@"\n' \
+        "$SUDO_REAL" "$SUDO_SHIM_DIR/askpass" "$SUDO_REAL" > "$SUDO_SHIM_DIR/sudo"
+      chmod 700 "$SUDO_SHIM_DIR/askpass" "$SUDO_SHIM_DIR/sudo"
+    ) || true
+    if [[ "$("$SUDO_SHIM_DIR/askpass" 2>/dev/null)" == "$pw" ]]; then
+      export PATH="$SUDO_SHIM_DIR:$PATH"
+      break
+    fi
+    rm -rf "$SUDO_SHIM_DIR"
+    SUDO_SHIM_DIR=""
+  done
+  pw=""
+  if [[ -z "$SUDO_SHIM_DIR" ]]; then
+    warn "Could not create a private password helper; sudo may ask for the password again."
+  fi
+
   local parent="$$"
   (
     trap - ERR EXIT
     while kill -0 "$parent" 2>/dev/null; do
-      sudo -n -v 2>/dev/null || true
+      "$SUDO_REAL" -n -v 2>/dev/null || true
       sleep 30
     done
   ) &
@@ -416,8 +475,10 @@ install_packages() {
   check_not_root
   setup_sudo
 
+  TAKE_DEFAULTS=1
+
   step "Updating the system (pacman -Syu)"
-  if confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
+  if [[ "${GLASSVEIL_SKIP_UPGRADE:-0}" != "1" ]] && confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
     run_logged sudo pacman -Syu "${PM_FLAGS[@]}"
   else
     warn "Skipping the upgrade. If a package fails with '404' or 'target not found', run: sudo pacman -Syu"
