@@ -49,7 +49,7 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "shell-glass-fullscreen",
-    match = { namespace = "^Glassveil Shell (Cheatsheet|Launcher|Power|Polkit|AI)$" },
+    match = { namespace = "^Glassveil Shell (Cheatsheet|Launcher|Power|Polkit|AI|Overview)$" },
 
     blur         = true,
     ignore_alpha = 0.05,
