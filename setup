@@ -890,6 +890,12 @@ do_install() {
     deploy_item "$item" ".config"
   done
 
+  if [[ -f "$ROOT/mimeapps.list" ]]; then
+    deploy_item "$ROOT/mimeapps.list" ".config"
+  else
+    warn "mimeapps.list not found in $ROOT; skipping default-app associations."
+  fi
+
   if [[ -d "$ROOT/icons" ]]; then
     step "Installing icons/cursors to $ICONS_DIR"
     run mkdir -p "$ICONS_DIR"
