@@ -29,7 +29,6 @@ TMP_DIRS=()
 SUDO_KEEPALIVE_PID=""
 SUDO_REAL=""
 SUDO_SHIM_DIR=""
-TAKE_DEFAULTS=0
 LOG_FROM=""
 IN_PTY=0
 if [[ "${GLASSVEIL_SETUP_PTY:-}" == "1" ]]; then IN_PTY=1; fi
@@ -232,8 +231,7 @@ Options:
   --reboot        Reboot when finished.
   --no-reboot     Do not reboot (default).
 
-Package installation asks for your sudo password ONCE, then runs unattended
-(pacman/yay/makepkg reuse it; questions are answered with their default).
+The sudo password is asked only once; pacman/yay/makepkg reuse it.
 
 If something fails, the script prints the failing step, the last lines of output and
 how to fix the usual causes by hand (package conflicts, mirrors, keyring, locks...).
@@ -245,14 +243,6 @@ confirm() {
   local def="${2:-n}" prompt ans
   if ((ASSUME_YES)); then
     return 0
-  fi
-  if ((TAKE_DEFAULTS)); then
-    if [[ "$def" == "y" ]]; then
-      info "$1 -> yes (automatic)"
-      return 0
-    fi
-    info "$1 -> no (automatic)"
-    return 1
   fi
   if [[ "$def" == "y" ]]; then prompt="[Y/n]"; else prompt="[y/N]"; fi
   if ! read -r -p "$1 $prompt " ans; then
@@ -297,7 +287,10 @@ run_logged() {
 }
 
 build_flags() {
-  PM_FLAGS=(--noconfirm)
+  PM_FLAGS=()
+  if ((ASSUME_YES)); then
+    PM_FLAGS+=(--noconfirm)
+  fi
 }
 
 check_arch() {
@@ -475,10 +468,8 @@ install_packages() {
   check_not_root
   setup_sudo
 
-  TAKE_DEFAULTS=1
-
   step "Updating the system (pacman -Syu)"
-  if [[ "${GLASSVEIL_SKIP_UPGRADE:-0}" != "1" ]] && confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
+  if confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
     run_logged sudo pacman -Syu "${PM_FLAGS[@]}"
   else
     warn "Skipping the upgrade. If a package fails with '404' or 'target not found', run: sudo pacman -Syu"
