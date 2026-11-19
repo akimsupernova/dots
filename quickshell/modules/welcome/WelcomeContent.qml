@@ -21,16 +21,20 @@ GlassPanel {
 
     readonly property var keyRows: [
         { keys: ["SUPER", "/"],          text: "Keybind cheatsheet" },
-        { keys: ["SUPER"],               text: "App launcher (tap)" },
+        { keys: ["SUPER", "Space"],      text: "App launcher" },
+        { keys: ["SUPER", "Tab"],        text: "Window overview" },
+        { keys: ["SUPER", "I"],          text: "Wiki guide" },
         { keys: ["SUPER", "A"],          text: "AI panel" },
-        { keys: ["SUPER", "G"],          text: "Name card" },
         { keys: ["SUPER", "B"],          text: "Settings" },
+        { keys: ["SUPER", "N"],          text: "Sidebar" },
+        { keys: ["SUPER", "SHIFT", "N"], text: "Notepad" },
+        { keys: ["SUPER", "G"],          text: "Name card" },
         { keys: ["SUPER", "."],          text: "Emojis" },
         { keys: ["SUPER", "Return"],     text: "Terminal" },
         { keys: ["SUPER", "W"],          text: "Browser" },
         { keys: ["SUPER", "E"],          text: "File manager" },
+        { keys: ["SUPER", "L"],          text: "Lock screen" },
         { keys: ["SUPER", "Q"],          text: "Close window" },
-        { keys: ["SUPER", "N"],          text: "Sidebar" },
         { keys: ["SUPER", "SHIFT", "P"], text: "Power menu" }
     ]
 
@@ -38,14 +42,20 @@ GlassPanel {
         {
             icon: "image",
             title: "Wallpapers & colors",
-            body: "Drop images or videos into ~/Pictures/Wallpapers, then press SUPER + R. Theme will follow your wallpaper's colors automatically.",
+            body: "Drop images or videos into ~/Pictures/Wallpapers, then press SUPER + R. The shell, terminal, GTK, Qt and KDE apps follow the wallpaper's colors.",
             path: ""
         },
         {
             icon: "sparkle",
-            title: "Glassveil theme",
-            body: "Auto adapts to the wallpaper. Force light or dark with the glassveil property in",
-            path: "quickshell/common/Theme.qml"
+            title: "Glassveil style",
+            body: "Light or dark glass, accent color, bar, gaps and corners live in Settings (SUPER + B). Auto follows the wallpaper.",
+            path: ""
+        },
+        {
+            icon: "book",
+            title: "Learn the setup",
+            body: "SUPER + I opens the full wiki guide. SUPER + Tab shows every window: drag one onto a workspace to move it there.",
+            path: ""
         },
         {
             icon: "folder",
@@ -292,7 +302,7 @@ GlassPanel {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         columns: 2
-                        rows: 6
+                        rows: 8
                         flow: GridLayout.TopToBottom
                         columnSpacing: 16 * root.u
                         rowSpacing: 0
@@ -305,7 +315,7 @@ GlassPanel {
                                 required property var modelData
                                 required property int index
 
-                                readonly property real appear: page1.st(1 + (index % 6) * 0.55 + Math.floor(index / 6) * 0.3)
+                                readonly property real appear: page1.st(1 + (index % 8) * 0.45 + Math.floor(index / 8) * 0.3)
 
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
