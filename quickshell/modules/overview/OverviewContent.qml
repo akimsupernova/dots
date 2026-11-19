@@ -18,6 +18,28 @@ FocusScope {
     property string filterWs: "all"
     property string selectedAddr: ""
     property bool _initialSelectionDone: false
+    property string dragAddr: ""
+    property real dragX: 0
+    property real dragY: 0
+    readonly property bool dragActive: root.dragAddr !== ""
+    readonly property var dropTargets: {
+        const names = {}
+        const live = Hyprland.workspaces.values
+        for (let i = 0; i < live.length; i++) {
+            const w = live[i]
+            if (w.id > 0 && w.monitor?.id === root.monitorId) names[w.id] = w.name
+        }
+        for (const w of root.workspaces)
+            if (w.id > 0) names[w.id] = w.name
+
+        const ids = Object.keys(names).map(Number)
+        const top = ids.length > 0 ? Math.max(...ids) : 0
+        const out = []
+        for (let id = 1; id <= top; id++)
+            out.push({ id: id, name: names[id] ?? String(id), isNew: false })
+        out.push({ id: top + 1, name: "", isNew: true })
+        return out
+    }
 
     readonly property var visibleAddrs: root.filterWs === "all"
         ? root.addrs
@@ -198,6 +220,45 @@ FocusScope {
         root.closeRequested()
     }
 
+    function beginDrag(addr) {
+        root.selectedAddr = addr
+        root.dragAddr = addr
+    }
+
+    function dragTo(sceneX, sceneY) {
+        const p = root.mapFromItem(null, sceneX, sceneY)
+        root.dragX = p.x
+        root.dragY = p.y
+    }
+
+    function endDrag() {
+        if (!root.dragActive) return
+        ghost.dropNow()
+        root.dragAddr = ""
+    }
+
+    function cancelDrag() {
+        if (!root.dragActive) return
+        ghost.cancelNow()
+        root.dragAddr = ""
+    }
+
+    function moveToWorkspace(addr, wsId) {
+        const address = root.norm(addr)
+        const id = Math.trunc(Number(wsId))
+        if (!/^0x[0-9a-fA-F]+$/.test(address) || !isFinite(id) || id <= 0) return
+        if (root.info[addr]?.wsId === id) return
+
+        if (Hyprland.usingLua) {
+            Hyprland.dispatch('hl.dsp.window.move({ workspace = "' + id
+                + '", follow = false, window = "address:' + address + '" })')
+        } else {
+            Hyprland.dispatch("movetoworkspacesilent " + id + ",address:" + address)
+        }
+
+        refreshSoon.restart()
+    }
+
     function closeWindow(addr) {
         const tl = root.toplevelFor(addr)
         if (tl?.wayland) tl.wayland.close()
@@ -206,7 +267,10 @@ FocusScope {
 
     Keys.onPressed: event => {
         switch (event.key) {
-        case Qt.Key_Escape: root.closeRequested(); break
+        case Qt.Key_Escape:
+            if (root.dragActive) root.cancelDrag()
+            else root.closeRequested()
+            break
         case Qt.Key_Left:   root.move("left"); break
         case Qt.Key_Right:  root.move("right"); break
         case Qt.Key_Up:     root.move("up"); break
@@ -284,6 +348,7 @@ FocusScope {
                 info: root.info[modelData] ?? ({})
                 toplevel: root.toplevelFor(modelData)
                 selected: root.selectedAddr === modelData
+                beingDragged: root.dragAddr === modelData
 
                 x: root.rects[modelData]?.x ?? 0
                 y: root.rects[modelData]?.y ?? 0
@@ -293,6 +358,9 @@ FocusScope {
                 onHovered: root.selectedAddr = modelData
                 onActivated: root.activate(modelData)
                 onCloseRequested: root.closeWindow(modelData)
+                onDragStarted: root.beginDrag(modelData)
+                onDragMoved: (sceneX, sceneY) => root.dragTo(sceneX, sceneY)
+                onDragFinished: root.endDrag()
             }
         }
 
@@ -316,7 +384,7 @@ FocusScope {
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Math.round(6 * root.u)
-            visible: root.workspaces.length > 1
+            visible: root.workspaces.length > 1 && !root.dragActive
 
             GlassButton {
                 text: "All"
@@ -334,6 +402,95 @@ FocusScope {
                     onClicked: root.filterWs = String(modelData.id)
                 }
             }
+        }
+
+        Row {
+            id: dropRow
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: Math.round(10 * root.u)
+            visible: root.dragActive
+
+            Repeater {
+                model: root.dropTargets
+
+                Item {
+                    id: slot
+                    required property var modelData
+                    readonly property bool origin: slot.modelData.id === (root.info[root.dragAddr]?.wsId ?? -1)
+
+                    width: Math.max(Math.round(72 * root.u), btn.implicitWidth)
+                    height: Math.round(40 * root.u)
+                    opacity: slot.origin ? 0.4 : 1
+                    scale: dropArea.containsDrag && !slot.origin ? 1.12 : 1
+                    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+                    GlassButton {
+                        id: btn
+                        anchors.fill: parent
+                        text: slot.modelData.isNew ? "+" : root.wsLabel(slot.modelData)
+                        selected: dropArea.containsDrag && !slot.origin
+                    }
+
+                    DropArea {
+                        id: dropArea
+                        anchors.fill: parent
+                        keys: ["glassveil-window"]
+                        onDropped: drop => root.moveToWorkspace(root.dragAddr, slot.modelData.id)
+                    }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        id: ghost
+
+        readonly property var meta: root.info[root.dragAddr] ?? ({})
+        readonly property string cls: String(ghost.meta.class ?? "")
+
+        visible: root.dragActive
+        z: 100
+        width: Math.round(240 * root.u)
+        height: Math.round(52 * root.u)
+        x: root.dragX - width / 2
+        y: root.dragY - height / 2
+        radius: Math.round(14 * root.u)
+        color: Qt.rgba(Theme.tint.r, Theme.tint.g, Theme.tint.b, 0.92)
+        border.width: 2
+        border.color: Theme.accent1
+
+        Drag.active: root.dragActive
+        Drag.dragType: Drag.Internal
+        Drag.keys: ["glassveil-window"]
+        Drag.source: ghost
+        Drag.hotSpot.x: width / 2
+        Drag.hotSpot.y: height / 2
+
+        function dropNow(): void { Drag.drop() }
+        function cancelNow(): void { Drag.cancel() }
+
+        AppIcon {
+            id: ghostIcon
+            anchors.left: parent.left
+            anchors.leftMargin: Math.round(14 * root.u)
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.round(24 * root.u)
+            height: width
+            iconName: DesktopEntries.heuristicLookup(ghost.cls)?.icon ?? ghost.cls.toLowerCase()
+        }
+
+        Text {
+            anchors.left: ghostIcon.right
+            anchors.leftMargin: Math.round(10 * root.u)
+            anchors.right: parent.right
+            anchors.rightMargin: Math.round(14 * root.u)
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.toplevelFor(root.dragAddr)?.title || ghost.meta.title || ghost.cls
+            elide: Text.ElideRight
+            color: Theme.ink
+            font.family: Theme.font
+            font.pixelSize: Math.round(11 * root.u)
+            font.weight: Font.Medium
         }
     }
 }

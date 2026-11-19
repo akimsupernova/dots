@@ -12,10 +12,15 @@ Item {
     property var info: ({})
     property var toplevel: null
     property bool selected: false
+    property bool beingDragged: false
+    property bool dragging: false
 
     signal activated()
     signal closeRequested()
     signal hovered()
+    signal dragStarted()
+    signal dragMoved(real sceneX, real sceneY)
+    signal dragFinished()
 
     readonly property real headerH: Math.round(34 * u)
     readonly property real pad: Math.round(8 * u)
@@ -30,7 +35,9 @@ Item {
     Behavior on height { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
     property real appear: 0
-    opacity: appear
+    property real dim: card.beingDragged ? 0.35 : 1
+    Behavior on dim { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    opacity: appear * dim
     scale: (0.94 + 0.06 * appear) * (card.hot ? 1.015 : 1)
     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
     NumberAnimation on appear { from: 0; to: 1; duration: 260; easing.type: Easing.OutCubic }
@@ -47,12 +54,57 @@ Item {
 
     MouseArea {
         id: area
+
+        property point pressAt: Qt.point(0, 0)
+        property bool suppressClick: false
+
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: card.dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
         onEntered: card.hovered()
+
+        onPressed: mouse => {
+            area.pressAt = Qt.point(mouse.x, mouse.y)
+            area.suppressClick = false
+            card.dragging = false
+        }
+
+        onPositionChanged: mouse => {
+            if (!area.pressed || !(area.pressedButtons & Qt.LeftButton)) return
+
+            if (!card.dragging) {
+                const dx = mouse.x - area.pressAt.x
+                const dy = mouse.y - area.pressAt.y
+                const t = Qt.styleHints.startDragDistance
+                if (dx * dx + dy * dy < t * t) return
+                card.dragging = true
+                card.dragStarted()
+            }
+
+            const p = area.mapToItem(null, mouse.x, mouse.y)
+            card.dragMoved(p.x, p.y)
+        }
+
+        onReleased: {
+            const wasDragging = card.dragging
+            card.dragging = false
+            area.suppressClick = wasDragging
+            if (wasDragging) card.dragFinished()
+        }
+
+        onCanceled: {
+            if (card.dragging) {
+                card.dragging = false
+                card.dragFinished()
+            }
+        }
+
         onClicked: mouse => {
+            if (area.suppressClick) {
+                area.suppressClick = false
+                return
+            }
             if (mouse.button === Qt.MiddleButton) card.closeRequested()
             else card.activated()
         }
