@@ -43,12 +43,9 @@ Scope {
             screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
                     ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
-            readonly property int edge: Prefs.winGapOut >= 0 ? Prefs.winGapOut : 5
-
             anchors { top: true; bottom: true; left: true; right: true }
-            margins { top: edge; bottom: edge; left: edge; right: edge }
-            exclusiveZone: 0
-            exclusionMode: ExclusionMode.Normal
+            margins { top: 0; bottom: 0; left: 0; right: 0 }
+            exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
             WlrLayershell.namespace: "Glassveil Shell Wiki"
