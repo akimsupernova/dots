@@ -8,6 +8,14 @@ import qs.services
 Scope {
     id: root
 
+    Component.onCompleted: Fullscreen.init()
+
+    readonly property bool blocked:
+        Toggles.keepAwake
+        || Fullscreen.gaming
+        || MediaActivity.active
+        || (Fullscreen.active && MediaActivity.anyPlaying)
+
     function lock() {
         if (LockState.locked) return
         ctx.reset()
@@ -16,13 +24,21 @@ Scope {
         if (Prefs.lockScreenOff) screenOff.restart()
     }
 
+    function tryLock() {
+        if (root.blocked) {
+            retry.restart()
+            return
+        }
+        retry.stop()
+        root.lock()
+    }
+
     IpcHandler {
         target: "lock"
         function lock(): void { root.lock() }
     }
 
     function dpms(on) {
-        if (!on && MediaActivity.active) return
         Quickshell.execDetached([
             "hyprctl", "dispatch",
             "hl.dsp.dpms({ action = '" + (on ? "enable" : "disable") + "' })"
@@ -35,18 +51,27 @@ Scope {
         onTriggered: root.dpms(false)
     }
 
+    Timer {
+        id: retry
+        interval: 15000
+        repeat: true
+        onTriggered: {
+            if (idle.isIdle) root.tryLock()
+            else stop()
+        }
+    }
+
     IdleMonitor {
-        enabled: !Toggles.keepAwake
-                 && !MediaActivity.active
-                 && (Prefs.lockWhen === "always" || (Prefs.lockWhen === "battery" && BatteryState.hasBattery))
+        id: idle
+        enabled: Prefs.lockWhen === "always"
+                 || (Prefs.lockWhen === "battery" && BatteryState.hasBattery)
         timeout: Prefs.lockTimeout * 60
         respectInhibitors: true
         onIsIdleChanged: {
             if (isIdle) {
-                if (MediaActivity.active) return
-                root.lock()
-                if (Prefs.lockScreenOff) screenOff.restart()
+                root.tryLock()
             } else {
+                retry.stop()
                 screenOff.stop()
                 root.dpms(true)
             }

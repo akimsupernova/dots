@@ -8,6 +8,7 @@ Singleton {
     id: root
 
     property bool active: false
+    property bool gaming: false
 
     function init() {}
 
@@ -26,11 +27,15 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 let on = false
+                let game = false
                 try {
-                    const f = JSON.parse(this.text).fullscreen
+                    const w = JSON.parse(this.text)
+                    const f = w.fullscreen
                     on = f === true || (typeof f === "number" && f >= 2)
+                    game = /^(steam_app_\d+|gamescope|lutris|heroic)/i.test(w.class || "")
                 } catch (e) {}
                 root.active = on
+                root.gaming = game
             }
         }
     }
