@@ -119,7 +119,7 @@ explain_failure() {
 
   if has 'could not satisfy dependencies|unable to satisfy dependency'; then
     hint "Dependencies could not be satisfied" \
-      "Run a full upgrade first:  sudo pacman -Syu   (do not use -Sy alone: partial upgrades break Arch)." \
+      "Run a full upgrade first:  sudo pacman -Syu" \
       "If the missing dependency is an AUR package, install it first:  yay -S <dependency>"
   fi
 
@@ -216,26 +216,17 @@ Dotfiles setup (Arch Linux / CachyOS)
 Usage: ./setup [options] <command>
 
 Commands:
-  install     Install packages, then install the dotfiles.
+  install     Install the dotfiles.
   uninstall   Remove the installed dotfiles and restore the original configs.
   deps        Install yay + packages only.
-  specs       Write the PC specs file (~/.config/glassveil/spec.txt) for the AI panel again.
-  welcome     Show the welcome card again at the next login.
+  specs       Write the PC specs for the AI panel.
   help        Show this help.
 
 Options:
-  -y, --yes       Answer yes to every question and pass --noconfirm to pacman/yay.
-                  Does not reboot by itself (add --reboot for that).
+  -y, --yes       Answer yes to every question.
   -n, --dry-run   Show what would be done without changing anything.
-  --no-deps       (install) skip package installation, dotfiles only.
+  --no-deps       skip package installation, dotfiles only.
   --reboot        Reboot when finished.
-  --no-reboot     Do not reboot (default).
-
-The sudo password is asked only once; pacman/yay/makepkg reuse it.
-
-If something fails, the script prints the failing step, the last lines of output and
-how to fix the usual causes by hand (package conflicts, mirrors, keyring, locks...).
-It is safe to run ./setup install again afterwards.
 USAGE
 }
 
@@ -419,6 +410,68 @@ setup_ddc() {
   fi
 }
 
+multilib_enabled() {
+  grep -qE '^\[multilib\]' /etc/pacman.conf 2>/dev/null
+}
+
+enable_multilib() {
+  if multilib_enabled; then
+    return 0
+  fi
+  if ! grep -qE '^#\[multilib\]' /etc/pacman.conf 2>/dev/null; then
+    warn "No commented [multilib] section found in /etc/pacman.conf. Add these two lines by hand, then run ./setup install again:"
+    warn "  [multilib]"
+    warn "  Include = /etc/pacman.d/mirrorlist"
+    return 1
+  fi
+
+  step "Enabling the [multilib] repository (32-bit packages)"
+  run sudo cp -a /etc/pacman.conf "/etc/pacman.conf.glassveil-$(date +%Y%m%d-%H%M%S).bak"
+  run sudo sed -i '/^#\[multilib\]/{ s/^#//; n; s/^#Include/Include/ }' /etc/pacman.conf
+
+  if ((DRY_RUN)); then
+    return 0
+  fi
+  if ! multilib_enabled || ! grep -A1 -E '^\[multilib\]' /etc/pacman.conf | grep -qE '^Include'; then
+    warn "Could not enable [multilib] automatically. Edit /etc/pacman.conf by hand (a backup was saved next to it)."
+    return 1
+  fi
+  info "[multilib] is enabled."
+}
+
+setup_steam() {
+  if pacman -Qq steam >/dev/null 2>&1; then
+    info "Steam is already installed."
+    return 0
+  fi
+  if ! confirm "Install Steam?"; then
+    return 0
+  fi
+
+  if ! multilib_enabled; then
+    if ! enable_multilib; then
+      warn "Skipping Steam [multilib] is not enabled."
+      return 0
+    fi
+    step "Syncing package databases"
+    if ! run_logged sudo pacman -Sy "${PM_FLAGS[@]}"; then
+      LOG_FROM=""
+      LAST_CMD=""
+      warn "Could not sync the databases. Run later: sudo pacman -Sy steam"
+      return 0
+    fi
+  fi
+
+  step "Installing Steam"
+  if ! run_logged sudo pacman -S --needed "${PM_FLAGS[@]}" steam; then
+    LOG_FROM=""
+    LAST_CMD=""
+    warn "Steam could not be installed. Try by hand later: sudo pacman -S steam"
+    return 0
+  fi
+  info "Steam installed. Run ./driver afterwards to install the matching 32-bit GPU libraries (lib32-*)."
+}
+
 enable_service() {
   local unit="$1" why="$2"
   command -v systemctl >/dev/null 2>&1 || return 0
@@ -461,6 +514,7 @@ post_install() {
   fi
 
   setup_ddc
+  setup_steam
 }
 
 install_packages() {
@@ -468,8 +522,8 @@ install_packages() {
   check_not_root
   setup_sudo
 
-  step "Updating the system (pacman -Syu)"
-  if confirm "Run a full system upgrade first? (recommended: installing on an outdated system can break it)" y; then
+  step "Updating the system"
+  if confirm "Run a full system upgrade first?" y; then
     run_logged sudo pacman -Syu "${PM_FLAGS[@]}"
   else
     warn "Skipping the upgrade. If a package fails with '404' or 'target not found', run: sudo pacman -Syu"
@@ -633,7 +687,7 @@ check_hyprland() {
   fi
   ver="$("$bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)"
   if [[ -n "$ver" && "$(printf '%s\n0.55\n' "$ver" | sort -V | head -n1)" != "0.55" ]]; then
-    warn "Hyprland $ver is too old: hypr/hyprland.lua needs 0.55 or newer. Update it: sudo pacman -Syu hyprland"
+    warn "Hyprland $ver is too old: hypr/hyprland.lua needs 0.55 or newer."
   fi
 }
 
