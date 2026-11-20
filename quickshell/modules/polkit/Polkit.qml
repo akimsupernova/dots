@@ -11,7 +11,7 @@ Scope {
                                          ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
 
     LazyLoader {
-        active: PolkitService.active
+        active: PolkitService.active && !PolkitService.inlineHandled
 
         PanelWindow {
             screen: root.focusedScreen

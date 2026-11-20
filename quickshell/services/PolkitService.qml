@@ -11,6 +11,7 @@ Singleton {
     property alias active: polkitAgent.isActive
     property alias flow: polkitAgent.flow
     property bool interactionAvailable: false
+    property bool inlineHandled: false
 
     readonly property string cleanMessage: {
         const m = root.flow?.message ?? ""

@@ -77,7 +77,58 @@ Item {
         reloadTimer.restart()
     }
 
+    property var autostart: []
+    property bool storeReady: false
+
+    readonly property string autostartDir:
+        (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/glassveil"
+    readonly property string autostartFile: autostartDir + "/autostart.list"
+
+    readonly property var autostartCandidates: AppSearch.list.filter(a =>
+        !a.noDisplay && root.autostart.indexOf(a.id) < 0)
+
+    function parseList(raw) {
+        const out = []
+        for (const line of String(raw).split("\n")) {
+            const id = root.stripSuffix(line)
+            if (id === "" || id.startsWith("#") || out.indexOf(id) >= 0) continue
+            out.push(id)
+        }
+        return out
+    }
+
+    function saveAutostart(next) {
+        root.autostart = next
+        autostartStore.setText(next.length > 0 ? next.join("\n") + "\n" : "")
+    }
+
+    function addAutostart(id) {
+        if (root.autostart.indexOf(id) >= 0) return
+        root.saveAutostart(root.autostart.concat([id]))
+    }
+
+    function removeAutostart(id) {
+        root.saveAutostart(root.autostart.filter(x => x !== id))
+    }
+
+    function entryFor(id) {
+        return AppSearch.list.find(a => a.id === id) ?? null
+    }
+
     Component.onCompleted: root.refresh()
+
+    Process {
+        running: true
+        command: ["mkdir", "-p", root.autostartDir]
+        onExited: root.storeReady = true
+    }
+
+    FileView {
+        id: autostartStore
+        path: root.storeReady ? root.autostartFile : ""
+        printErrors: false
+        onLoaded: root.autostart = root.parseList(text())
+    }
 
     Process {
         id: queryProc
@@ -131,6 +182,94 @@ Item {
                         onActivated: i => root.setDefault(row.modelData, row.apps[i].id)
                     }
                 }
+            }
+        }
+
+        Card {
+            title: "Autostart apps"
+
+            Dropdown {
+                Layout.fillWidth: true
+                overlay: popupLayer
+                model: ["Add an app…"].concat(root.autostartCandidates.map(a => a.name))
+                currentIndex: 0
+                onActivated: i => {
+                    if (i > 0) root.addAutostart(root.autostartCandidates[i - 1].id)
+                }
+            }
+
+            Repeater {
+                model: root.autostart
+
+                Rectangle {
+                    id: item
+                    required property string modelData
+
+                    readonly property var entry: root.entryFor(item.modelData)
+
+                    Layout.fillWidth: true
+                    implicitHeight: Math.round(36 * root.u)
+                    radius: height / 2
+                    color: Theme.inkA(0.08)
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Math.round(12 * root.u)
+                        anchors.rightMargin: Math.round(8 * root.u)
+                        spacing: Math.round(10 * root.u)
+
+                        AppIcon {
+                            Layout.alignment: Qt.AlignVCenter
+                            iconName: item.entry ? item.entry.icon : ""
+                            implicitSize: Math.round(20 * root.u)
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            text: item.entry ? item.entry.name : item.modelData
+                            elide: Text.ElideRight
+                            color: Theme.ink
+                            opacity: item.entry ? 1.0 : 0.55
+                            font.family: Theme.font
+                            font.pixelSize: Math.round(10.5 * root.u)
+                        }
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: Math.round(24 * root.u)
+                            implicitHeight: implicitWidth
+                            radius: width / 2
+                            color: Theme.inkA(rm.containsMouse ? 0.22 : 0.0)
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Icon {
+                                anchors.centerIn: parent
+                                name: "x"
+                                size: Math.round(12 * root.u)
+                                color: Theme.ink
+                            }
+                            MouseArea {
+                                id: rm
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.removeAutostart(item.modelData)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                visible: root.autostart.length === 0
+                Layout.fillWidth: true
+                text: "No autostart apps yet."
+                color: Theme.ink
+                opacity: 0.55
+                wrapMode: Text.WordWrap
+                font.family: Theme.font
+                font.pixelSize: Math.round(9 * root.u)
             }
         }
 

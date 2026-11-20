@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import qs.common
+import qs.services
 
 ColumnLayout {
     id: root
@@ -14,12 +15,38 @@ ColumnLayout {
     property string distroLike: ""
     property string distroName: ""
     property bool confirmReset: false
+    property bool confirmClean: false
+    property string cleanResult: ""
 
     readonly property bool isArch: distroId === "arch" || distroLike.split(" ").indexOf("arch") >= 0
     readonly property bool isArchProper: distroId === "arch"
 
     function openLink(url) {
         if (url !== "") Quickshell.execDetached(["xdg-open", url])
+    }
+
+    readonly property string cleanScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/clean.sh"
+    readonly property bool cleaning: cleanProc.running
+    onCleaningChanged: UiState.settingsLocked = cleaning
+    Component.onDestruction: {
+        if (root.cleaning) UiState.settingsLocked = false
+    }
+
+    Binding {
+        target: PolkitService
+        property: "inlineHandled"
+        value: root.cleaning
+    }
+
+    function submitPassword() {
+        if (!PolkitService.interactionAvailable) return
+        PolkitService.submit(pwInput.text)
+        pwInput.text = ""
+    }
+
+    function runCleanup() {
+        root.cleanResult = ""
+        cleanProc.running = true
     }
 
     function parseOs(raw) {
@@ -44,6 +71,27 @@ ColumnLayout {
         id: confirmTimer
         interval: 3000
         onTriggered: root.confirmReset = false
+    }
+
+    Process {
+        id: cleanProc
+        command: ["bash", root.cleanScript]
+        onExited: (exitCode, exitStatus) => {
+            root.cleanResult = exitCode === 0 ? "Done" : "Failed (" + exitCode + ")"
+            resultTimer.restart()
+        }
+    }
+
+    Timer {
+        id: cleanTimer
+        interval: 3000
+        onTriggered: root.confirmClean = false
+    }
+
+    Timer {
+        id: resultTimer
+        interval: 4000
+        onTriggered: root.cleanResult = ""
     }
 
     Card {
@@ -215,6 +263,111 @@ ColumnLayout {
             wrapMode: Text.WordWrap
             font.family: Theme.font
             font.pixelSize: Math.round(9 * root.u)
+        }
+    }
+
+    Card {
+        title: "Maintenance"
+
+        SettingRow {
+            label: "Cleanup junk"
+            hint: "Clean up stuck apps and processes. Reboot your PC afterward."
+
+            GlassButton {
+                icon: "trash"
+                enabled: !cleanProc.running
+                text: cleanProc.running ? "Cleaning…"
+                    : root.cleanResult !== "" ? root.cleanResult
+                    : root.confirmClean ? "Click again to confirm" : "Cleanup"
+                onClicked: {
+                    if (root.confirmClean) {
+                        root.confirmClean = false
+                        cleanTimer.stop()
+                        root.runCleanup()
+                    } else {
+                        root.confirmClean = true
+                        cleanTimer.restart()
+                    }
+                }
+            }
+        }
+
+        ColumnLayout {
+            id: authBox
+            visible: root.cleaning && PolkitService.active
+            Layout.fillWidth: true
+            spacing: Math.round(8 * root.u)
+
+            onVisibleChanged: if (visible) Qt.callLater(pwInput.focusInput)
+
+            Connections {
+                target: PolkitService
+                function onInteractionAvailableChanged() {
+                    if (!PolkitService.interactionAvailable) return
+                    pwInput.text = ""
+                    pwInput.focusInput()
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Authentication required"
+                color: Theme.ink
+                opacity: 0.8
+                wrapMode: Text.WordWrap
+                font.family: Theme.font
+                font.pixelSize: Math.round(9.5 * root.u)
+            }
+
+            GlassField {
+                id: pwInput
+                Layout.fillWidth: true
+                icon: ""
+                enabled: PolkitService.interactionAvailable
+                echoMode: (PolkitService.flow?.responseVisible ?? false) ? TextInput.Normal : TextInput.Password
+                passwordCharacter: "•"
+                placeholder: PolkitService.cleanPrompt
+
+                onAccepted: root.submitPassword()
+                onKeyPressed: event => {
+                    if (event.key === Qt.Key_Escape) {
+                        PolkitService.cancel()
+                        event.accepted = true
+                    }
+                }
+            }
+
+            Text {
+                readonly property var f: PolkitService.flow
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: {
+                    if (!f) return ""
+                    if (f.supplementaryMessage) return f.supplementaryMessage
+                    return f.failed ? "Authentication failed. Try again." : ""
+                }
+                color: (f?.failed || f?.supplementaryIsError) ? Theme.warn : Theme.ink
+                wrapMode: Text.WordWrap
+                font.family: Theme.font
+                font.pixelSize: Math.round(9 * root.u)
+                font.bold: f?.failed ?? false
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: Math.round(8 * root.u)
+
+                GlassButton {
+                    text: "Cancel"
+                    onClicked: PolkitService.cancel()
+                }
+                GlassButton {
+                    primary: true
+                    text: "OK"
+                    enabled: PolkitService.interactionAvailable
+                    onClicked: root.submitPassword()
+                }
+            }
         }
     }
 
