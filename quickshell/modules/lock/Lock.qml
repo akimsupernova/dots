@@ -8,13 +8,7 @@ import qs.services
 Scope {
     id: root
 
-    Component.onCompleted: Fullscreen.init()
-
-    readonly property bool blocked:
-        Toggles.keepAwake
-        || Fullscreen.gaming
-        || MediaActivity.active
-        || (Fullscreen.active && MediaActivity.anyPlaying)
+    readonly property bool blocked: Toggles.keepAwake || MediaActivity.active
 
     function lock() {
         if (LockState.locked) return

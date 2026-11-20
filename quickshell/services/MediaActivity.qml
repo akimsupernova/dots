@@ -2,28 +2,23 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Services.Mpris
 
 Singleton {
     id: root
 
-    function isVideoPlayer(p) {
-        const id = String(p.desktopEntry || "") + " " + String(p.identity || "") + " " + String(p.dbusName || "")
-        return /\b(mpv|vlc|celluloid|haruna|totem|smplayer|kodi|jellyfin|plex|stremio|freetube|parole|dragon)\b/i.test(id)
-    }
-
-    readonly property bool videoPlaying:
-        Mpris.players.values.some(p =>
-            p.playbackState === MprisPlaybackState.Playing && root.isVideoPlayer(p))
-
-    readonly property bool anyPlaying:
-        Mpris.players.values.some(p => p.playbackState === MprisPlaybackState.Playing)
-
+    property bool audioPlaying: false
     property bool inhibited: false
 
-    readonly property bool active: videoPlaying || inhibited
+    readonly property bool active: audioPlaying || inhibited
 
     property bool watch: true
+
+    Process {
+        id: audioProbe
+        command: ["sh", "-c",
+            "command -v pactl >/dev/null 2>&1 && pactl list sink-inputs 2>/dev/null | grep -q 'Corked: no'"]
+        onExited: code => root.audioPlaying = code === 0
+    }
 
     Process {
         id: inhibitProbe
@@ -34,11 +29,12 @@ Singleton {
     }
 
     function probe() {
+        if (!audioProbe.running) audioProbe.running = true
         if (!inhibitProbe.running) inhibitProbe.running = true
     }
 
     Timer {
-        interval: 5000
+        interval: 3000
         repeat: true
         running: root.watch
         triggeredOnStart: true
