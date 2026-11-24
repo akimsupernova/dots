@@ -140,16 +140,5 @@ GlassPanel {
                 onPicked: keepOpen => root.pick(index, keepOpen)
             }
         }
-
-        Text {
-            Layout.fillWidth: true
-            elide: Text.ElideRight
-            horizontalAlignment: Text.AlignHCenter
-            text: root.results[grid.currentIndex]?.text ?? ""
-            color: Theme.ink
-            opacity: 0.6
-            font.family: Theme.font
-            font.pixelSize: Math.round(9 * root.u)
-        }
     }
 }

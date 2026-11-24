@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Io
 import qs.common
 
 GlassPanel {
@@ -12,11 +13,39 @@ GlassPanel {
     property real startTime: 0
     property real elapsed: 0
     property int selectedIndex: 0
+    property bool canSuspend: false
+    property bool canHibernate: false
 
-    readonly property var actions: [
-        { id: "poweroff", icon: "power",           label: "Power off", doing: "Powering off" },
-        { id: "reboot",   icon: "arrow-clockwise", label: "Reboot",    doing: "Rebooting" }
+    readonly property var allActions: [
+        { id: "lock",      icon: "lock",            label: "Lock",      doing: "Locking",
+          confirm: false, command: ["qs", "ipc", "call", "lock", "lock"] },
+        { id: "logout",    icon: "logout",          label: "Log out",   doing: "Logging out",
+          confirm: true,  command: ["hyprctl", "dispatch", "hl.dsp.exit()"] },
+        { id: "suspend",   icon: "moon",            label: "Suspend",   doing: "Suspending", needs: "canSuspend",
+          confirm: false, command: ["systemctl", "suspend"] },
+        { id: "hibernate", icon: "hibernate",       label: "Hibernate", doing: "Hibernating", needs: "canHibernate",
+          confirm: true,  command: ["systemctl", "hibernate"] },
+        { id: "reboot",    icon: "arrow-clockwise", label: "Reboot",    doing: "Rebooting",
+          confirm: true,  command: ["systemctl", "reboot"] },
+        { id: "poweroff",  icon: "power",           label: "Power off", doing: "Powering off",
+          confirm: true,  command: ["systemctl", "poweroff"] }
     ]
+    readonly property var actions: allActions.filter(a => !a.needs || root[a.needs])
+    onActionsChanged: selectedIndex = Math.min(selectedIndex, actions.length - 1)
+
+    Process {
+        running: true
+        command: ["busctl", "call", "org.freedesktop.login1", "/org/freedesktop/login1",
+                  "org.freedesktop.login1.Manager", "CanSuspend"]
+        stdout: StdioCollector { onStreamFinished: root.canSuspend = text.indexOf("\"yes\"") >= 0 }
+    }
+    Process {
+        running: true
+        command: ["busctl", "call", "org.freedesktop.login1", "/org/freedesktop/login1",
+                  "org.freedesktop.login1.Manager", "CanHibernate"]
+        stdout: StdioCollector { onStreamFinished: root.canHibernate = text.indexOf("\"yes\"") >= 0 }
+    }
+
     readonly property var current: actions.find(a => a.id === pending) ?? null
     readonly property int secondsLeft: Math.max(0, Math.ceil((delayMs - elapsed) / 1000))
 
@@ -26,6 +55,10 @@ GlassPanel {
     function start(i) {
         if (pending !== "") return
         selectedIndex = i
+        if (!actions[i].confirm) {
+            execute(actions[i].command)
+            return
+        }
         pending = actions[i].id
         startTime = Date.now()
         elapsed = 0
@@ -65,7 +98,7 @@ GlassPanel {
             root.elapsed = Date.now() - root.startTime
             if (root.elapsed >= root.delayMs) {
                 tick.stop()
-                root.execute(["systemctl", root.pending])
+                root.execute(root.current.command)
             }
         }
     }
@@ -128,16 +161,6 @@ GlassPanel {
                     font.family: Theme.font
                     font.pixelSize: Math.round(10.5 * root.u)
                     font.bold: root.pending !== ""
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.pending === "" ? "Esc or click outside to close"
-                                              : "Esc or click outside to cancel"
-                    color: Theme.ink
-                    opacity: 0.5
-                    font.family: Theme.font
-                    font.pixelSize: Math.round(8.5 * root.u)
                 }
                 Rectangle {
                     opacity: root.pending !== "" ? 1 : 0

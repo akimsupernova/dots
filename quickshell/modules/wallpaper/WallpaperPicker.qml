@@ -441,16 +441,6 @@ Scope {
                             }
                         }
                     }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        visible: folderModel.count > 0
-                        text: "Promise you won't say goodbye right now"
-                        color: Theme.ink
-                        opacity: 0.5 * glass.stage(5)
-                        font.family: Theme.font
-                        font.pixelSize: Math.round(8.5 * root.u)
-                    }
                 }
             }
 

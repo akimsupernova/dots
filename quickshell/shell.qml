@@ -10,6 +10,7 @@ import qs.modules.wallpaper
 import qs.modules.clock
 import qs.modules.polkit
 import qs.modules.emoji
+import qs.modules.clipboard
 import qs.modules.power
 import qs.modules.namecard
 import qs.modules.welcome
@@ -43,6 +44,7 @@ ShellRoot {
     ClockWidget {}
     Polkit {}
     EmojiPicker {}
+    ClipboardHistory {}
     PowerMenu {}
     NameCard {}
     Welcome {}

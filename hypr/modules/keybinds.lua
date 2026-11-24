@@ -36,6 +36,7 @@ hl.bind("ALT + F4", hl.dsp.exec_cmd([[notify-send -a Keybind -u normal -t 4000 -
 hl.bind("CTRL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -e btop"), { description = "Workspace: Task Manager" })
 hl.bind("SUPER + SPACE", hl.dsp.global("quickshell:launcherToggleRelease"), { description = "Shell: Toggle launcher" })
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call emoji toggle"), { description = "Workspace: Emoji" })
+hl.bind("SUPER + SHIFT + V", hl.dsp.exec_cmd("qs ipc call clipboard toggle"), { description = "Workspace: Clipboard History" })
 hl.bind("SUPER + G", hl.dsp.exec_cmd("qs ipc call namecard toggle"), { description = "App: Name Card" })
 hl.bind("SUPER + N", hl.dsp.exec_cmd("qs ipc call sidebar toggle"), { description = "Shell: Sidebar" })
 hl.bind("SUPER + A", hl.dsp.exec_cmd("qs ipc call ai toggle"), { description = "Shell: AI Panel" })
