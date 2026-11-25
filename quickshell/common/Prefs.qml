@@ -63,6 +63,9 @@ Singleton {
     property string lockWhen: "battery"
     property int lockTimeout: 3
     property bool lockScreenOff: true
+    property bool lockMedia: true
+    property bool lockNotifs: true
+    property bool lockNotifBody: true
 
     property int nightTemp: 4200
     property bool nightSchedule: false
@@ -121,6 +124,9 @@ Singleton {
         lockWhen:     { t: "enum", v: ["battery", "always", "never"] },
         lockTimeout:  { t: "num", min: 1, max: 60, int: true },
         lockScreenOff:{ t: "bool" },
+        lockMedia:    { t: "bool" },
+        lockNotifs:   { t: "bool" },
+        lockNotifBody:{ t: "bool" },
         nightTemp:    { t: "num", min: 2500, max: 6500, int: true },
         nightSchedule:{ t: "bool" },
         nightStart:   { t: "num", min: 0, max: 1439, int: true },

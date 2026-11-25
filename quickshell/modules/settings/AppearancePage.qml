@@ -13,14 +13,14 @@ ColumnLayout {
     readonly property real nearestScale: scales.reduce((a, b) => Math.abs(b - Prefs.uiScale) < Math.abs(a - Prefs.uiScale) ? b : a)
 
     readonly property var parts: [
-        { key: "barTitle",      label: "Window title",     hint: "The active window on the left" },
-        { key: "barResources",  label: "System resources", hint: "CPU and memory" },
-        { key: "barMedia",      label: "Media player",     hint: "Shows while something is playing" },
+        { key: "barTitle",      label: "Window title",     hint: "" },
+        { key: "barResources",  label: "System resources", hint: "" },
+        { key: "barMedia",      label: "Media player",     hint: "" },
         { key: "barWorkspaces", label: "Workspaces",       hint: "" },
         { key: "barClock",      label: "Clock",            hint: "" },
         { key: "barTray",       label: "Tray icons",       hint: "" },
-        { key: "barStatus",     label: "Status icons",     hint: "Network, Bluetooth, microphone, notifications" },
-        { key: "barBattery",    label: "Battery",          hint: "Only on devices with a battery" },
+        { key: "barStatus",     label: "Status icons",     hint: "" },
+        { key: "barBattery",    label: "Battery",          hint: "" },
         { key: "barVolume",     label: "Volume",           hint: "" }
     ]
 
@@ -29,7 +29,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Glassveil style"
-            hint: "Applies to the shell GTK, and Qt."
 
             Choice {
                 options: [
@@ -45,7 +44,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Accent color"
-            hint: "Auto picks a color from your wallpaper"
 
             Flow {
                 Layout.fillWidth: true
@@ -85,7 +83,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Interface size"
-            hint: "Scales every panel"
 
             Choice {
                 options: [
@@ -159,7 +156,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Gap between windows"
-            hint: "Changes Hyprland itself, not only the shell"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -195,7 +191,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Window look"
-            hint: "Go back to the values in your Hyprland config"
 
             GlassButton {
                 text: "Use config"
@@ -229,7 +224,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Weather"
-            hint: "Icon and temperature next to the battery"
 
             ToggleSwitch {
                 checked: Weather.enabled

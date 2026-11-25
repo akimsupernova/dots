@@ -49,7 +49,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Volume"
-            hint: "Tap the icon to mute"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -121,7 +120,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Microphone volume"
-            hint: "Tap the icon to mute"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -205,7 +203,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Scroll step"
-            hint: "Volume change per scroll on the bar"
 
             Stepper {
                 value: Prefs.audioStep
@@ -221,7 +218,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Maximum volume"
-            hint: "Above 100% boosts the sound and can distort it"
 
             Choice {
                 options: [
@@ -240,7 +236,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Volume pop-up"
-            hint: "Shows a bubble when volume changes"
 
             ToggleSwitch {
                 checked: Prefs.audioOsd

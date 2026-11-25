@@ -431,15 +431,6 @@ Scope {
                                 onEntered: root.selectedIndex = del.index
                             }
                         }
-
-                        ScrollBar.vertical: ScrollBar {
-                            policy: ScrollBar.AsNeeded
-                            width: 5
-                            contentItem: Rectangle {
-                                radius: 3
-                                color: Theme.inkA(0.35)
-                            }
-                        }
                     }
                 }
             }

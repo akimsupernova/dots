@@ -28,7 +28,6 @@ ColumnLayout {
 
         SettingRow {
             label: "AI panel"
-            hint: "Open or close it. Shell command: qs ipc call ai toggle"
 
             GlassButton {
                 icon: "sparkle"
@@ -41,8 +40,7 @@ ColumnLayout {
         }
 
         SettingRow {
-            label: "Close when clicking outside"
-            hint: "Clicking the empty screen area closes the panel"
+            label: "Close with mouse"
 
             ToggleSwitch {
                 checked: Prefs.aiCloseOutside
@@ -52,7 +50,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Chat history"
-            hint: "Starts a fresh conversation"
 
             GlassButton {
                 icon: "trash"
@@ -80,7 +77,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Chat height"
-            hint: "Tallest the conversation area can grow"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -104,7 +100,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Default size"
-            hint: "Width, chat height and bottom distance"
 
             GlassButton {
                 icon: "rotate"
@@ -119,7 +114,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Drag the panel"
-            hint: "Hold the drag key and drag anywhere on the panel"
 
             ToggleSwitch {
                 checked: Prefs.aiDraggable
@@ -146,7 +140,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Remember position"
-            hint: "Off puts the panel back in place every time it opens"
             enabled: Prefs.aiDraggable
             opacity: enabled ? 1 : 0.4
 
@@ -158,7 +151,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Default position"
-            hint: "Centered, at the bottom distance above"
 
             GlassButton {
                 icon: "rotate"
@@ -175,7 +167,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Effect"
-            hint: "Animates the chat area only."
 
             Choice {
                 options: [
@@ -191,7 +182,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Amount"
-            hint: "Open the AI panel to see it"
             enabled: Prefs.aiTheme !== "none"
             opacity: enabled ? 1 : 0.4
 
@@ -212,7 +202,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Show while the AI is running"
-            hint: "A small pill at the top of the screen shows what the AI is doing"
 
             ToggleSwitch {
                 checked: Prefs.aiStatus
@@ -227,7 +216,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Answer style"
-            hint: "Applies to your next message"
 
             Choice {
                 options: [
@@ -242,7 +230,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Share PC specs with AI"
-            hint: "Allow your AI provider to access your PC specifications with every message"
 
             ToggleSwitch {
                 checked: Prefs.aiSpecs
@@ -252,7 +239,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Custom instructions"
-            hint: "Added to the built-in prompt"
 
             ToggleSwitch {
                 checked: Prefs.aiInstructionsOn

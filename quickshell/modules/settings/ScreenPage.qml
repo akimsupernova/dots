@@ -20,8 +20,7 @@ ColumnLayout {
 
         SettingRow {
             stacked: true
-            label: "Lock when idle"
-            hint: "Battery only skips desktops. Never while media plays"
+            label: "Lock options"
 
             Choice {
                 options: [
@@ -36,7 +35,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Lock after"
-            hint: "Of no keyboard or mouse use"
             enabled: root.autoLock
             opacity: enabled ? 1 : 0.4
 
@@ -53,13 +51,41 @@ ColumnLayout {
 
         SettingRow {
             label: "Turn the screen off"
-            hint: "Right after an idle lock"
             enabled: root.autoLock
             opacity: enabled ? 1 : 0.4
 
             ToggleSwitch {
                 checked: Prefs.lockScreenOff
                 onToggled: v => Prefs.set("lockScreenOff", v)
+            }
+        }
+
+        SettingRow {
+            label: "Show media player"
+
+            ToggleSwitch {
+                checked: Prefs.lockMedia
+                onToggled: v => Prefs.set("lockMedia", v)
+            }
+        }
+
+        SettingRow {
+            label: "Show notifications"
+
+            ToggleSwitch {
+                checked: Prefs.lockNotifs
+                onToggled: v => Prefs.set("lockNotifs", v)
+            }
+        }
+
+        SettingRow {
+            label: "Show notification text"
+            enabled: Prefs.lockNotifs
+            opacity: enabled ? 1 : 0.4
+
+            ToggleSwitch {
+                checked: Prefs.lockNotifBody
+                onToggled: v => Prefs.set("lockNotifBody", v)
             }
         }
 
@@ -94,7 +120,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Night light"
-            hint: "Warms the screen colors"
             enabled: Toggles.nightAvailable
             opacity: enabled ? 1 : 0.4
 
@@ -107,7 +132,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Color temperature"
-            hint: "Lower is warmer"
             enabled: Toggles.nightAvailable
             opacity: enabled ? 1 : 0.4
 
@@ -121,7 +145,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Schedule"
-            hint: "Turns on and off by itself. Switching it by hand holds until the next change"
             enabled: Toggles.nightAvailable
             opacity: enabled ? 1 : 0.4
 

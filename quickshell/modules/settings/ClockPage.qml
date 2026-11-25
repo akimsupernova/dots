@@ -14,7 +14,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Style"
-            hint: "You can also right-click the clock"
 
             Choice {
                 options: [
@@ -29,7 +28,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Size"
-            hint: "Or hold the left button on the clock and scroll"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -59,7 +57,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Ring shows"
-            hint: "Battery falls back to the day on desktops"
 
             Choice {
                 options: [
@@ -100,7 +97,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "City"
-            hint: "Press Enter to apply. Leave empty to detect it from your IP address"
 
             GlassField {
                 id: cityField
@@ -147,7 +143,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Weather data"
-            hint: "From Open-Meteo, no account needed"
 
             GlassButton {
                 icon: "arrow-clockwise"

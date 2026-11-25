@@ -68,7 +68,7 @@ ColumnLayout {
 
         Text {
             Layout.fillWidth: true
-            text: "Keybind: Super + Shift + R picks a random one."
+            text: "Super + Shift + R random wallpaper."
             color: Theme.ink
             opacity: 0.6
             wrapMode: Text.WordWrap

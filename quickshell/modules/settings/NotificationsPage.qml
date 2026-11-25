@@ -15,7 +15,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Do not disturb"
-            hint: "Hides pop-ups. Critical ones still show"
 
             ToggleSwitch {
                 checked: Notifs.dnd
@@ -26,7 +25,6 @@ ColumnLayout {
         SettingRow {
             stacked: true
             label: "Show each pop-up for"
-            hint: "Hovering a pop-up keeps it open"
 
             ValueSlider {
                 Layout.fillWidth: true
@@ -50,7 +48,6 @@ ColumnLayout {
 
         SettingRow {
             label: "Keep critical ones open"
-            hint: "Critical pop-ups stay until you close them"
 
             ToggleSwitch {
                 checked: Prefs.notifCriticalSticky
@@ -60,7 +57,6 @@ ColumnLayout {
 
         SettingRow {
             label: "USB devices"
-            hint: "Notify when a USB device is plugged in or removed"
 
             ToggleSwitch {
                 checked: Prefs.notifUsb

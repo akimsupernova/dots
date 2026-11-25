@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.common
+import qs.services
 
 Item {
     id: root
@@ -70,6 +71,69 @@ Item {
         anchors.fill: parent
         focus: true
         Keys.onPressed: event => root.handleKey(event)
+    }
+
+    LockSpectrum {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: Math.round(parent.width * 0.06)
+        anchors.rightMargin: Math.round(parent.width * 0.06)
+        height: Math.round(root.height * 0.26)
+        u: root.u
+        bars: 36
+        levels: root.shared.levels
+        active: root.shared.mediaVisible && root.shared.playing
+    }
+
+    Column {
+        id: widgets
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: card.bottom
+        anchors.topMargin: Math.round(26 * root.u)
+        width: Math.round(300 * root.u)
+        spacing: Math.round(22 * root.u)
+        opacity: root.shown ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+
+        Item {
+            id: notifSlot
+            width: parent.width
+            readonly property bool want: Prefs.lockNotifs && Notifs.count > 0
+            height: want ? notifs.implicitHeight : 0
+            opacity: want ? 1 : 0
+            visible: height > 0
+            clip: true
+            Behavior on height { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+            LockNotifs {
+                id: notifs
+                width: parent.width
+                u: root.u
+                showBody: Prefs.lockNotifBody
+            }
+        }
+
+        Item {
+            id: mediaSlot
+            width: parent.width
+            readonly property bool want: root.shared.mediaVisible
+            height: want ? media.implicitHeight : 0
+            opacity: want ? 1 : 0
+            visible: height > 0
+            clip: true
+            Behavior on height { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+
+            LockMedia {
+                id: media
+                width: parent.width
+                u: root.u
+                player: root.shared.player
+                playing: root.shared.playing
+            }
+        }
     }
 
     Item {

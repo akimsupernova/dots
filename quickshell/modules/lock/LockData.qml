@@ -1,6 +1,9 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Mpris
+import qs.common
+import qs.services
 
 Scope {
     id: root
@@ -40,6 +43,48 @@ Scope {
         } else {
             root.wallpaper = root.fileUrl(path)
         }
+    }
+
+    property var levels: []
+
+    readonly property var player: {
+        const list = Mpris.players.values
+        return list.find(p => p.playbackState === MprisPlaybackState.Playing)
+            ?? list.find(p => p.playbackState === MprisPlaybackState.Paused)
+            ?? null
+    }
+    readonly property bool playing: player?.playbackState === MprisPlaybackState.Playing
+    readonly property bool mediaVisible: Prefs.lockMedia && player !== null
+    readonly property bool spectrumOn: LockState.locked && Prefs.lockMedia && playing
+
+    readonly property string cavaConfPath: runtimeDir + "/glassveil-lock-cava.conf"
+    readonly property string cavaConf: [
+        "[general]", "bars = 18", "framerate = 60",
+        "[input]", "method = pipewire", "source = auto",
+        "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
+        "ascii_max_range = 100", "bar_delimiter = 59", "frame_delimiter = 10",
+        "[smoothing]", "noise_reduction = 70"
+    ].join("\n")
+
+    function parseBars(line) {
+        const parts = line.split(";")
+        const out = []
+        for (let i = 0; i < parts.length; i++)
+            if (parts[i] !== "") out.push(parseInt(parts[i]) || 0)
+        if (out.length) root.levels = out
+    }
+
+    Process {
+        id: cava
+        running: root.spectrumOn
+        command: ["bash", "-c",
+                  "printf '%s\\n' \"$2\" > \"$1\" && exec cava -p \"$1\"",
+                  "cava-lock", root.cavaConfPath, root.cavaConf]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => root.parseBars(data)
+        }
+        onRunningChanged: if (!running) root.levels = []
     }
 
     FileView {
