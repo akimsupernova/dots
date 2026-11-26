@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-rm -rf "$HOME/.cache"
+find "$HOME/.cache" -mindepth 1 -maxdepth 1 ! -name 'wallpaper-thumbs' -exec rm -rf {} +
 
 pkexec /usr/bin/bash -c '
     pacman -Scc --noconfirm

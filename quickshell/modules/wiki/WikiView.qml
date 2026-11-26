@@ -90,7 +90,7 @@ Item {
         height: Math.round(48 * root.u)
         width: dockRow.implicitWidth + 24 * root.u
         radius: height / 2
-        color: Qt.alpha(Theme.tint, 0.95)
+        color: Theme.tint
         border.width: 1
         border.color: Qt.alpha(Theme.accent1, 0.4)
 

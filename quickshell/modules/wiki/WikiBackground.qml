@@ -4,7 +4,7 @@ import qs.common
 Rectangle {
     id: root
     radius: 0
-    color: Qt.alpha(Theme.tint, Math.min(0.94, Theme.panelAlpha + 0.2))
+    color: Theme.tint
     border.width: 0
 
     Rectangle {
