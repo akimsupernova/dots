@@ -10,3 +10,5 @@ pkexec /usr/bin/bash -c '
     rm -rf /tmp/.*
     rm -rf /tmp/*
 '
+
+notify-send -i "$HOME/.config/quickshell/assets/icons/info.svg" "System" "Reboot require"
