@@ -48,30 +48,6 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: heroLabel.y + heroLabel.height
 
-                Image {
-                    id: brand
-                    property real bob: 0
-                    anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: Math.round(84 * page.u)
-                    height: width
-                    source: Qt.resolvedUrl("../../assets/namecard/glassveilbrand.png")
-                    sourceSize.width: Math.round(168 * page.u)
-                    sourceSize.height: Math.round(168 * page.u)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    smooth: true
-                    mipmap: true
-                    transform: Translate { y: brand.bob }
-
-                    SequentialAnimation on bob {
-                        loops: Animation.Infinite
-                        running: page.visible
-                        NumberAnimation { to: -4 * page.u; duration: 2600; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 4 * page.u; duration: 2600; easing.type: Easing.InOutSine }
-                    }
-                }
-
                 WaveTitle {
                     id: heroTitle
                     anchors.top: brand.bottom
