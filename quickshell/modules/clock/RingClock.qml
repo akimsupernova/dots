@@ -127,24 +127,15 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: timeText.bottom
         anchors.topMargin: -root.size * 0.035
-        width: root.size * 0.62
+
+        readonly property real gap: root.size * 0.04
+
+        width: monthText.implicitWidth + gap + dayText.implicitWidth + gap + weekdayText.implicitWidth
         height: dayText.implicitHeight
 
         Text {
-            id: dayText
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: String(clock.date.getDate())
-            color: root.textColor
-            style: Text.Raised
-            styleColor: root.shadowColor
-            font.family: Theme.font
-            font.pixelSize: root.size * 0.105
-            font.bold: true
-        }
-
-        Text {
-            anchors.right: dayText.left
-            anchors.rightMargin: root.size * 0.04
+            id: monthText
+            anchors.left: parent.left
             anchors.baseline: dayText.baseline
             text: Qt.locale().toString(clock.date, "MMM").replace(/\./g, "").toUpperCase()
             color: Theme.inkA(0.75)
@@ -155,8 +146,22 @@ Item {
         }
 
         Text {
-            anchors.left: dayText.right
-            anchors.leftMargin: root.size * 0.04
+            id: dayText
+            anchors.left: parent.left
+            anchors.leftMargin: monthText.implicitWidth + dateRow.gap
+            text: String(clock.date.getDate())
+            color: root.textColor
+            style: Text.Raised
+            styleColor: root.shadowColor
+            font.family: Theme.font
+            font.pixelSize: root.size * 0.105
+            font.bold: true
+        }
+
+        Text {
+            id: weekdayText
+            anchors.left: parent.left
+            anchors.leftMargin: monthText.implicitWidth + dateRow.gap + dayText.implicitWidth + dateRow.gap
             anchors.baseline: dayText.baseline
             text: Qt.locale().toString(clock.date, "ddd").replace(/\./g, "").toUpperCase()
             color: Theme.inkA(0.75)
