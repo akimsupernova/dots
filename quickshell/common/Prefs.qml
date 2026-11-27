@@ -33,6 +33,7 @@ Singleton {
     property bool clockDate: true
     property bool clockWeather: true
     property bool clock24h: true
+    property bool clockAuto: true
 
     property int audioStep: 2
     property int audioMax: 100
@@ -98,6 +99,7 @@ Singleton {
         clockDate:    { t: "bool" },
         clockWeather: { t: "bool" },
         clock24h:     { t: "bool" },
+        clockAuto:    { t: "bool" },
         audioStep:    { t: "num", min: 1, max: 10, int: true },
         audioMax:     { t: "num", min: 100, max: 150, int: true },
         audioOsd:     { t: "bool" },

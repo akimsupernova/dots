@@ -8,6 +8,8 @@ Item {
     property int topInset: 0
     property bool draggable: true
     property var savedPos: null
+    property var autoPos: null
+    property bool autoPlace: false
     property string style: "digital"
     property int ringSize: 280
     property string ringMode: "day"
@@ -80,6 +82,9 @@ Item {
         if (root.savedPos) {
             nx = root.savedPos.x
             ny = root.savedPos.y
+        } else if (root.autoPlace && root.autoPos) {
+            nx = root.autoPos.cx * root.width - holder.width / 2
+            ny = root.autoPos.cy * root.height - holder.height / 2
         } else {
             const p = root.position
             nx = p.endsWith("left") ? root.margin
@@ -96,6 +101,8 @@ Item {
     onWidthChanged: place()
     onHeightChanged: place()
     onSavedPosChanged: place()
+    onAutoPosChanged: place()
+    onAutoPlaceChanged: place()
     onPositionChanged: place()
     onMarginChanged: place()
     onTopInsetChanged: place()
@@ -107,6 +114,15 @@ Item {
         height: clock.implicitHeight + (ring.implicitHeight - clock.implicitHeight) * root.morph
         onWidthChanged: root.place()
         onHeightChanged: root.place()
+
+        Behavior on x {
+            enabled: root._armed && root.autoPlace && !dragArea.dragging
+            NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
+        }
+        Behavior on y {
+            enabled: root._armed && root.autoPlace && !dragArea.dragging
+            NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
+        }
 
         scale: (root.draggable && dragArea.pressed) ? 1.05 : 1
         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }

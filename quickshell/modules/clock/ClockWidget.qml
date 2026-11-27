@@ -26,6 +26,9 @@ Scope {
 
     readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/quickshell"
     property var saved: ({})
+    property var auto: ({})
+    property bool autoPlace: Prefs.clockAuto
+    property bool _wallChanged: false
 
     Process {
         command: ["mkdir", "-p", root.stateDir]
@@ -37,6 +40,24 @@ Scope {
         path: root.stateDir + "/clock-position.json"
         onLoaded: {
             try { root.saved = JSON.parse(text()) } catch (e) { root.saved = ({}) }
+        }
+    }
+
+    FileView {
+        id: autoFile
+        path: root.stateDir + "/clock-auto.json"
+        watchChanges: true
+        onFileChanged: {
+            root._wallChanged = true
+            reload()
+        }
+        onLoaded: {
+            try { root.auto = JSON.parse(text()) } catch (e) { root.auto = ({}) }
+            if (root._wallChanged && root.autoPlace) {
+                root.saved = ({})
+                stateFile.setText("{}")
+            }
+            root._wallChanged = false
         }
     }
 
@@ -102,6 +123,8 @@ Scope {
                 ringMode: root.ringMode
                 showWeather: root.showWeather
                 savedPos: root.saved[win.modelData?.name ?? ""] ?? null
+                autoPlace: root.autoPlace
+                autoPos: root.auto[win.modelData?.name ?? ""] ?? root.auto["*"] ?? null
 
                 timeSize: root.timeSize
                 dateSize: root.dateSize

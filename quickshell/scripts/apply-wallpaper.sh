@@ -91,6 +91,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if command -v python3 >/dev/null 2>&1; then
   python3 "$SCRIPT_DIR/extract_accent.py" "$PATH_IN" >>"$LOG" 2>&1 &
   disown || true
+  python3 "$SCRIPT_DIR/clock_position.py" "$PATH_IN" >>"$LOG" 2>&1 &
+  disown || true
 fi
 
 exit 0

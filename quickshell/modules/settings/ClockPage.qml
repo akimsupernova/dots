@@ -38,6 +38,15 @@ ColumnLayout {
         }
 
         SettingRow {
+            label: "Auto-move on wallpaper change"
+
+            ToggleSwitch {
+                checked: Prefs.clockAuto
+                onToggled: v => Prefs.set("clockAuto", v)
+            }
+        }
+
+        SettingRow {
             label: "24-hour time"
 
             ToggleSwitch {
