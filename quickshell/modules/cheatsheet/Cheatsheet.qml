@@ -307,6 +307,7 @@ Scope {
                                     spacing: 7 * root.u
                                     property var catData: modelData
                                     property int catIndex: index
+                                    property real keyColWidth: 0
                                     readonly property real catStage: glass.stage(1.6 + Math.min(catIndex, 4) * 0.5)
 
                                     opacity: catStage
@@ -320,7 +321,6 @@ Scope {
                                             font.family: Theme.font
                                             font.pixelSize: Math.round(12 * root.u)
                                             font.bold: true
-                                            leftPadding: 2
                                         }
                                         Rectangle {
                                             height: Math.max(2, Math.round(2 * root.u))
@@ -337,21 +337,34 @@ Scope {
                                             property var bindData: modelData
                                             readonly property real rowStage: glass.stage(2.2 + Math.min(catCol.catIndex * 0.5 + index * 0.12, 3.6))
 
-                                            implicitWidth: rowInner.implicitWidth + 12 * root.u
+                                            implicitWidth: rowInner.implicitWidth
                                             height: Math.round(22 * root.u)
                                             opacity: rowStage
                                             transform: Translate { x: (1 - bindRow.rowStage) * -14 * root.u }
 
                                             Row {
                                                 id: rowInner
-                                                x: 6 * root.u
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 spacing: 12 * root.u
+
+                                                Item {
+                                                    id: keyCol
+                                                    width: catCol.keyColWidth
+                                                    height: keyRow.height
+                                                    anchors.verticalCenter: parent.verticalCenter
 
                                                 Row {
                                                     id: keyRow
                                                     spacing: 4 * root.u
+                                                    anchors.left: parent.left
                                                     anchors.verticalCenter: parent.verticalCenter
+
+                                                    function reportWidth() {
+                                                        if (implicitWidth > catCol.keyColWidth)
+                                                            catCol.keyColWidth = implicitWidth
+                                                    }
+                                                    onImplicitWidthChanged: reportWidth()
+                                                    Component.onCompleted: reportWidth()
 
                                                     Repeater {
                                                         model: bindRow.bindData.mods
@@ -374,6 +387,7 @@ Scope {
                                                         label: bindRow.bindData.key
                                                         emphasis: true
                                                     }
+                                                }
                                                 }
 
                                                 Text {
