@@ -69,6 +69,34 @@ Scope {
         }
     }
 
+    property var hero: ({ x: 0, y: 0, zoom: 1 })
+
+    FileView {
+        id: heroFile
+        path: host.stateDir + "/namecard-hero.json"
+        onLoaded: {
+            try {
+                const v = JSON.parse(text())
+                host.hero = {
+                    x: Number(v.x) || 0,
+                    y: Number(v.y) || 0,
+                    zoom: Number(v.zoom) > 0 ? Number(v.zoom) : 1
+                }
+            } catch (e) { host.hero = ({ x: 0, y: 0, zoom: 1 }) }
+        }
+    }
+
+    Timer {
+        id: heroSaveTimer
+        interval: 400
+        onTriggered: heroFile.setText(JSON.stringify(host.hero))
+    }
+
+    function setHero(x, y, zoom) {
+        host.hero = { x: x, y: y, zoom: zoom }
+        heroSaveTimer.restart()
+    }
+
     function setImage(key, path) {
         const next = Object.assign({}, host.images)
         if (path) next[key] = path
@@ -111,9 +139,16 @@ Scope {
             u: host.uiScale
             images: host.images
             playing: host.playing
+            heroX: host.hero.x
+            heroY: host.hero.y
+            heroZoom: host.hero.zoom
             onRequestClose: host.open = false
             onPickRequested: key => host.pickKey = key
-            onResetRequested: key => host.setImage(key, "")
+            onHeroAdjustRequested: (x, y, zoom) => host.setHero(x, y, zoom)
+            onResetRequested: key => {
+                host.setImage(key, "")
+                if (key === "hero") host.setHero(0, 0, 1)
+            }
         }
 
         HyprlandFocusGrab {
@@ -178,11 +213,13 @@ Scope {
         tintAlpha: Math.min(0.9, content.tintAlpha + 0.35)
 
         onPicked: path => {
+            if (host.pickKey === "hero") host.setHero(0, 0, 1)
             host.setImage(host.pickKey, path)
             host.pickKey = ""
             focusTimer2.restart()
         }
         onResetRequested: {
+            if (host.pickKey === "hero") host.setHero(0, 0, 1)
             host.setImage(host.pickKey, "")
             host.pickKey = ""
             focusTimer2.restart()

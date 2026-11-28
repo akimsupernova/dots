@@ -43,6 +43,46 @@ Item {
     signal pickRequested(string key)
     signal resetRequested(string key)
 
+    property real heroX: 0
+    property real heroY: 0
+    property real heroZoom: 1
+    readonly property real heroZoomMin: 0.2
+    readonly property real heroZoomMax: 6
+    signal heroAdjustRequested(real x, real y, real zoom)
+
+    readonly property real heroZoomRate: 0.0004
+    property bool heroSmooth: false
+    property real viewX: heroX
+    property real viewY: heroY
+    property real viewZoom: heroZoom
+    Behavior on viewX { NumberAnimation { duration: root.heroSmooth ? 170 : 0; easing.type: Easing.OutCubic } }
+    Behavior on viewY { NumberAnimation { duration: root.heroSmooth ? 170 : 0; easing.type: Easing.OutCubic } }
+    Behavior on viewZoom { NumberAnimation { duration: root.heroSmooth ? 170 : 0; easing.type: Easing.OutCubic } }
+
+    function panHero(dx, dy) {
+        heroSmooth = false
+        heroAdjustRequested(heroX + dx / u, heroY + dy / u, heroZoom)
+    }
+
+    function resetHero() {
+        heroSmooth = true
+        heroAdjustRequested(0, 0, 1)
+    }
+
+    function zoomHero(cx, cy, delta) {
+        const next = Math.max(heroZoomMin, Math.min(heroZoomMax, heroZoom * Math.exp(delta * heroZoomRate)))
+        if (next === heroZoom) return
+        const ratio = next / heroZoom
+        const ox = heroBox.width / 2
+        const oy = heroBox.height / 2
+        const px = heroX * u
+        const py = heroY * u
+        const nx = cx - ox - ratio * (cx - px - ox)
+        const ny = cy - oy - ratio * (cy - py - oy)
+        heroSmooth = true
+        heroAdjustRequested(nx / u, ny / u, next)
+    }
+
     property bool playing: false
     property real danceMix: playing ? 1 : 0
     Behavior on danceMix { NumberAnimation { duration: 450; easing.type: Easing.InOutCubic } }
@@ -65,6 +105,30 @@ Item {
 
     focus: true
     Keys.onEscapePressed: root.requestClose()
+
+    property bool altDown: false
+    readonly property bool heroDebug: false
+    onActiveFocusChanged: if (!activeFocus) altDown = false
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Alt) {
+            altDown = true
+            if (heroDebug) console.log("namecard: Alt key received (keyboard focus ok)")
+        } else if (altDown || (event.modifiers & Qt.AltModifier)) {
+            const cx = heroBox.width / 2
+            const cy = heroBox.height / 2
+            if (event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) {
+                zoomHero(cx, cy, 120)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Minus || event.key === Qt.Key_Underscore) {
+                zoomHero(cx, cy, -120)
+                event.accepted = true
+            }
+        }
+    }
+    Keys.onReleased: event => {
+        if (event.key === Qt.Key_Alt) altDown = false
+    }
 
     Item {
         id: card
@@ -92,7 +156,12 @@ Item {
 
         AnimatedImage {
             id: heroImg
-            anchors.fill: parent
+            width: parent.width
+            height: parent.height
+            x: root.viewX * root.u
+            y: root.viewY * root.u
+            scale: root.viewZoom
+            transformOrigin: Item.Center
             source: root.imgSrc("hero")
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignHCenter
@@ -127,8 +196,14 @@ Item {
         dim: false
         radius: 0
         z: 0
+        adjustable: true
+        debug: root.heroDebug
+        altHeld: root.altDown
         onPick: root.pickRequested("hero")
         onReset: root.resetRequested("hero")
+        onAltMove: (dx, dy) => root.panHero(dx, dy)
+        onAltWheel: (x, y, delta) => root.zoomHero(x, y, delta)
+        onAdjustReset: root.resetHero()
     }
 
     SystemClock {
