@@ -10,8 +10,11 @@ Scope {
 
     readonly property bool blocked: Toggles.keepAwake || MediaActivity.active
 
+    readonly property int unlockDuration: 760
+
     function lock() {
         if (LockState.locked) return
+        console.log("[lock] lock() requested t=" + Date.now())
         ctx.reset()
         UiState.sidebarOpen = false
         LockState.locked = true
@@ -41,7 +44,7 @@ Scope {
 
     Timer {
         id: screenOff
-        interval: 800
+        interval: 1400
         onTriggered: root.dpms(false)
     }
 
@@ -72,26 +75,56 @@ Scope {
         }
     }
 
+    Timer {
+        id: release
+        interval: root.unlockDuration
+        onTriggered: {
+            LockState.locked = false
+            ctx.unlocking = false
+        }
+    }
+
     LockContext {
         id: ctx
         onUnlocked: {
-            LockState.locked = false
             screenOff.stop()
             root.dpms(true)
+            ctx.unlocking = true
+            release.restart()
         }
     }
 
     LockData { id: store }
+
+    Variants {
+        model: Quickshell.screens
+
+        Image {
+            required property var modelData
+            source: LockState.live ? "" : store.wallpaper
+            sourceSize: Qt.size(Math.round(modelData.width * modelData.devicePixelRatio),
+                                Math.round(modelData.height * modelData.devicePixelRatio))
+            asynchronous: true
+            visible: false
+        }
+    }
 
     WlSessionLock {
         locked: LockState.locked
         onLockedChanged: LockState.locked = locked
 
         WlSessionLockSurface {
+            id: surf
+            color: LockState.live ? "transparent" : "white"
+
             LockSurface {
                 anchors.fill: parent
                 context: ctx
                 shared: store
+                wallSize: surf.screen
+                    ? Qt.size(Math.round(surf.screen.width * surf.screen.devicePixelRatio),
+                              Math.round(surf.screen.height * surf.screen.devicePixelRatio))
+                    : Qt.size(0, 0)
             }
         }
     }

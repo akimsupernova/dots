@@ -4,4 +4,5 @@ import Quickshell
 
 Singleton {
     property bool locked: false
+    readonly property bool live: false
 }

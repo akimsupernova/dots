@@ -11,6 +11,7 @@ Scope {
     property bool checking: false
     property bool failed: false
     property string failReason: "wrong"
+    property bool unlocking: false
 
     function fail(reason) {
         root.checking = false
@@ -20,22 +21,22 @@ Scope {
     }
 
     function clear() { root.password = ""; root.failed = false }
-    function reset() { root.clear(); root.checking = false }
+    function reset() { root.clear(); root.checking = false; root.unlocking = false }
 
     function type(s) {
-        if (root.checking || root.password.length >= 256) return
+        if (root.checking || root.unlocking || root.password.length >= 256) return
         root.failed = false
         root.password += s
     }
 
     function backspace() {
-        if (root.checking) return
+        if (root.checking || root.unlocking) return
         root.failed = false
         root.password = root.password.slice(0, -1)
     }
 
     function submit() {
-        if (root.checking || root.password === "") return
+        if (root.checking || root.unlocking || root.password === "") return
         root.checking = true
         console.log("[lock] starting PAM, config=" + pam.config + " dir=" + pam.configDirectory)
         const ok = pam.start()
